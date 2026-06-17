@@ -1,11 +1,20 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
-import { Home, ShoppingBag, LayoutGrid, CreditCard, Package, Settings, LogOut, Bell, ChevronDown, User, Menu, X, TrendingUp, Clock, CheckCircle2, AlertCircle, Star, Zap, ArrowUpRight, ArrowDownRight, Search, RefreshCw, Filter, MoreHorizontal, Utensils, Wallet, Users, BarChart3, ShieldCheck, Globe, ChefHat, Sun, Moon } from "lucide-react";
+import { useRouter } from "next/navigation";
+import {
+  Home, ShoppingBag, LayoutGrid, CreditCard, Package, Settings, LogOut,
+  Bell, ChevronDown, User, Menu, X, TrendingUp, Clock, CheckCircle2,
+  AlertCircle, Star, Zap, ArrowUpRight, ArrowDownRight, Search, RefreshCw,
+  Filter, MoreHorizontal, Utensils, Wallet, Users, BarChart3, ShieldCheck,
+  Globe, ChefHat, Sun, Moon,
+} from "lucide-react";
 import { TbBusinessplan } from "react-icons/tb";
 import { FaHandsHelping } from "react-icons/fa";
-import '../designdashboardcomponent/designdashboard.css'
+import "../designdashboardcomponent/designdashboard.css";
 import MenuCategory from "../menucategorypage/menucategorypage";
-import BusinessInformation from '../businessinformationpage/businessinformationpage'
+import BusinessInformation from "../businessinformationpage/businessinformationpage";
+import SettingsPage from '../ApplicationMainLayout/settingspage'
+import HelpDeskPage from '../ApplicationMainLayout/helpdesk'
 
 const NAV_ITEMS = [
   { id: "Home", label: "Home", icon: Home },
@@ -20,26 +29,20 @@ const NAV_ITEMS = [
 
 const MENU_CONTENT = {
   Home: { icon: ChefHat, color: "#6d28d9", bg: "#ede9fe", title: "Something Delicious", accent: "is Coming Soon!", desc: "We're building something powerful for your restaurant. Stay tuned — your full dashboard is on the way.", tag: "🚀 Exciting things ahead" },
-  Orders: { icon: ShoppingBag, color: "#0369a1", bg: "#e0f2fe", title: "Orders Module", accent: "Coming Soon!", desc: "Track live orders, manage delivery status and review order history — all in one place. Launching very soon.", tag: "📦 Order management system" },
-  "Business Information": { icon: TbBusinessplan, color: "#0369a1", bg: "#e0f2fe", title: "Business Information", accent: "Coming Soon!", desc: "Find your Business Information here.", tag: "📦 Business Information" },
-  "Menu & Category": { icon: LayoutGrid, color: "#b45309", bg: "#fef3c7", title: "Menu Management", accent: "Coming Soon!", desc: "Build rich menus, organise categories, set prices and upload photos. Your perfect menu builder is being crafted.", tag: "🍽️ Menu builder & categories" },
-  "Payment Setup": { icon: CreditCard, color: "#065f46", bg: "#d1fae5", title: "Payment Module", accent: "Coming Soon!", desc: "Accept UPI, cards and wallets. Configure payout cycles and view transaction reports with complete transparency.", tag: "💳 Secure payment gateway" },
-  "Inventory Info": { icon: Package, color: "#7c2d12", bg: "#ffedd5", title: "Inventory Module", accent: "Coming Soon!", desc: "Monitor stock levels, get low-inventory alerts and manage your suppliers without any spreadsheet chaos.", tag: "📊 Stock & supply management" },
-  Settings: { icon: Settings, color: "#1e3a5f", bg: "#dbeafe", title: "Settings Module", accent: "Coming Soon!", desc: "Configure your restaurant profile, manage team roles, permissions and notification preferences easily.", tag: "⚙️ System configuration" },
-"Help Desk": { 
-    icon: FaHandsHelping, 
-    color: "#0f766e", 
-    bg: "#ccfbf1", 
-    title: "Help Desk", 
-    accent: "Coming Soon!", 
-    desc: "Get support, FAQs, contact admin, and submit tickets.", 
-    tag: "🛟 Support & Help Center" 
-  },
+  Orders: { icon: ShoppingBag, color: "#0369a1", bg: "#e0f2fe", title: "Orders Module", accent: "Coming Soon!", desc: "Track live orders, manage delivery status and review order history — all in one place.", tag: "📦 Order management system" },
+  "Business Information": { icon: TbBusinessplan, color: "#0369a1", bg: "#e0f2fe", title: "Business Information", accent: "", desc: "", tag: "" },
+  "Menu & Category": { icon: LayoutGrid, color: "#b45309", bg: "#fef3c7", title: "Menu Management", accent: "Coming Soon!", desc: "Build rich menus, organise categories, set prices and upload photos.", tag: "🍽️ Menu builder & categories" },
+  "Payment Setup": { icon: CreditCard, color: "#065f46", bg: "#d1fae5", title: "Payment Module", accent: "Coming Soon!", desc: "Accept UPI, cards and wallets. Configure payout cycles and view transaction reports.", tag: "💳 Secure payment gateway" },
+  "Inventory Info": { icon: Package, color: "#7c2d12", bg: "#ffedd5", title: "Inventory Module", accent: "Coming Soon!", desc: "Monitor stock levels, get low-inventory alerts and manage your suppliers.", tag: "📊 Stock & supply management" },
+  Settings: { icon: Settings, color: "#1e3a5f", bg: "#dbeafe", title: "Settings Module", accent: "Coming Soon!", desc: "Configure your restaurant profile, manage team roles, permissions and notification preferences.", tag: "⚙️ System configuration" },
+  "Help Desk": { icon: FaHandsHelping, color: "#0f766e", bg: "#ccfbf1", title: "Help Desk", accent: "Coming Soon!", desc: "Get support, FAQs, contact admin, and submit tickets.", tag: "🛟 Support & Help Center" },
 };
 
 const PAGE_COMPONENTS = {
   "Menu & Category": MenuCategory,
   "Business Information": BusinessInformation,
+  "Settings":SettingsPage,
+  "Help Desk":HelpDeskPage,
 };
 
 const STAT_CARDS = [
@@ -72,17 +75,41 @@ const STATUS_MAP = {
   delivered: { label: "Delivered", cls: "status-delivered" },
 };
 
+function getInitials(name) {
+  if (!name) return "AD";
+  return name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
+}
+
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h < 12) return "Good morning";
+  if (h < 17) return "Good afternoon";
+  return "Good evening";
+}
+
 const MainAdminDashboard = () => {
+  const router = useRouter();
   const [active, setActive] = useState("Home");
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchVal, setSearchVal] = useState("");
   const [isDark, setIsDark] = useState(false);
+  const [user, setUser] = useState(null);
   const dropRef = useRef(null);
 
-  const content = MENU_CONTENT[active];
-  const ContentIcon = content.icon;
-  const ActivePage = PAGE_COMPONENTS[active];
+  useEffect(() => {
+    const stored = localStorage.getItem("ttl_user");
+    const token = localStorage.getItem("ttl_token");
+    if (!stored || !token) {
+      router.push("/logintabletopleo");
+      return;
+    }
+    try {
+      setUser(JSON.parse(stored));
+    } catch {
+      router.push("/logintabletopleo");
+    }
+  }, []);
 
   useEffect(() => {
     const fn = (e) => {
@@ -93,19 +120,25 @@ const MainAdminDashboard = () => {
   }, []);
 
   useEffect(() => {
-    if (isDark) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
+    if (isDark) document.documentElement.classList.add("dark");
+    else document.documentElement.classList.remove("dark");
   }, [isDark]);
 
-  const handleNav = (id) => {
-    setActive(id);
-    setSidebarOpen(false);
+  const handleLogout = () => {
+    localStorage.removeItem("ttl_token");
+    localStorage.removeItem("ttl_user");
+    router.push("/logintabletopleo");
   };
 
+  const handleNav = (id) => { setActive(id); setSidebarOpen(false); };
+
+  const content = MENU_CONTENT[active];
+  const ContentIcon = content.icon;
+  const ActivePage = PAGE_COMPONENTS[active];
   const isHome = active === "Home";
+
+  const initials = getInitials(user?.fullName);
+  const firstName = user?.fullName?.split(" ")[0] || "Admin";
 
   return (
     <div className="ad-root">
@@ -113,27 +146,17 @@ const MainAdminDashboard = () => {
 
       <aside className={`ad-sidebar ${sidebarOpen ? "open" : ""}`}>
         <div className="ad-sidebar-logo">
-          <div className="ad-logo-mark">
-            <Utensils size={16} color="#fff" />
-          </div>
+          <div className="ad-logo-mark"><Utensils size={16} color="#fff" /></div>
           <span className="ad-logo-name">TableTop</span>
-          <button className="ad-close-btn" onClick={() => setSidebarOpen(false)} aria-label="Close menu">
-            <X size={18} />
-          </button>
+          <button className="ad-close-btn" onClick={() => setSidebarOpen(false)} aria-label="Close menu"><X size={18} /></button>
         </div>
 
         <nav className="ad-nav">
           <ul>
             {NAV_ITEMS.map(({ id, label, icon: Icon }) => (
               <li key={id}>
-                <a
-                  href="#"
-                  className={`ad-nav-btn ${active === id ? "ad-nav-active" : ""}`}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleNav(id);
-                  }}
-                >
+                <a href="#" className={`ad-nav-btn ${active === id ? "ad-nav-active" : ""}`}
+                  onClick={(e) => { e.preventDefault(); handleNav(id); }}>
                   <Icon size={17} />
                   <span>{label}</span>
                   {active === id && <div className="ad-nav-dot" />}
@@ -145,18 +168,15 @@ const MainAdminDashboard = () => {
 
         <div className="ad-sidebar-bottom">
           <div className="ad-restaurant-card">
-            <div className="ad-rc-avatar">R</div>
+            <div className="ad-rc-avatar">{initials}</div>
             <div className="ad-rc-info">
-              <div className="ad-rc-name">Liyaqath Leo</div>
-              <div className="ad-rc-status">
-                <span className="ad-rc-dot" /> Live
-              </div>
+              <div className="ad-rc-name">{user?.fullName || "Admin"}</div>
+              <div className="ad-rc-status"><span className="ad-rc-dot" /> Live</div>
             </div>
             <div className="ad-rc-badge">Pro</div>
           </div>
-          <button className="ad-logout-btn" type="button">
-            <LogOut size={16} />
-            <span>Sign Out</span>
+          <button className="ad-logout-btn" type="button" onClick={handleLogout}>
+            <LogOut size={16} /><span>Sign Out</span>
           </button>
         </div>
       </aside>
@@ -169,43 +189,22 @@ const MainAdminDashboard = () => {
             </button>
             <div className="ad-search-wrap">
               <Search size={14} className="ad-search-icon" />
-              <input
-                className="ad-search"
-                placeholder="Search orders, items..."
-                value={searchVal}
-                onChange={(e) => setSearchVal(e.target.value)}
-              />
+              <input className="ad-search" placeholder="Search orders, items..." value={searchVal} onChange={(e) => setSearchVal(e.target.value)} />
             </div>
           </div>
 
           <div className="ad-topbar-right">
-            <div className="ad-live-badge">
-              <span className="ad-live-dot" />
-              Live
-            </div>
-
-            <button className="ad-icon-btn" aria-label="Notifications" type="button">
-              <Bell size={17} />
-            </button>
-
-            <button
-              className="ad-icon-btn"
-              onClick={() => setIsDark(!isDark)}
-              aria-label="Toggle theme"
-              type="button"
-            >
+            <div className="ad-live-badge"><span className="ad-live-dot" />Live</div>
+            <button className="ad-icon-btn" aria-label="Notifications" type="button"><Bell size={17} /></button>
+            <button className="ad-icon-btn" onClick={() => setIsDark(!isDark)} aria-label="Toggle theme" type="button">
               {isDark ? <Sun size={17} /> : <Moon size={17} />}
             </button>
 
             <div className="ad-profile-wrap" ref={dropRef}>
-              <button
-                className="ad-profile-btn"
-                onClick={() => setDropdownOpen((s) => !s)}
-                type="button"
-              >
-                <div className="ad-profile-av">LZ</div>
+              <button className="ad-profile-btn" onClick={() => setDropdownOpen((s) => !s)} type="button">
+                <div className="ad-profile-av">{initials}</div>
                 <div className="ad-profile-text">
-                  <span className="ad-profile-name">Liyaqath</span>
+                  <span className="ad-profile-name">{user?.fullName || "Admin"}</span>
                   <span className="ad-profile-role">Admin</span>
                 </div>
                 <ChevronDown size={14} className={`ad-chevron ${dropdownOpen ? "rotated" : ""}`} />
@@ -214,10 +213,15 @@ const MainAdminDashboard = () => {
               {dropdownOpen && (
                 <div className="ad-dropdown">
                   <div className="ad-dd-head">
-                    <div className="ad-dd-av">LZ</div>
+                    <div className="ad-dd-av">{initials}</div>
                     <div>
-                      <div className="ad-dd-name">Liyaqath</div>
-                      <div className="ad-dd-email">liyaqath@tabletop.in</div>
+                      <div className="ad-dd-name">{user?.fullName || "Admin"}</div>
+                      <div className="ad-dd-email">{user?.email || ""}</div>
+                      {user?.adminId && (
+                        <div style={{ fontSize: 11, color: "#a1a1aa", marginTop: 2 }}>
+                          ID: {user.adminId}
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div className="ad-dd-div" />
@@ -225,7 +229,9 @@ const MainAdminDashboard = () => {
                   <button className="ad-dd-item" type="button"><Settings size={14} /> Settings</button>
                   <button className="ad-dd-item" type="button"><Globe size={14} /> Help Center</button>
                   <div className="ad-dd-div" />
-                  <button className="ad-dd-item ad-dd-logout" type="button"><LogOut size={14} /> Sign Out</button>
+                  <button className="ad-dd-item ad-dd-logout" type="button" onClick={handleLogout}>
+                    <LogOut size={14} /> Sign Out
+                  </button>
                 </div>
               )}
             </div>
@@ -237,8 +243,8 @@ const MainAdminDashboard = () => {
             <>
               <div className="ad-welcome-row">
                 <div>
-                  <div className="ad-page-title">Good morning, Liyaqath 👋</div>
-                  <div className="ad-page-sub">Here's what's happening at your restaurant today.</div>
+                  <div className="ad-page-title">{getGreeting()}, {firstName} 👋</div>
+                  <div className="ad-page-sub">Here&apos;s what&apos;s happening at your restaurant today.</div>
                 </div>
                 <div className="ad-header-actions">
                   <button className="ad-btn-secondary" type="button"><RefreshCw size={14} /> Refresh</button>
@@ -252,12 +258,9 @@ const MainAdminDashboard = () => {
                   return (
                     <div className="ad-stat-card" key={s.label}>
                       <div className="ad-stat-top">
-                        <div className="ad-stat-icon-wrap" style={{ background: s.bg }}>
-                          <Icon size={17} color={s.color} />
-                        </div>
+                        <div className="ad-stat-icon-wrap" style={{ background: s.bg }}><Icon size={17} color={s.color} /></div>
                         <span className={`ad-stat-change ${s.up ? "up" : "down"}`}>
-                          {s.up ? <ArrowUpRight size={13} /> : <ArrowDownRight size={13} />}
-                          {s.change}
+                          {s.up ? <ArrowUpRight size={13} /> : <ArrowDownRight size={13} />}{s.change}
                         </span>
                       </div>
                       <div className="ad-stat-value">{s.value}</div>
@@ -284,9 +287,7 @@ const MainAdminDashboard = () => {
                           <div className="ad-order-left">
                             <div className="ad-order-id">{o.id}</div>
                             <div className="ad-order-item">{o.item}</div>
-                            <div className="ad-order-meta">
-                              <Clock size={11} /> {o.time} · {o.table}
-                            </div>
+                            <div className="ad-order-meta"><Clock size={11} /> {o.time} · {o.table}</div>
                           </div>
                           <div className="ad-order-right">
                             <div className="ad-order-amount">{o.amount}</div>
@@ -319,24 +320,11 @@ const MainAdminDashboard = () => {
                       </div>
                     ))}
                   </div>
-
                   <div className="ad-quick-stats">
-                    <div className="ad-qs-item">
-                      <CheckCircle2 size={15} color="#16a34a" />
-                      <span>156 delivered</span>
-                    </div>
-                    <div className="ad-qs-item">
-                      <Zap size={15} color="#b45309" />
-                      <span>12 preparing</span>
-                    </div>
-                    <div className="ad-qs-item">
-                      <AlertCircle size={15} color="#dc2626" />
-                      <span>2 issues</span>
-                    </div>
-                    <div className="ad-qs-item">
-                      <TrendingUp size={15} color="#6d28d9" />
-                      <span>↑ 8% week</span>
-                    </div>
+                    <div className="ad-qs-item"><CheckCircle2 size={15} color="#16a34a" /><span>156 delivered</span></div>
+                    <div className="ad-qs-item"><Zap size={15} color="#b45309" /><span>12 preparing</span></div>
+                    <div className="ad-qs-item"><AlertCircle size={15} color="#dc2626" /><span>2 issues</span></div>
+                    <div className="ad-qs-item"><TrendingUp size={15} color="#6d28d9" /><span>↑ 8% week</span></div>
                   </div>
                 </div>
               </div>
@@ -358,10 +346,7 @@ const MainAdminDashboard = () => {
                       return (
                         <div className="ad-perf-col" key={d}>
                           <div className="ad-perf-bar-wrap">
-                            <div
-                              className={`ad-perf-bar ${isToday ? "today" : ""}`}
-                              style={{ height: `${heights[i]}%` }}
-                            />
+                            <div className={`ad-perf-bar ${isToday ? "today" : ""}`} style={{ height: `${heights[i]}%` }} />
                           </div>
                           <div className={`ad-perf-day ${isToday ? "today" : ""}`}>{d}</div>
                         </div>
@@ -407,18 +392,12 @@ const MainAdminDashboard = () => {
                     <div className="ad-cs-tag">{content.tag}</div>
                     <h2 className="ad-cs-title">
                       {content.title}{" "}
-                      <span className="ad-cs-accent" style={{ color: content.color }}>
-                        {content.accent}
-                      </span>
+                      <span className="ad-cs-accent" style={{ color: content.color }}>{content.accent}</span>
                     </h2>
                     <p className="ad-cs-desc">{content.desc}</p>
                     <div className="ad-cs-actions">
-                      <button className="ad-btn-primary" type="button">
-                        <Bell size={15} /> Notify Me
-                      </button>
-                      <button className="ad-btn-secondary" type="button" onClick={() => setActive("Home")}>
-                        ← Back to Dashboard
-                      </button>
+                      <button className="ad-btn-primary" type="button"><Bell size={15} /> Notify Me</button>
+                      <button className="ad-btn-secondary" type="button" onClick={() => setActive("Home")}>← Back to Dashboard</button>
                     </div>
                   </div>
                 </div>

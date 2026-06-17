@@ -817,3 +817,106 @@
   .mc-form-actions { flex-wrap: wrap; }
   .mc-btn-reset, .mc-save-btn { flex: 1; justify-content: center; }
 }
+
+.mc-btn-danger {
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.mc-btn-danger:hover {
+  background: #dc2626;
+}
+
+
+
+
+/* ====================== Improved No Category Empty State ====================== */
+.mc-no-category {
+  padding: 70px 30px;
+  text-align: center;
+  background: #f8fafc;
+  border: 2px dashed #cbd5e1;
+  border-radius: 16px;
+  margin: 24px 0;
+  color: #64748b;
+  transition: all 0.3s ease;
+}
+
+.dark .mc-no-category {
+  background: #1e2937;
+  border-color: #475569;
+  color: #94a3b8;
+}
+
+.mc-no-category .mc-no-icon {
+  font-size: 52px;
+  margin-bottom: 16px;
+  display: block;
+  line-height: 1;
+}
+
+.mc-no-category h3 {
+  font-size: 19px;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+  color: #1e2937;
+}
+
+.dark .mc-no-category h3 {
+  color: #f1f5f9;
+}
+
+.mc-no-category p {
+  font-size: 14.5px;
+  max-width: 260px;
+  margin: 0 auto 20px;
+  line-height: 1.5;
+}
+
+.mc-no-category button {
+  background: #6d28d9;
+  color: white;
+  border: none;
+  padding: 11px 24px;
+  border-radius: 10px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.mc-no-category button:hover {
+  background: #5b21b6;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(109, 40, 217, 0.3);
+}
+
+/* Optional hover effect on the whole box */
+.mc-no-category:hover {
+  border-color: #6d28d9;
+  background: #f1e8ff;
+}
+
+.dark .mc-no-category:hover {
+  background: #2d3748;
+  border-color: #7c3aed;
+}
+
+.mc-add-cat-inline {
+  padding: 16px 18px;
+  background: #fef8f3;
+  border-bottom: 1px solid #f4f4f5;
+}
+
+.mc-inline-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}

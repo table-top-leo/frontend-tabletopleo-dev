@@ -1247,3 +1247,133 @@
 .dark .ad-btn-secondary:hover {
   background: #3f3f46;
 }
+
+/* Logout Modal Styles */
+.ad-logout-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.ad-logout-modal {
+  background: white;
+  padding: 28px 32px;
+  border-radius: 12px;
+  width: 340px;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.dark .ad-logout-modal {
+  background: #1f2937;
+  color: white;
+}
+
+.ad-logout-modal h3 {
+  margin: 0 0 12px 0;
+  font-size: 20px;
+}
+
+.ad-logout-modal p {
+  color: #64748b;
+  margin-bottom: 24px;
+}
+
+.dark .ad-logout-modal p {
+  color: #94a3b8;
+}
+
+.ad-modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.ad-btn-cancel {
+  padding: 10px 24px;
+  border: 1px solid #cbd5e1;
+  background: white;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.dark .ad-btn-cancel {
+  background: #334155;
+  border-color: #475569;
+  color: white;
+}
+
+.ad-btn-danger {
+  padding: 10px 24px;
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.ad-btn-danger:hover {
+  background: #dc2626;
+}
+
+
+.ad-sidebar {
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+
+.ad-sidebar.collapsed {
+  width: 72px;
+}
+
+.ad-sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  position: relative;
+}
+
+.ad-collapse-btn {
+  background: none;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+}
+
+.ad-nav-btn span {
+  transition: opacity 0.3s;
+}
+
+.ad-sidebar.collapsed .ad-nav-btn span,
+.ad-sidebar.collapsed .ad-logo-name,
+.ad-sidebar.collapsed .ad-rc-info {
+  opacity: 0;
+  width: 0;
+  overflow: hidden;
+  display: none;
+}
+
+.ad-sidebar.collapsed .ad-nav-btn {
+  justify-content: center;
+}
+
+.ad-sidebar.collapsed .ad-rc-avatar {
+  margin-right: 0;
+}
+

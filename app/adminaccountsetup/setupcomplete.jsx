@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import "../designadminaccountsetup/setupcomplete.css";
-import Link from 'next/link'
+import Link from "next/link";
 
 const CONFETTI = [
   { color: "#f59e0b", w: 10, h: 5, left: "15%", delay: 0 },
@@ -25,12 +25,7 @@ const ACTION_CARDS = [
   { icon: "📈", bg: "#f0fdf4", title: "Start Receiving Orders", desc: "Let customers place orders" },
 ];
 
-function generateBizId() {
-  return `BUS-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 900000) + 100000)}`;
-}
-
-export default function SetupComplete({ accountData, businessTypeData }) {
-  const [bizId] = useState(generateBizId);
+export default function SetupComplete({ accountData, businessTypeData, businessInfoData }) {
   const [copied, setCopied] = useState(false);
   const [animate, setAnimate] = useState(false);
 
@@ -43,6 +38,9 @@ export default function SetupComplete({ accountData, businessTypeData }) {
   const email = accountData?.email || "";
   const phone = accountData?.phone || "";
   const bizType = businessTypeData?.businessTypeLabel || "";
+  const bizId = businessInfoData?.businessId || "—";
+  const adminId = accountData?.adminId || "—";
+
   const initials = name
     .split(" ")
     .map((w) => w[0])
@@ -77,21 +75,13 @@ export default function SetupComplete({ accountData, businessTypeData }) {
           ))}
         <div className={`success-circle ${animate ? "pop" : ""}`}>
           <svg width="42" height="42" viewBox="0 0 42 42" fill="none">
-            <path
-              d="M10 22l8 8 14-16"
-              stroke="white"
-              strokeWidth="4"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
+            <path d="M10 22l8 8 14-16" stroke="white" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </div>
       </div>
 
       <h1 className="complete-title">Setup Completed!</h1>
-      <div className="complete-congrats">
-        Congratulations, {name.split(" ")[0]}! 🎉
-      </div>
+      <div className="complete-congrats">Congratulations, {name.split(" ")[0]}! 🎉</div>
       <p className="complete-desc">
         Your business account has been successfully created.
         <br />
@@ -103,18 +93,30 @@ export default function SetupComplete({ accountData, businessTypeData }) {
         <div>
           <div className="user-name">{name}</div>
           <div className="user-details">
-            <div className="user-detail-row">
-              <span>✉️</span>
-              <span>{email}</span>
-            </div>
-            <div className="user-detail-row">
-              <span>📞</span>
-              <span>{phone}</span>
-            </div>
-            <div className="user-detail-row">
-              <span>🏪</span>
-              <span>Business Type: {bizType}</span>
-            </div>
+            {email && (
+              <div className="user-detail-row">
+                <span>✉️</span>
+                <span>{email}</span>
+              </div>
+            )}
+            {phone && (
+              <div className="user-detail-row">
+                <span>📞</span>
+                <span>{phone}</span>
+              </div>
+            )}
+            {bizType && (
+              <div className="user-detail-row">
+                <span>🏪</span>
+                <span>Business Type: {bizType}</span>
+              </div>
+            )}
+            {adminId !== "—" && (
+              <div className="user-detail-row">
+                <span>🔑</span>
+                <span>Admin ID: {adminId}</span>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -130,12 +132,7 @@ export default function SetupComplete({ accountData, businessTypeData }) {
             <button className="btn-copy" onClick={copyBizId} type="button" title="Copy ID">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                 <rect x="5" y="5" width="9" height="9" rx="2" stroke="currentColor" strokeWidth="1.5" />
-                <path
-                  d="M3 11H2a1 1 0 01-1-1V2a1 1 0 011-1h8a1 1 0 011 1v1"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                />
+                <path d="M3 11H2a1 1 0 01-1-1V2a1 1 0 011-1h8a1 1 0 011 1v1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
               </svg>
             </button>
           </div>
@@ -146,15 +143,14 @@ export default function SetupComplete({ accountData, businessTypeData }) {
       <div className="action-cards">
         {ACTION_CARDS.map((a) => (
           <div className="action-card" key={a.title} role="button" tabIndex={0}>
-            <div className="action-icon-wrap" style={{ background: a.bg }}>
-              {a.icon}
-            </div>
+            <div className="action-icon-wrap" style={{ background: a.bg }}>{a.icon}</div>
             <div className="action-card-title">{a.title}</div>
             <div className="action-card-desc">{a.desc}</div>
           </div>
         ))}
       </div>
-<Link href="/tabletopleodashboard" className="btn-dashboard" type="button">
+
+      <Link href="/tabletopleodashboard" className="btn-dashboard" type="button">
         Go to Dashboard →
       </Link>
 
@@ -166,8 +162,7 @@ export default function SetupComplete({ accountData, businessTypeData }) {
         <div className="quote-mark">&ldquo;</div>
         <div>
           <div className="quote-text">
-            The best way to predict the future of your business is to create it.
-            Keep innovating, keep serving, and success will follow you.
+            The best way to predict the future of your business is to create it. Keep innovating, keep serving, and success will follow you.
           </div>
           <div className="quote-author">– Peter Drucker</div>
         </div>

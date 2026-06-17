@@ -1,24 +1,18 @@
 "use client";
 import { useState } from "react";
-import { FaListAlt, FaCreditCard, FaQrcode, FaTruck, FaChartBar, FaUtensils, FaLock, FaBox, FaBuilding, FaStore, FaChartLine, FaBolt, FaPlus } from "react-icons/fa";
+import { FaListAlt, FaCreditCard, FaQrcode, FaTruck, FaChartBar, FaUtensils, FaLock, FaBox, FaBuilding, FaStore, FaChartLine, FaBolt } from "react-icons/fa";
 import { MdMenuBook, MdTableRestaurant } from "react-icons/md";
-import Stepper from "./stepper";
-import AccountSetup from "./accountsetup";
-import BusinessType from "./businesstype";
-import BusinessInformation from "./businessinformation";
-import SetupComplete from "./setupcomplete";
+import Stepper from "../adminaccountsetup/stepper";
+import AccountSetup from "../adminaccountsetup/accountsetup";
+import BusinessType from "../adminaccountsetup/businesstype";
+import BusinessInformation from "../adminaccountsetup/businessinformation";
+import SetupComplete from "../adminaccountsetup/setupcomplete";
 import "../designadminaccountsetup/setupwrapper.css";
 import Link from "next/link";
 
 const LEFT_PANELS = [
   {
-    title: (
-      <>
-        Let Your Business
-        <br />
-        Grow Smarter
-      </>
-    ),
+    title: (<>Let Your Business<br />Grow Smarter</>),
     desc: "Join thousands of restaurants, cafes and shops using TableTopLeo to manage menu, orders, payments and grow their business.",
     features: [
       { icon: <MdMenuBook />, text: "Easy Menu Management" },
@@ -29,15 +23,7 @@ const LEFT_PANELS = [
     ],
   },
   {
-    title: (
-      <>
-        One Platform.
-        <br />
-        Every Business.
-        <br />
-        Limitless Growth.
-      </>
-    ),
+    title: (<>One Platform.<br />Every Business.<br />Limitless Growth.</>),
     desc: "From menu management to QR ordering and secure payments, TableTopLeo has everything you need to run and grow your business.",
     features: [
       { icon: <FaUtensils />, text: "Smart Menu Management" },
@@ -49,13 +35,7 @@ const LEFT_PANELS = [
     ],
   },
   {
-    title: (
-      <>
-        Set Up Your Business
-        <br />
-        The Right Way.
-      </>
-    ),
+    title: (<>Set Up Your Business<br />The Right Way.</>),
     desc: "Tell us about your business so we can personalize your experience and help you serve your customers better.",
     features: [
       { icon: <FaStore />, text: "All-in-One Platform", sub: "Manage menu, orders, payments and customers from one place." },
@@ -65,13 +45,7 @@ const LEFT_PANELS = [
     ],
   },
   {
-    title: (
-      <>
-        Your Success Starts Here,
-        <br />
-        <span className="panel-accent">Great Things Await!</span>
-      </>
-    ),
+    title: (<>Your Success Starts Here,<br /><span className="panel-accent">Great Things Await!</span></>),
     desc: "From menu management to secure payments and QR ordering – TableTopLeo is your all-in-one platform to simplify operations and grow your business effortlessly.",
     features: [
       { icon: <FaStore />, text: "All-in-One Platform", sub: "Manage menu, orders, payments & customers in one place." },
@@ -113,18 +87,12 @@ export default function OnboardingPage() {
           {step === 4 ? (
             <>
               <span className="nav-helper-text">Need help?</span>
-              <button className="btn-contact" type="button">
-                💬 Contact Support
-              </button>
+              <button className="btn-contact" type="button">💬 Contact Support</button>
             </>
           ) : (
             <>
               <span className="nav-helper-text">Already have an account?</span>
-              <Link href="/logintabletopleo" className="btn-login" type="button">
-               
-                Login
-              
-              </Link>
+              <Link href="/logintabletopleo" className="btn-login">Login</Link>
             </>
           )}
         </div>
@@ -180,32 +148,24 @@ export default function OnboardingPage() {
             <div className="form-body">
               {step === 1 && (
                 <AccountSetup
-                  onNext={(data) => {
-                    setAccountData(data);
-                    goNext();
-                  }}
+                  onNext={(data) => { setAccountData(data); goNext(); }}
                   initialData={accountData}
                 />
               )}
               {step === 2 && (
                 <BusinessType
-                  onNext={(data) => {
-                    setBusinessTypeData(data);
-                    goNext();
-                  }}
+                  onNext={(data) => { setBusinessTypeData(data); goNext(); }}
                   onBack={goBack}
                   initialData={businessTypeData}
                 />
               )}
               {step === 3 && (
                 <BusinessInformation
-                  onNext={(data) => {
-                    setBusinessInfoData(data);
-                    goNext();
-                  }}
+                  onNext={(data) => { setBusinessInfoData(data); goNext(); }}
                   onBack={goBack}
                   initialData={businessInfoData}
                   businessTypeData={businessTypeData}
+                  accountData={accountData}
                 />
               )}
               {step === 4 && (

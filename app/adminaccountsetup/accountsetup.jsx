@@ -3,6 +3,7 @@ import { useState, useRef } from "react";
 import PhoneInput, { isValidPhoneNumber } from "react-phone-number-input";
 import "react-phone-number-input/style.css";
 import "../designadminaccountsetup/designaccountsetup.css";
+import { registerUser, verifyOtp, createPassword } from "../services/authService";
 
 export default function AccountSetup({ onNext, initialData }) {
   const [form, setForm] = useState({
@@ -19,6 +20,9 @@ export default function AccountSetup({ onNext, initialData }) {
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [emailVerified, setEmailVerified] = useState(false);
   const [otpError, setOtpError] = useState("");
+  const [verifyLoading, setVerifyLoading] = useState(false);
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [submitLoading, setSubmitLoading] = useState(false);
   const otpRefs = useRef([]);
 
   const set = (field) => (e) => {
@@ -33,26 +37,50 @@ export default function AccountSetup({ onNext, initialData }) {
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
       e.email = "Enter a valid email address.";
     if (!emailVerified) e.email = e.email || "Please verify your email first.";
-    if (!form.phone) e.phone = "Mobile number is required.";
-    else if (!isValidPhoneNumber(form.phone))
-      e.phone = "Enter a valid phone number for the selected country.";
     if (!form.password) e.password = "Password is required.";
-    else if (form.password.length < 8)
-      e.password = "Password must be at least 8 characters.";
+    else if (
+      !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(
+        form.password
+      )
+    )
+      e.password =
+        "Password must be at least 8 characters with uppercase, lowercase, digit and special character (@$!%*?&).";
     if (!form.confirmPassword) e.confirmPassword = "Please confirm your password.";
     else if (form.password !== form.confirmPassword)
       e.confirmPassword = "Passwords do not match.";
     return e;
   };
 
-  const handleVerifyEmail = () => {
+  const handleVerifyEmail = async () => {
     if (!form.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
       setErrors((e) => ({ ...e, email: "Enter a valid email to verify." }));
       return;
     }
-    setShowOtp(true);
-    setOtp(["", "", "", "", "", ""]);
-    setTimeout(() => otpRefs.current[0]?.focus(), 50);
+    if (!form.fullName.trim()) {
+      setErrors((e) => ({ ...e, fullName: "Full name is required before sending OTP." }));
+      return;
+    }
+    setVerifyLoading(true);
+    try {
+      const mobileNumber = form.phone || "0000000000";
+      await registerUser(form.fullName, form.email, mobileNumber);
+      setShowOtp(true);
+      setOtp(["", "", "", "", "", ""]);
+      setTimeout(() => otpRefs.current[0]?.focus(), 50);
+    } catch (err) {
+      const msg =
+        err.response?.data?.message || "Failed to send OTP. Please try again.";
+      if (msg.toLowerCase().includes("already registered")) {
+        setErrors((e) => ({
+          ...e,
+          email: "Email already registered. Please login.",
+        }));
+      } else {
+        setErrors((e) => ({ ...e, email: msg }));
+      }
+    } finally {
+      setVerifyLoading(false);
+    }
   };
 
   const handleOtpChange = (index, val) => {
@@ -69,29 +97,62 @@ export default function AccountSetup({ onNext, initialData }) {
       otpRefs.current[index - 1]?.focus();
   };
 
-  const handleVerifyOtp = () => {
+  const handleVerifyOtp = async () => {
     if (otp.join("").length < 6) {
       setOtpError("Please enter all 6 digits.");
       return;
     }
-    setEmailVerified(true);
-    setShowOtp(false);
-    setErrors((er) => ({ ...er, email: "" }));
+    setOtpLoading(true);
+    try {
+      await verifyOtp(form.email, otp.join(""));
+      setEmailVerified(true);
+      setShowOtp(false);
+      setErrors((er) => ({ ...er, email: "" }));
+    } catch (err) {
+      const msg = err.response?.data?.message || "Invalid OTP. Please try again.";
+      if (msg.toLowerCase().includes("expired")) {
+        setOtpError("OTP has expired. Please request a new OTP.");
+      } else {
+        setOtpError("Invalid OTP. Please check and try again.");
+      }
+    } finally {
+      setOtpLoading(false);
+    }
   };
 
-  const handleResend = () => {
+  const handleResend = async () => {
     setOtp(["", "", "", "", "", ""]);
     setOtpError("");
-    setTimeout(() => otpRefs.current[0]?.focus(), 50);
+    setVerifyLoading(true);
+    try {
+      const mobileNumber = form.phone || "0000000000";
+      await registerUser(form.fullName, form.email, mobileNumber);
+      setTimeout(() => otpRefs.current[0]?.focus(), 50);
+    } catch {
+      setOtpError("Failed to resend OTP. Please try again.");
+    } finally {
+      setVerifyLoading(false);
+    }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const e = validate();
     if (Object.keys(e).length) {
       setErrors(e);
       return;
     }
-    onNext({ ...form, emailVerified: true });
+    setSubmitLoading(true);
+    try {
+      const res = await createPassword(form.email, form.password, form.confirmPassword);
+      const adminId = res.data?.adminId;
+      onNext({ ...form, emailVerified: true, adminId });
+    } catch (err) {
+      const msg =
+        err.response?.data?.message || "Failed to set password. Please try again.";
+      setErrors((e) => ({ ...e, password: msg }));
+    } finally {
+      setSubmitLoading(false);
+    }
   };
 
   return (
@@ -118,12 +179,7 @@ export default function AccountSetup({ onNext, initialData }) {
           <span className="input-icon">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <circle cx="8" cy="5.5" r="3" stroke="#a1a1aa" strokeWidth="1.5" />
-              <path
-                d="M1.5 14c0-3 3-5 6.5-5s6.5 2 6.5 5"
-                stroke="#a1a1aa"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-              />
+              <path d="M1.5 14c0-3 3-5 6.5-5s6.5 2 6.5 5" stroke="#a1a1aa" strokeWidth="1.5" strokeLinecap="round" />
             </svg>
           </span>
           <input
@@ -166,8 +222,13 @@ export default function AccountSetup({ onNext, initialData }) {
                 ✓ Verified
               </button>
             ) : (
-              <button className="btn-verify" onClick={handleVerifyEmail} type="button">
-                Verify Email
+              <button
+                className="btn-verify"
+                onClick={handleVerifyEmail}
+                type="button"
+                disabled={verifyLoading}
+              >
+                {verifyLoading ? "Sending..." : "Verify Email"}
               </button>
             )}
           </div>
@@ -198,11 +259,21 @@ export default function AccountSetup({ onNext, initialData }) {
           </div>
           {otpError && <div className="field-error">{otpError}</div>}
           <div className="otp-actions">
-            <button className="btn-verify-otp" onClick={handleVerifyOtp} type="button">
-              Verify OTP
+            <button
+              className="btn-verify-otp"
+              onClick={handleVerifyOtp}
+              type="button"
+              disabled={otpLoading}
+            >
+              {otpLoading ? "Verifying..." : "Verify OTP"}
             </button>
-            <button className="otp-resend" onClick={handleResend} type="button">
-              Resend OTP
+            <button
+              className="otp-resend"
+              onClick={handleResend}
+              type="button"
+              disabled={verifyLoading}
+            >
+              {verifyLoading ? "Resending..." : "Resend OTP"}
             </button>
           </div>
         </div>
@@ -212,20 +283,14 @@ export default function AccountSetup({ onNext, initialData }) {
         <div className="email-verified-row">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
             <circle cx="8" cy="8" r="7" fill="#22c55e" />
-            <path
-              d="M4.5 8.5l2.5 2.5 4.5-5"
-              stroke="white"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
+            <path d="M4.5 8.5l2.5 2.5 4.5-5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
           Email verified successfully!
         </div>
       )}
 
       <div className="form-group">
-        <label className="form-label">Mobile Number</label>
+        <label className="form-label">Mobile Number (Optional)</label>
         <div className={`phone-input-wrap ${errors.phone ? "error" : ""}`}>
           <PhoneInput
             international
@@ -247,12 +312,7 @@ export default function AccountSetup({ onNext, initialData }) {
           <span className="input-icon">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <rect x="3" y="7" width="10" height="8" rx="2" stroke="#a1a1aa" strokeWidth="1.5" />
-              <path
-                d="M5 7V5a3 3 0 016 0v2"
-                stroke="#a1a1aa"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-              />
+              <path d="M5 7V5a3 3 0 016 0v2" stroke="#a1a1aa" strokeWidth="1.5" strokeLinecap="round" />
               <circle cx="8" cy="11" r="1.2" fill="#a1a1aa" />
             </svg>
           </span>
@@ -272,21 +332,12 @@ export default function AccountSetup({ onNext, initialData }) {
           >
             {showPassword ? (
               <svg width="17" height="17" viewBox="0 0 17 17" fill="none">
-                <path
-                  d="M1 8.5C1 8.5 3.8 3 8.5 3S16 8.5 16 8.5 13.2 14 8.5 14 1 8.5 1 8.5z"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                />
+                <path d="M1 8.5C1 8.5 3.8 3 8.5 3S16 8.5 16 8.5 13.2 14 8.5 14 1 8.5 1 8.5z" stroke="currentColor" strokeWidth="1.5" />
                 <circle cx="8.5" cy="8.5" r="2.5" stroke="currentColor" strokeWidth="1.5" />
               </svg>
             ) : (
               <svg width="17" height="17" viewBox="0 0 17 17" fill="none">
-                <path
-                  d="M2 2l13 13M7 4.3A7.7 7.7 0 018.5 4C13.2 4 16 9 16 9s-.9 1.7-2.5 3M10.8 10.8A3 3 0 015.3 6.3"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                />
+                <path d="M2 2l13 13M7 4.3A7.7 7.7 0 018.5 4C13.2 4 16 9 16 9s-.9 1.7-2.5 3M10.8 10.8A3 3 0 015.3 6.3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
               </svg>
             )}
           </button>
@@ -300,12 +351,7 @@ export default function AccountSetup({ onNext, initialData }) {
           <span className="input-icon">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <rect x="3" y="7" width="10" height="8" rx="2" stroke="#a1a1aa" strokeWidth="1.5" />
-              <path
-                d="M5 7V5a3 3 0 016 0v2"
-                stroke="#a1a1aa"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-              />
+              <path d="M5 7V5a3 3 0 016 0v2" stroke="#a1a1aa" strokeWidth="1.5" strokeLinecap="round" />
               <circle cx="8" cy="11" r="1.2" fill="#a1a1aa" />
             </svg>
           </span>
@@ -325,21 +371,12 @@ export default function AccountSetup({ onNext, initialData }) {
           >
             {showConfirm ? (
               <svg width="17" height="17" viewBox="0 0 17 17" fill="none">
-                <path
-                  d="M1 8.5C1 8.5 3.8 3 8.5 3S16 8.5 16 8.5 13.2 14 8.5 14 1 8.5 1 8.5z"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                />
+                <path d="M1 8.5C1 8.5 3.8 3 8.5 3S16 8.5 16 8.5 13.2 14 8.5 14 1 8.5 1 8.5z" stroke="currentColor" strokeWidth="1.5" />
                 <circle cx="8.5" cy="8.5" r="2.5" stroke="currentColor" strokeWidth="1.5" />
               </svg>
             ) : (
               <svg width="17" height="17" viewBox="0 0 17 17" fill="none">
-                <path
-                  d="M2 2l13 13M7 4.3A7.7 7.7 0 018.5 4C13.2 4 16 9 16 9s-.9 1.7-2.5 3M10.8 10.8A3 3 0 015.3 6.3"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                />
+                <path d="M2 2l13 13M7 4.3A7.7 7.7 0 018.5 4C13.2 4 16 9 16 9s-.9 1.7-2.5 3M10.8 10.8A3 3 0 015.3 6.3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
               </svg>
             )}
           </button>
@@ -349,8 +386,13 @@ export default function AccountSetup({ onNext, initialData }) {
         )}
       </div>
 
-      <button className="btn-primary" onClick={handleSubmit} type="button">
-        Next →
+      <button
+        className="btn-primary"
+        onClick={handleSubmit}
+        type="button"
+        disabled={submitLoading}
+      >
+        {submitLoading ? "Setting up..." : "Next →"}
       </button>
 
       <div className="form-footer">
@@ -360,8 +402,3 @@ export default function AccountSetup({ onNext, initialData }) {
     </div>
   );
 }
-
-
-
-
-
