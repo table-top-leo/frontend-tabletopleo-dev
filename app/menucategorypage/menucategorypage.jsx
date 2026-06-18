@@ -10,6 +10,7 @@ import {
   createCategory, getCategoriesByAdmin, updateCategory, deleteCategory,
   createProduct, getProductsByCategory, updateProduct, deleteProduct,
 } from "../services/menuService";
+import { uploadCategoryImage, uploadProductImage } from "../services/imageservice";
 
 const ITEMS_PER_PAGE = 5;
 
@@ -36,6 +37,86 @@ function Toast({ msg, type }) {
   );
 }
 
+function ImageUploadBox({ imageUrl, onUpload, onRemove, uploading, label, compact }) {
+  const inputRef = useRef();
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) onUpload(file);
+    e.target.value = "";
+  };
+
+  if (compact) {
+    return (
+      <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+        <input ref={inputRef} type="file" accept="image/jpeg,image/jpg,image/png,image/webp"
+          style={{ display:"none" }} onChange={handleFileChange} />
+        {imageUrl ? (
+          <div style={{ position:"relative", display:"inline-flex" }}>
+            <img src={imageUrl} alt="category"
+              style={{ width:38, height:38, objectFit:"cover", borderRadius:8, border:"1.5px solid #e4e4e7" }} />
+            <button type="button" onClick={onRemove}
+              style={{ position:"absolute", top:-6, right:-6, width:18, height:18, background:"#ef4444",
+                border:"2px solid #fff", borderRadius:"50%", color:"#fff", display:"flex",
+                alignItems:"center", justifyContent:"center", cursor:"pointer", padding:0 }}>
+              <X size={10} />
+            </button>
+          </div>
+        ) : (
+          <div onClick={() => inputRef.current?.click()}
+            style={{ width:38, height:38, borderRadius:8, background:"#f4f3f0",
+              border:"1.5px dashed #d4d4d8", display:"flex", alignItems:"center",
+              justifyContent:"center", cursor:"pointer", color:"#a1a1aa", flexShrink:0 }}
+            title="Upload category image">
+            {uploading ? <Loader2 size={14} style={{ animation:"spin .7s linear infinite" }} /> : <Image size={15} />}
+          </div>
+        )}
+        <span style={{ fontSize:12, color:"#a1a1aa" }}>
+          {uploading ? "Uploading..." : imageUrl ? "Image uploaded" : "Optional: add image"}
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <input ref={inputRef} type="file" accept="image/jpeg,image/jpg,image/png,image/webp"
+        style={{ display:"none" }} onChange={handleFileChange} />
+      {imageUrl ? (
+        <div style={{ position:"relative", display:"inline-flex" }}>
+          <img src={imageUrl} alt="preview"
+            style={{ width:100, height:100, objectFit:"cover", borderRadius:10,
+              border:"1.5px solid #e4e4e7", display:"block" }} />
+          <button type="button" onClick={onRemove}
+            style={{ position:"absolute", top:-7, right:-7, width:20, height:20, background:"#ef4444",
+              border:"2px solid #fff", borderRadius:"50%", color:"#fff", display:"flex",
+              alignItems:"center", justifyContent:"center", cursor:"pointer", padding:0,
+              boxShadow:"0 1px 4px rgba(0,0,0,.2)", zIndex:2 }}>
+            <X size={11} />
+          </button>
+        </div>
+      ) : (
+        <div className="mc-upload-zone" onClick={() => inputRef.current?.click()}
+          role="button" tabIndex={0}
+          onKeyDown={e => e.key === "Enter" && inputRef.current?.click()}>
+          {uploading ? (
+            <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:6 }}>
+              <Loader2 size={24} style={{ animation:"spin .7s linear infinite", color:"#3b1f0a" }} />
+              <span className="mc-upload-text">Uploading...</span>
+            </div>
+          ) : (
+            <>
+              <Upload size={24} className="mc-upload-icon" />
+              <span className="mc-upload-text">Click to upload</span>
+              <span className="mc-upload-hint">PNG, JPG, WEBP up to 5MB</span>
+            </>
+          )}
+        </div>
+      )}
+    </>
+  );
+}
+
 const MenuCategory = () => {
   const user       = getUser();
   const adminId    = user?.adminId    || "";
@@ -47,7 +128,8 @@ const MenuCategory = () => {
   const [formCollapsed,    setFormCollapsed]    = useState(false);
   const [showAddCatInline, setShowAddCatInline] = useState(false);
   const [newCatName,       setNewCatName]       = useState("");
-  const [newCatImage,      setNewCatImage]      = useState(null);
+  const [newCatImageUrl,   setNewCatImageUrl]   = useState(null);
+  const [newCatImgUploading, setNewCatImgUploading] = useState(false);
   const [searchQuery,      setSearchQuery]      = useState("");
   const [statusFilter,     setStatusFilter]     = useState("All Status");
   const [currentPage,      setCurrentPage]      = useState(1);
@@ -60,15 +142,13 @@ const MenuCategory = () => {
   const [catSaving,        setCatSaving]        = useState(false);
   const [deleting,         setDeleting]         = useState(false);
   const [toast,            setToast]            = useState(null);
+  const [prodImgUploading, setProdImgUploading] = useState(false);
 
   const [form, setForm] = useState({
     categoryId:"", newCategoryName:"", name:"", description:"",
-    price:"", status:"ACTIVE", imagePreview:null,
+    price:"", status:"ACTIVE", imageUrl:null,
   });
   const [formErrors, setFormErrors] = useState({});
-
-  const imageRef    = useRef();
-  const catImageRef = useRef();
 
   const showToast = useCallback((msg, type = "success") => {
     setToast({ msg, type });
@@ -116,13 +196,28 @@ const MenuCategory = () => {
     resetForm();
   };
 
-  const handleCatImageUpload = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => setNewCatImage(ev.target.result);
-    reader.readAsDataURL(file);
-    e.target.value = "";
+  const handleCatImageUpload = async (file) => {
+    setNewCatImgUploading(true);
+    try {
+      const res = await uploadCategoryImage(file);
+      setNewCatImageUrl(res.data?.imageUrl || null);
+    } catch {
+      showToast("Failed to upload category image.", "error");
+    } finally {
+      setNewCatImgUploading(false);
+    }
+  };
+
+  const handleProdImageUpload = async (file) => {
+    setProdImgUploading(true);
+    try {
+      const res = await uploadProductImage(file);
+      setForm(prev => ({ ...prev, imageUrl: res.data?.imageUrl || null }));
+    } catch {
+      showToast("Failed to upload product image.", "error");
+    } finally {
+      setProdImgUploading(false);
+    }
   };
 
   const handleAddCategory = async () => {
@@ -132,13 +227,13 @@ const MenuCategory = () => {
       const res = await createCategory({
         adminId, businessId,
         categoryName: newCatName.trim(),
-        categoryImageUrl: newCatImage || null,
+        categoryImageUrl: newCatImageUrl || null,
       });
       const created = res.data;
       setCategories(prev => [created, ...prev]);
       setSelectedCatId(created.categoryId);
       setNewCatName("");
-      setNewCatImage(null);
+      setNewCatImageUrl(null);
       setShowAddCatInline(false);
       showToast("Category created successfully! ✓");
     } catch (err) {
@@ -165,23 +260,14 @@ const MenuCategory = () => {
   };
 
   const resetForm = useCallback(() => {
-    setForm({ categoryId:"", newCategoryName:"", name:"", description:"", price:"", status:"ACTIVE", imagePreview:null });
+    setForm({ categoryId:"", newCategoryName:"", name:"", description:"", price:"", status:"ACTIVE", imageUrl:null });
     setFormErrors({});
     setEditingItem(null);
   }, []);
 
   const handleFieldChange = useCallback((field, value) => {
     setForm(prev => ({ ...prev, [field]: value }));
-    setFormErrors(prev => ({ ...prev, [field]: "" }));
-  }, []);
-
-  const handleImageUpload = useCallback((e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => setForm(prev => ({ ...prev, imagePreview: ev.target.result }));
-    reader.readAsDataURL(file);
-    e.target.value = "";
+    setFormErrors(prev => ({ ...prev, [field]:"" }));
   }, []);
 
   const validateForm = () => {
@@ -220,7 +306,7 @@ const MenuCategory = () => {
         itemName: form.name.trim(),
         itemDescription: form.description.trim() || null,
         itemPrice: parseFloat(form.price),
-        itemImageUrl: form.imagePreview || null,
+        itemImageUrl: form.imageUrl || null,
         productStatus: form.status,
       };
 
@@ -262,7 +348,7 @@ const MenuCategory = () => {
       categoryId: String(item.categoryId), newCategoryName:"",
       name: item.itemName, description: item.itemDescription || "",
       price: String(item.itemPrice), status: item.productStatus,
-      imagePreview: item.itemImageUrl || null,
+      imageUrl: item.itemImageUrl || null,
     });
     setFormErrors({});
     setFormCollapsed(false);
@@ -330,17 +416,9 @@ const MenuCategory = () => {
         .mc-no-category h3{font-size:14px;font-weight:700;color:#18181b;margin:0}
         .mc-no-category p{font-size:12.5px;margin:0}
         .mc-no-category button{display:inline-flex;align-items:center;gap:6px;background:#3b1f0a;color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:700;cursor:pointer;margin-top:4px}
-        .mc-cat-row-wrap{display:flex;align-items:center;width:100%;position:relative}
         .mc-cat-row-actions{display:flex;align-items:center;gap:2px;margin-left:auto;padding-left:6px;flex-shrink:0}
         .mc-cat-icon-btn{background:none;border:none;color:#d4d4d8;cursor:pointer;padding:5px;border-radius:5px;display:flex;align-items:center;transition:color .18s,background .18s;flex-shrink:0}
         .mc-cat-icon-btn:hover{color:#ef4444;background:#fee2e2}
-        .mc-img-upload-row{display:flex;align-items:center;gap:8px}
-        .mc-cat-img-preview{width:36px;height:36px;border-radius:8px;object-fit:cover;border:1.5px solid #e4e4e7;flex-shrink:0}
-        .mc-cat-img-placeholder{width:36px;height:36px;border-radius:8px;background:#f4f3f0;border:1.5px dashed #d4d4d8;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#a1a1aa;cursor:pointer;transition:border-color .18s,background .18s}
-        .mc-cat-img-placeholder:hover{border-color:#3b1f0a;background:#fdf7f3}
-        .mc-upload-cancel-btn{position:absolute;top:-6px;right:-6px;width:18px;height:18px;background:#ef4444;border:none;border-radius:50%;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;z-index:2}
-        .mc-img-wrap-rel{position:relative;display:inline-flex}
-        .mc-prod-img-cancel{position:absolute;top:-7px;right:-7px;width:20px;height:20px;background:#ef4444;border:2px solid #fff;border-radius:50%;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;z-index:2;box-shadow:0 1px 4px rgba(0,0,0,.2)}
       `}</style>
 
       {toast && <Toast msg={toast.msg} type={toast.type} />}
@@ -409,56 +487,21 @@ const MenuCategory = () => {
                 onKeyDown={e => e.key === "Enter" && handleAddCategory()}
                 autoFocus
               />
-
-              <div className="mc-img-upload-row">
-                <input
-                  ref={catImageRef}
-                  type="file"
-                  accept="image/*"
-                  style={{ display:"none" }}
-                  onChange={handleCatImageUpload}
-                />
-                {newCatImage ? (
-                  <div className="mc-img-wrap-rel">
-                    <img src={newCatImage} alt="Category" className="mc-cat-img-preview" />
-                    <button
-                      className="mc-upload-cancel-btn"
-                      onClick={() => setNewCatImage(null)}
-                      type="button"
-                      title="Remove image"
-                    >
-                      <X size={10} />
-                    </button>
-                  </div>
-                ) : (
-                  <div
-                    className="mc-cat-img-placeholder"
-                    onClick={() => catImageRef.current?.click()}
-                    title="Upload category image"
-                  >
-                    <Image size={16} />
-                  </div>
-                )}
-                <span style={{ fontSize:12, color:"#a1a1aa" }}>
-                  {newCatImage ? "Image selected" : "Optional: upload category image"}
-                </span>
-              </div>
-
+              <ImageUploadBox
+                imageUrl={newCatImageUrl}
+                onUpload={handleCatImageUpload}
+                onRemove={() => setNewCatImageUrl(null)}
+                uploading={newCatImgUploading}
+                compact
+              />
               <div className="mc-inline-actions">
-                <button
-                  className="mc-btn-ghost"
-                  onClick={() => { setShowAddCatInline(false); setNewCatName(""); setNewCatImage(null); }}
-                  disabled={catSaving}
-                  type="button"
-                >
+                <button className="mc-btn-ghost"
+                  onClick={() => { setShowAddCatInline(false); setNewCatName(""); setNewCatImageUrl(null); }}
+                  disabled={catSaving} type="button">
                   Cancel
                 </button>
-                <button
-                  className="mc-btn-dark"
-                  onClick={handleAddCategory}
-                  disabled={catSaving || !newCatName.trim()}
-                  type="button"
-                >
+                <button className="mc-btn-dark" onClick={handleAddCategory}
+                  disabled={catSaving || !newCatName.trim() || newCatImgUploading} type="button">
                   {catSaving
                     ? <><Loader2 size={14} style={{ animation:"spin .7s linear infinite" }} /> Creating...</>
                     : <><Check size={14} /> Create</>}
@@ -493,7 +536,8 @@ const MenuCategory = () => {
                 >
                   <div className="mc-cat-img">
                     {cat.categoryImageUrl
-                      ? <img src={cat.categoryImageUrl} alt={cat.categoryName} style={{ width:"100%", height:"100%", objectFit:"cover", borderRadius:8 }} />
+                      ? <img src={cat.categoryImageUrl} alt={cat.categoryName}
+                          style={{ width:"100%", height:"100%", objectFit:"cover", borderRadius:8 }} />
                       : "🍽️"}
                   </div>
                   <div className="mc-cat-info">
@@ -501,12 +545,8 @@ const MenuCategory = () => {
                     <div className="mc-cat-count">{cat.productCount} Items</div>
                   </div>
                   <div className="mc-cat-row-actions" onClick={e => e.stopPropagation()}>
-                    <button
-                      className="mc-cat-icon-btn"
-                      title="Delete category"
-                      onClick={() => openDeleteModal({ type:"category", id:cat.categoryId })}
-                      type="button"
-                    >
+                    <button className="mc-cat-icon-btn" title="Delete category"
+                      onClick={() => openDeleteModal({ type:"category", id:cat.categoryId })} type="button">
                       <Trash2 size={13} />
                     </button>
                     <ChevronRight size={15} className="mc-cat-arrow" style={{ color:"#d4d4d8", pointerEvents:"none" }} />
@@ -534,11 +574,9 @@ const MenuCategory = () => {
                   <div className="mc-form-group mc-fg-half">
                     <label className="mc-label">Category <span className="mc-req">*</span></label>
                     <div className="mc-select-wrap">
-                      <select
-                        className={`mc-select ${formErrors.category ? "mc-err" : ""}`}
+                      <select className={`mc-select ${formErrors.category ? "mc-err" : ""}`}
                         value={form.categoryId}
-                        onChange={e => { handleFieldChange("categoryId", e.target.value); handleFieldChange("newCategoryName",""); }}
-                      >
+                        onChange={e => { handleFieldChange("categoryId", e.target.value); handleFieldChange("newCategoryName",""); }}>
                         <option value="">Select Category</option>
                         {categories.map(c => (
                           <option key={c.categoryId} value={String(c.categoryId)}>{c.categoryName}</option>
@@ -551,13 +589,9 @@ const MenuCategory = () => {
                   <div className="mc-form-or">or</div>
                   <div className="mc-form-group mc-fg-half">
                     <label className="mc-label">&nbsp;</label>
-                    <input
-                      className="mc-input"
-                      type="text"
-                      placeholder="Create New Category"
+                    <input className="mc-input" type="text" placeholder="Create New Category"
                       value={form.newCategoryName}
-                      onChange={e => { handleFieldChange("newCategoryName", e.target.value); handleFieldChange("categoryId",""); }}
-                    />
+                      onChange={e => { handleFieldChange("newCategoryName", e.target.value); handleFieldChange("categoryId",""); }} />
                   </div>
                 </div>
 
@@ -566,13 +600,8 @@ const MenuCategory = () => {
                     <label className="mc-label">Item Name <span className="mc-req">*</span></label>
                     <div className={`mc-input-icon-wrap ${formErrors.name ? "mc-err" : ""}`}>
                       <span className="mc-input-icon"><Coffee size={15} /></span>
-                      <input
-                        className="mc-input-inner"
-                        type="text"
-                        placeholder="Enter item name"
-                        value={form.name}
-                        onChange={e => handleFieldChange("name", e.target.value)}
-                      />
+                      <input className="mc-input-inner" type="text" placeholder="Enter item name"
+                        value={form.name} onChange={e => handleFieldChange("name", e.target.value)} />
                     </div>
                     {formErrors.name && <span className="mc-field-err">{formErrors.name}</span>}
                   </div>
@@ -580,13 +609,8 @@ const MenuCategory = () => {
                     <label className="mc-label">Item Description (Optional)</label>
                     <div className="mc-input-icon-wrap">
                       <span className="mc-input-icon"><Filter size={14} /></span>
-                      <input
-                        className="mc-input-inner"
-                        type="text"
-                        placeholder="Enter item description"
-                        value={form.description}
-                        onChange={e => handleFieldChange("description", e.target.value)}
-                      />
+                      <input className="mc-input-inner" type="text" placeholder="Enter item description"
+                        value={form.description} onChange={e => handleFieldChange("description", e.target.value)} />
                     </div>
                   </div>
                 </div>
@@ -594,62 +618,27 @@ const MenuCategory = () => {
                 <div className="mc-form-row">
                   <div className="mc-form-group mc-fg-half">
                     <label className="mc-label">Item Image (Optional)</label>
-                    <input ref={imageRef} type="file" accept="image/*" style={{ display:"none" }} onChange={handleImageUpload} />
-
-                    {form.imagePreview ? (
-                      <div style={{ position:"relative", display:"inline-flex" }}>
-                        <img
-                          src={form.imagePreview}
-                          alt="preview"
-                          style={{ width:100, height:100, objectFit:"cover", borderRadius:10, border:"1.5px solid #e4e4e7", display:"block" }}
-                        />
-                        <button
-                          className="mc-prod-img-cancel"
-                          onClick={() => handleFieldChange("imagePreview", null)}
-                          type="button"
-                          title="Remove image"
-                        >
-                          <X size={11} />
-                        </button>
-                      </div>
-                    ) : (
-                      <div
-                        className="mc-upload-zone"
-                        onClick={() => imageRef.current?.click()}
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={e => e.key === "Enter" && imageRef.current?.click()}
-                      >
-                        <Upload size={24} className="mc-upload-icon" />
-                        <span className="mc-upload-text">Click to upload</span>
-                        <span className="mc-upload-hint">PNG, JPG up to 5MB</span>
-                      </div>
-                    )}
+                    <ImageUploadBox
+                      imageUrl={form.imageUrl}
+                      onUpload={handleProdImageUpload}
+                      onRemove={() => handleFieldChange("imageUrl", null)}
+                      uploading={prodImgUploading}
+                    />
                   </div>
 
                   <div className="mc-form-group mc-fg-half">
                     <label className="mc-label">Item Price <span className="mc-req">*</span></label>
                     <div className={`mc-input-icon-wrap ${formErrors.price ? "mc-err" : ""}`}>
                       <span className="mc-input-icon mc-rupee">₹</span>
-                      <input
-                        className="mc-input-inner"
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        placeholder="0.00"
-                        value={form.price}
-                        onChange={e => handleFieldChange("price", e.target.value)}
-                      />
+                      <input className="mc-input-inner" type="number" min="0" step="0.01" placeholder="0.00"
+                        value={form.price} onChange={e => handleFieldChange("price", e.target.value)} />
                     </div>
                     {formErrors.price && <span className="mc-field-err">{formErrors.price}</span>}
 
                     <label className="mc-label" style={{ marginTop:14 }}>Status</label>
                     <div className="mc-select-wrap">
-                      <select
-                        className="mc-select"
-                        value={form.status}
-                        onChange={e => handleFieldChange("status", e.target.value)}
-                      >
+                      <select className="mc-select" value={form.status}
+                        onChange={e => handleFieldChange("status", e.target.value)}>
                         <option value="ACTIVE">Active</option>
                         <option value="INACTIVE">Inactive</option>
                       </select>
@@ -662,7 +651,8 @@ const MenuCategory = () => {
                   <button className="mc-btn-reset" onClick={resetForm} type="button" disabled={formSaving}>
                     <RotateCcw size={14} /> Reset
                   </button>
-                  <button className="mc-btn-dark mc-save-btn" onClick={handleSaveItem} type="button" disabled={formSaving}>
+                  <button className="mc-btn-dark mc-save-btn" onClick={handleSaveItem} type="button"
+                    disabled={formSaving || prodImgUploading}>
                     {formSaving
                       ? <><Loader2 size={14} style={{ animation:"spin .7s linear infinite" }} /> {editingItem ? "Updating..." : "Saving..."}</>
                       : <><Send size={14} /> {editingItem ? "Update Item" : "Save Item"}</>}
@@ -680,23 +670,21 @@ const MenuCategory = () => {
               <div className="mc-items-controls">
                 <div className="mc-search-wrap">
                   <Search size={14} className="mc-search-icon" />
-                  <input
-                    className="mc-search-input"
-                    type="text"
-                    placeholder="Search items..."
+                  <input className="mc-search-input" type="text" placeholder="Search items..."
                     value={searchQuery}
-                    onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-                  />
+                    onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1); }} />
                 </div>
                 <div className="mc-select-wrap mc-status-select">
-                  <select className="mc-select" value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setCurrentPage(1); }}>
+                  <select className="mc-select" value={statusFilter}
+                    onChange={e => { setStatusFilter(e.target.value); setCurrentPage(1); }}>
                     <option>All Status</option>
                     <option>Active</option>
                     <option>Inactive</option>
                   </select>
                   <ChevronDown size={14} className="mc-select-icon" />
                 </div>
-                <button className="mc-icon-btn" onClick={() => selectedCatId && fetchProducts(selectedCatId)} title="Refresh" type="button">
+                <button className="mc-icon-btn" onClick={() => selectedCatId && fetchProducts(selectedCatId)}
+                  title="Refresh" type="button">
                   <RefreshCw size={15} />
                 </button>
               </div>
@@ -723,9 +711,7 @@ const MenuCategory = () => {
                       </td>
                     </tr>
                   ) : !selectedCatId ? (
-                    <tr>
-                      <td colSpan={5} className="mc-empty">👈 Select a category from the left to view items.</td>
-                    </tr>
+                    <tr><td colSpan={5} className="mc-empty">👈 Select a category from the left to view items.</td></tr>
                   ) : pagedProducts.length === 0 ? (
                     <tr>
                       <td colSpan={5} className="mc-empty">
@@ -741,8 +727,10 @@ const MenuCategory = () => {
                           <div className="mc-item-cell">
                             <div className="mc-item-thumb">
                               {item.itemImageUrl
-                                ? <img src={item.itemImageUrl} alt={item.itemName} className="mc-thumb-img" />
-                                : <span className="mc-thumb-emoji">🍽️</span>}
+                                ? <img src={item.itemImageUrl} alt={item.itemName} className="mc-thumb-img"
+                                    onError={e => { e.target.style.display="none"; e.target.nextSibling.style.display="flex"; }} />
+                                : null}
+                              <span className="mc-thumb-emoji" style={{ display: item.itemImageUrl ? "none" : "flex" }}>🍽️</span>
                             </div>
                             <span className="mc-item-name">{item.itemName}</span>
                           </div>
@@ -777,15 +765,18 @@ const MenuCategory = () => {
                   {Math.min(safePage * ITEMS_PER_PAGE, filteredProducts.length)} of {filteredProducts.length} items
                 </span>
                 <div className="mc-pg-controls">
-                  <button className="mc-pg-btn" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={safePage === 1} type="button">
+                  <button className="mc-pg-btn" onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={safePage === 1} type="button">
                     <ChevronLeft size={15} />
                   </button>
                   {Array.from({ length: totalPages }, (_, i) => i + 1).map(pg => (
-                    <button key={pg} className={`mc-pg-btn ${safePage === pg ? "mc-pg-active" : ""}`} onClick={() => setCurrentPage(pg)} type="button">
+                    <button key={pg} className={`mc-pg-btn ${safePage === pg ? "mc-pg-active" : ""}`}
+                      onClick={() => setCurrentPage(pg)} type="button">
                       {pg}
                     </button>
                   ))}
-                  <button className="mc-pg-btn" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={safePage === totalPages} type="button">
+                  <button className="mc-pg-btn" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={safePage === totalPages} type="button">
                     <ChevronRight size={15} />
                   </button>
                 </div>
