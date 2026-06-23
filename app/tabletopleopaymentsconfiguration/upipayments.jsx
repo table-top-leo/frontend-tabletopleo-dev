@@ -1,15 +1,14 @@
-import { useState, useRef } from "react";
+"use client";
+// app/tabletopleopaymentsconfiguration/upipayments.jsx
+// Phase 4 + 5 — UPI Payment Setup with full backend integration
+// Connects to: POST /api/payment/upi/save, POST /api/qr/generate
 
-const UPI_PROVIDERS = ["oksbi", "ybl", "paytm", "icici", "upi", "apl", "ibl", "axl"];
+import { useState, useEffect } from "react";
+import paymentService from "../services/paymentService";
+import qrService from "../services/qrService";
 
 function validateUPIID(id) {
   return /^[a-zA-Z0-9._-]+@[a-zA-Z0-9]+$/.test(id);
-}
-
-function generateQRDataURL(upiId, merchantName) {
-  const upiString = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(merchantName)}&cu=INR`;
-  // We'll render QR via a canvas-based approach using the upiString
-  return upiString;
 }
 
 export default function UPIPayments({ onBack }) {
@@ -17,55 +16,149 @@ export default function UPIPayments({ onBack }) {
   const [upiId, setUpiId] = useState("");
   const [upiError, setUpiError] = useState("");
   const [nameError, setNameError] = useState("");
+
+  // State flags
   const [saved, setSaved] = useState(false);
-  const [qrGenerated, setQrGenerated] = useState(false);
-  const [qrUrl, setQrUrl] = useState("");
   const [editMode, setEditMode] = useState(true);
   const [agreed, setAgreed] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
-  const qrCanvasRef = useRef(null);
+
+  // QR state
+  const [qrGenerated, setQrGenerated] = useState(false);
+  const [qrImageBase64, setQrImageBase64] = useState("");
+  const [qrUrl, setQrUrl] = useState("");
+
+  // Loading / error states
+  const [saving, setSaving] = useState(false);
+  const [generatingQr, setGeneratingQr] = useState(false);
+  const [saveError, setSaveError] = useState("");
+  const [qrError, setQrError] = useState("");
+  const [saveSuccess, setSaveSuccess] = useState("");
+
+  // On mount: try to load existing UPI config (if admin already saved before)
+  useEffect(() => {
+    const loadExistingConfig = async () => {
+      try {
+        const res = await paymentService.getUpiConfig();
+        if (res.success && res.data) {
+          setMerchantName(res.data.merchantName || "");
+          setUpiId(res.data.upiId || "");
+          setSaved(true);
+          setEditMode(false);
+        }
+      } catch {
+        // 404 means no config yet — that's fine, just show empty form
+      }
+    };
+
+    const loadExistingQr = async () => {
+      try {
+        const res = await qrService.getMyQrCode();
+        if (res.success && res.data) {
+          setQrImageBase64(res.data.qrImageBase64 || "");
+          setQrUrl(res.data.qrUrl || "");
+          setQrGenerated(true);
+        }
+      } catch {
+        // No QR yet — fine
+      }
+    };
+
+    loadExistingConfig();
+    loadExistingQr();
+  }, []);
 
   const validate = () => {
     let valid = true;
-    if (!merchantName.trim()) { setNameError("Merchant name is required."); valid = false; } else setNameError("");
-    if (!upiId.trim()) { setUpiError("UPI ID is required."); valid = false; }
-    else if (!validateUPIID(upiId)) { setUpiError("Enter a valid UPI ID (e.g. name@oksbi)."); valid = false; }
-    else setUpiError("");
+    if (!merchantName.trim()) {
+      setNameError("Merchant name is required.");
+      valid = false;
+    } else setNameError("");
+
+    if (!upiId.trim()) {
+      setUpiError("UPI ID is required.");
+      valid = false;
+    } else if (!validateUPIID(upiId)) {
+      setUpiError("Enter a valid UPI ID (e.g. name@oksbi).");
+      valid = false;
+    } else setUpiError("");
+
     return valid;
   };
 
-  const handleSave = () => {
+  // ── SAVE: calls POST /api/payment/upi/save ──────────────────────────────
+  const handleSave = async () => {
     if (!validate()) return;
-    setSaved(true);
-    setEditMode(false);
-    setQrGenerated(false);
-    setQrUrl("");
+
+    setSaving(true);
+    setSaveError("");
+    setSaveSuccess("");
+
+    try {
+      const res = await paymentService.saveUpiConfig({
+        merchantName: merchantName.trim(),
+        upiId: upiId.trim().toLowerCase(),
+      });
+
+      if (res.success) {
+        setSaved(true);
+        setEditMode(false);
+        setQrGenerated(false);
+        setQrImageBase64("");
+        setSaveSuccess("UPI configuration saved successfully!");
+        setTimeout(() => setSaveSuccess(""), 3000);
+      } else {
+        setSaveError(res.message || "Failed to save. Please try again.");
+      }
+    } catch (err) {
+      const msg = err.response?.data?.message || "Failed to save configuration. Please try again.";
+      setSaveError(msg);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleEdit = () => {
     setEditMode(true);
     setQrGenerated(false);
+    setSaveError("");
   };
 
-  const handleGenerateQR = () => {
-    const upiString = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(merchantName)}&cu=INR`;
-    const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(upiString)}`;
-    setQrUrl(qrApiUrl);
-    setQrGenerated(true);
+  // ── GENERATE QR: calls POST /api/qr/generate ───────────────────────────
+  const handleGenerateQR = async () => {
+    setGeneratingQr(true);
+    setQrError("");
+
+    try {
+      const res = await qrService.generateQrCode();
+
+      if (res.success && res.data) {
+        setQrImageBase64(res.data.qrImageBase64);
+        setQrUrl(res.data.qrUrl);
+        setQrGenerated(true);
+      } else {
+        setQrError(res.message || "Failed to generate QR code.");
+      }
+    } catch (err) {
+      const msg = err.response?.data?.message || "QR code generation failed. Please try again.";
+      setQrError(msg);
+    } finally {
+      setGeneratingQr(false);
+    }
   };
 
   const handleCopyUrl = () => {
-    const upiString = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(merchantName)}&cu=INR`;
-    navigator.clipboard.writeText(upiString).then(() => {
+    navigator.clipboard.writeText(qrUrl).then(() => {
       setCopySuccess(true);
       setTimeout(() => setCopySuccess(false), 2000);
     });
   };
 
   const handleDownloadQR = () => {
+    if (!qrImageBase64) return;
     const link = document.createElement("a");
-    link.href = qrUrl;
-    link.download = `upi-qr-${upiId}.png`;
+    link.href = qrImageBase64;
+    link.download = `tabletopleo-qr-${upiId}.png`;
     link.click();
   };
 
@@ -104,13 +197,13 @@ export default function UPIPayments({ onBack }) {
       <div className="upi-body">
         <div className="upi-main">
 
-          {/* Step 1 */}
+          {/* Step 1 — Merchant Details */}
           <div className="upi-section">
             <div className="upi-step-label">
               <span className="upi-step-num">1</span>
               Merchant Details
             </div>
-            <p className="upi-step-desc">Enter your merchant name (as per bank) and UPI ID to receive payments.</p>
+            <p className="upi-step-desc">Enter your merchant name and UPI ID. Your admin ID and business ID are linked automatically from your account.</p>
 
             <div className="upi-form-row">
               <div className="upi-field">
@@ -145,108 +238,108 @@ export default function UPIPayments({ onBack }) {
                 <div className="upi-examples">
                   Examples:&nbsp;
                   {["name@oksbi", "name@ybl", "name@paytm", "name@icici"].map((ex) => (
-                    <button
-                      key={ex}
-                      className="upi-example-chip"
-                      onClick={() => { if (editMode) setUpiId(ex); }}
-                    >{ex}</button>
+                    <button key={ex} className="upi-example-chip" onClick={() => { if (editMode) setUpiId(ex); }}>{ex}</button>
                   ))}
                 </div>
               </div>
             </div>
 
+            {/* Save / Update button */}
             {editMode ? (
-              <button className="upi-btn-primary" onClick={handleSave}>
-                Save &amp; Continue
-              </button>
+              <div>
+                <button className="upi-btn-primary" onClick={handleSave} disabled={saving}>
+                  {saving ? "Saving..." : (saved ? "Update Configuration" : "Save & Continue")}
+                </button>
+                {saveError && <div className="upi-error-banner">{saveError}</div>}
+              </div>
             ) : (
-              <div className="upi-saved-bar">
-                <svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="8" fill="#16a34a" /><path d="M5 8l2 2 4-4" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                Details saved successfully
-                <button className="upi-edit-link" onClick={handleEdit}>Edit</button>
+              <div>
+                {saveSuccess && <div className="upi-success-banner">{saveSuccess}</div>}
+                <div className="upi-saved-bar">
+                  <svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="8" fill="#16a34a" /><path d="M5 8l2 2 4-4" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                  Configuration saved & stored in database
+                  <button className="upi-edit-link" onClick={handleEdit}>Edit</button>
+                </div>
               </div>
             )}
           </div>
 
-          {/* Step 2 — Details after save */}
+          {/* Step 2 — UPI Details (after save) */}
           {saved && !editMode && (
             <div className="upi-section">
               <div className="upi-step-label">
                 <span className="upi-step-num">2</span>
-                UPI Details
+                Your UPI Configuration
               </div>
               <div className="upi-details-grid">
                 <div className="upi-detail-item">
-                  <span className="upi-detail-icon">
-                    <svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" stroke="#94a3b8" strokeWidth="1.5" fill="none" /><path d="M8 5v4M8 11v.5" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round" /></svg>
-                  </span>
                   <div>
                     <div className="upi-detail-label">Merchant Name</div>
                     <div className="upi-detail-value">{merchantName}</div>
                   </div>
                 </div>
                 <div className="upi-detail-item">
-                  <span className="upi-detail-icon">
-                    <svg width="16" height="16" viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="10" rx="2" stroke="#94a3b8" strokeWidth="1.5" fill="none" /><path d="M2 7h12" stroke="#94a3b8" strokeWidth="1.5" /></svg>
-                  </span>
                   <div>
                     <div className="upi-detail-label">UPI ID</div>
                     <div className="upi-detail-value">{upiId}</div>
                   </div>
                 </div>
                 <div className="upi-detail-item">
-                  <span className="upi-detail-icon">
-                    <svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" stroke="#94a3b8" strokeWidth="1.5" fill="none" /><path d="M8 5v3l2 2" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round" /></svg>
-                  </span>
                   <div>
                     <div className="upi-detail-label">UPI Provider</div>
                     <div className="upi-detail-value">{provider.toUpperCase() || "—"}</div>
                   </div>
                 </div>
                 <div className="upi-detail-item">
-                  <span className="upi-detail-icon">
-                    <svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" stroke="#94a3b8" strokeWidth="1.5" fill="none" /><path d="M5 8l2 2 4-4" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                  </span>
                   <div>
                     <div className="upi-detail-label">Status</div>
-                    <span className="upi-status-chip">Active &amp; Verified</span>
+                    <span className="upi-status-chip">Active & Verified</span>
                   </div>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Step 3 — QR Code */}
+          {/* Step 3 — Generate QR Code */}
           {saved && !editMode && (
             <div className="upi-section">
               <div className="upi-step-label">
                 <span className="upi-step-num">3</span>
-                Generate QR Code
+                Generate Menu QR Code
               </div>
-              <p className="upi-step-desc">Generate a QR code to display at your counter or share with customers.</p>
+              <p className="upi-step-desc">
+                Generate a QR code for your restaurant. When customers scan it, they will see your full menu with categories, products, prices, and business info.
+              </p>
+
+              {qrError && <div className="upi-error-banner">{qrError}</div>}
 
               {!qrGenerated ? (
-                <button className="upi-btn-primary" onClick={handleGenerateQR}>
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    <rect x="2" y="2" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.5" />
-                    <rect x="9" y="2" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.5" />
-                    <rect x="2" y="9" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.5" />
-                    <rect x="10" y="10" width="3" height="3" rx="0.5" fill="currentColor" />
-                  </svg>
-                  Generate QR Code
+                <button className="upi-btn-primary" onClick={handleGenerateQR} disabled={generatingQr}>
+                  {generatingQr ? (
+                    <span>Generating QR...</span>
+                  ) : (
+                    <>
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <rect x="2" y="2" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.5" />
+                        <rect x="9" y="2" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.5" />
+                        <rect x="2" y="9" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.5" />
+                        <rect x="10" y="10" width="3" height="3" rx="0.5" fill="currentColor" />
+                      </svg>
+                      Generate QR Code
+                    </>
+                  )}
                 </button>
               ) : (
                 <div className="upi-qr-area">
                   <div className="upi-qr-card">
                     <div className="upi-qr-merchant">{merchantName}</div>
-                    <div className="upi-qr-sub">Scan & Pay with any UPI App</div>
+                    <div className="upi-qr-sub">Scan to view menu & order</div>
                     <img
-                      src={qrUrl}
-                      alt="UPI QR Code"
+                      src={qrImageBase64}
+                      alt="TableTop Leo Menu QR Code"
                       className="upi-qr-img"
-                      onError={(e) => { e.target.src = "data:image/svg+xml,..."; }}
                     />
-                    <div className="upi-qr-id">{upiId}</div>
+                    <div className="upi-qr-id">{qrUrl}</div>
                   </div>
                   <div className="upi-qr-actions">
                     <button className="upi-btn-outline" onClick={handleDownloadQR}>
@@ -254,13 +347,19 @@ export default function UPIPayments({ onBack }) {
                       Download QR
                     </button>
                     <button className="upi-btn-outline" onClick={handleCopyUrl}>
-                      <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="5" y="5" width="8" height="8" rx="1.5" stroke="currentColor" strokeWidth="1.5" /><path d="M10 5V3.5A1.5 1.5 0 008.5 2h-5A1.5 1.5 0 002 3.5v5A1.5 1.5 0 003.5 10H5" stroke="currentColor" strokeWidth="1.5" /></svg>
-                      {copySuccess ? "Copied!" : "Copy UPI URL"}
+                      {copySuccess ? "Copied!" : "Copy Menu URL"}
                     </button>
-                    <button className="upi-btn-ghost" onClick={() => { setQrGenerated(false); setQrUrl(""); handleGenerateQR(); }}>
-                      Regenerate
+                    <button className="upi-btn-ghost" onClick={handleGenerateQR} disabled={generatingQr}>
+                      {generatingQr ? "Regenerating..." : "Regenerate QR"}
                     </button>
                   </div>
+                </div>
+              )}
+
+              {qrGenerated && (
+                <div className="upi-qr-info">
+                  <svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="7" fill="#3b82f6"/><path d="M7 4v3M7 9v.5" stroke="white" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                  <span>When a customer scans this QR code, their phone will open: <strong>{qrUrl}</strong> — showing your full menu including all categories and products.</span>
                 </div>
               )}
             </div>
@@ -268,7 +367,7 @@ export default function UPIPayments({ onBack }) {
 
           {/* Terms */}
           <div className="upi-section upi-section--terms">
-            <div className="upi-terms-title">Terms &amp; Conditions</div>
+            <div className="upi-terms-title">Terms & Conditions</div>
             <ol className="upi-terms-list">
               <li>You must provide a valid and active UPI ID.</li>
               <li>Payments made by customers will be transferred directly to your bank account.</li>
@@ -280,47 +379,8 @@ export default function UPIPayments({ onBack }) {
             </ol>
             <label className="upi-agree">
               <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} />
-              <span>I agree to the Terms &amp; Conditions</span>
+              <span>I agree to the Terms & Conditions</span>
             </label>
-          </div>
-
-          {/* Pros & Cons + Important Notes */}
-          <div className="upi-info-row">
-            <div className="upi-info-card upi-info-card--pros">
-              <div className="upi-info-title">
-                <svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="7" fill="#16a34a" /><path d="M4 7l2 2 4-4" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                Pros
-              </div>
-              <ul>
-                <li>Zero platform fee</li>
-                <li>Instant settlement to bank</li>
-                <li>Supports all UPI apps</li>
-                <li>Easy to setup and use</li>
-                <li>100% secure &amp; reliable</li>
-              </ul>
-            </div>
-            <div className="upi-info-card upi-info-card--cons">
-              <div className="upi-info-title">
-                <svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="7" fill="#dc2626" /><path d="M5 5l4 4M9 5L5 9" stroke="white" strokeWidth="1.5" strokeLinecap="round" /></svg>
-                Limitations
-              </div>
-              <ul>
-                <li>Refunds must be processed manually</li>
-                <li>No automatic order cancellation on failed payment</li>
-                <li>Transaction tracking depends on UPI notifications</li>
-              </ul>
-            </div>
-            <div className="upi-info-card upi-info-card--notes">
-              <div className="upi-info-title">
-                <svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="7" fill="#f59e0b" /><path d="M7 4v3M7 9v.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" /></svg>
-                Important Notes
-              </div>
-              <ul>
-                <li>UPI payments are instant and cannot be charged back</li>
-                <li>Keep your UPI ID active to continue receiving payments</li>
-                <li>You will receive payment notifications in your UPI app</li>
-              </ul>
-            </div>
           </div>
 
           {/* Footer */}
@@ -329,9 +389,14 @@ export default function UPIPayments({ onBack }) {
             <button
               className={`upi-btn-activate ${!agreed || !saved ? "upi-btn-activate--disabled" : ""}`}
               disabled={!agreed || !saved}
+              onClick={() => {
+                if (agreed && saved) {
+                  onBack();
+                }
+              }}
             >
-              <svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.5" fill="none" /><path d="M5 8l2 2 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
-              Save &amp; Activate UPI
+              <svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.5" fill="none"/><path d="M5 8l2 2 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              Done — UPI Active
             </button>
           </div>
         </div>
@@ -339,13 +404,25 @@ export default function UPIPayments({ onBack }) {
         {/* Sidebar */}
         <div className="upi-sidebar">
           <div className="upi-sidebar-card">
-            <div className="upi-sidebar-title">How UPI Payments Work</div>
+            <div className="upi-sidebar-title">How It Works</div>
             <ol className="upi-how-list">
-              <li>Customer scans your QR code</li>
-              <li>Enters amount &amp; confirms</li>
-              <li>Payment goes directly to your bank</li>
-              <li>You receive instant notification</li>
+              <li>Enter your UPI ID and merchant name</li>
+              <li>Click Save — stored in database</li>
+              <li>Click Generate QR Code</li>
+              <li>Print & place QR at your table/counter</li>
+              <li>Customer scans → sees your full menu</li>
             </ol>
+          </div>
+
+          <div className="upi-sidebar-card">
+            <div className="upi-sidebar-title">What the QR Contains</div>
+            <ul className="upi-how-list" style={{ listStyle: "disc" }}>
+              <li>Your business name & logo</li>
+              <li>All menu categories</li>
+              <li>All products with prices</li>
+              <li>Business address & hours</li>
+              <li>Contact information</li>
+            </ul>
           </div>
 
           <div className="upi-sidebar-card">
@@ -353,37 +430,22 @@ export default function UPIPayments({ onBack }) {
             <div className="upi-charge-row"><span>Platform Fee</span><span className="upi-zero">₹0</span></div>
             <div className="upi-charge-row"><span>Gateway Fee</span><span className="upi-zero">₹0</span></div>
             <div className="upi-charge-row upi-charge-row--total"><span>Total Charges</span><span className="upi-zero">₹0</span></div>
-            <div className="upi-direct-badge">
-              <svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="7" fill="#16a34a" /><path d="M4 7l2 2 4-4" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
-              100% Direct Payment to Bank
-            </div>
           </div>
 
           <div className="upi-sidebar-card">
             <div className="upi-sidebar-title">Supported UPI Apps</div>
             <div className="upi-apps-grid">
-              {["Google Pay", "PhonePe", "Paytm", "BHIM", "Amazon Pay"].map((app) => (
+              {["Google Pay", "PhonePe", "Paytm", "BHIM", "Amazon Pay", "& More"].map((app) => (
                 <span key={app} className="upi-app-chip">{app}</span>
               ))}
-              <span className="upi-app-chip">& More</span>
             </div>
           </div>
         </div>
       </div>
 
       <style>{`
-        .upi-root {
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-          color: #1a1a2e;
-          max-width: 1080px;
-          padding: 28px 32px;
-        }
-        .upi-back-btn {
-          display: inline-flex; align-items: center; gap: 6px;
-          background: none; border: none; cursor: pointer;
-          color: #3b82f6; font-size: 13px; font-weight: 500;
-          padding: 0; margin-bottom: 18px;
-        }
+        .upi-root { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #1a1a2e; max-width: 1080px; padding: 28px 32px; }
+        .upi-back-btn { display: inline-flex; align-items: center; gap: 6px; background: none; border: none; cursor: pointer; color: #3b82f6; font-size: 13px; font-weight: 500; padding: 0; margin-bottom: 18px; }
         .upi-back-btn:hover { text-decoration: underline; }
         .upi-header { margin-bottom: 24px; }
         .upi-header-inner { display: flex; align-items: center; gap: 14px; }
@@ -393,34 +455,17 @@ export default function UPIPayments({ onBack }) {
         .upi-body { display: flex; gap: 24px; }
         .upi-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 18px; }
         .upi-sidebar { width: 240px; flex-shrink: 0; display: flex; flex-direction: column; gap: 14px; }
-
-        .upi-section {
-          background: #fff; border: 1px solid #e2e8f0;
-          border-radius: 12px; padding: 20px;
-        }
+        .upi-section { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; }
         .upi-section--terms { background: #fafafa; }
-        .upi-step-label {
-          display: flex; align-items: center; gap: 10px;
-          font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 6px;
-        }
-        .upi-step-num {
-          width: 24px; height: 24px; border-radius: 50%;
-          background: #3b82f6; color: #fff;
-          display: flex; align-items: center; justify-content: center;
-          font-size: 12px; font-weight: 700; flex-shrink: 0;
-        }
+        .upi-step-label { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 6px; }
+        .upi-step-num { width: 24px; height: 24px; border-radius: 50%; background: #3b82f6; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
         .upi-step-desc { font-size: 12px; color: #64748b; margin: 0 0 16px; }
         .upi-form-row { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
         .upi-field { flex: 1; min-width: 220px; display: flex; flex-direction: column; gap: 6px; }
         .upi-label { font-size: 12px; font-weight: 600; color: #374151; }
         .upi-req { color: #ef4444; }
         .upi-input-wrap { position: relative; }
-        .upi-input {
-          width: 100%; padding: 9px 36px 9px 12px; border-radius: 8px;
-          border: 1.5px solid #e2e8f0; font-size: 13px;
-          color: #0f172a; background: #fff;
-          outline: none; transition: border-color 0.15s; box-sizing: border-box;
-        }
+        .upi-input { width: 100%; padding: 9px 36px 9px 12px; border-radius: 8px; border: 1.5px solid #e2e8f0; font-size: 13px; color: #0f172a; background: #fff; outline: none; transition: border-color 0.15s; box-sizing: border-box; }
         .upi-input:focus { border-color: #3b82f6; }
         .upi-input--valid { border-color: #16a34a; }
         .upi-input--error { border-color: #ef4444; }
@@ -428,110 +473,45 @@ export default function UPIPayments({ onBack }) {
         .upi-input-check { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); }
         .upi-error-msg { font-size: 11px; color: #ef4444; }
         .upi-examples { font-size: 11px; color: #64748b; display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
-        .upi-example-chip {
-          background: #f1f5f9; border: none; border-radius: 4px;
-          padding: 2px 7px; font-size: 11px; color: #475569;
-          cursor: pointer; font-family: monospace;
-        }
+        .upi-example-chip { background: #f1f5f9; border: none; border-radius: 4px; padding: 2px 7px; font-size: 11px; color: #475569; cursor: pointer; font-family: monospace; }
         .upi-example-chip:hover { background: #dbeafe; color: #2563eb; }
-
-        .upi-btn-primary {
-          display: inline-flex; align-items: center; gap: 8px;
-          padding: 9px 20px; background: #3b82f6; border: none;
-          border-radius: 8px; color: #fff; font-size: 13px;
-          font-weight: 600; cursor: pointer; transition: background 0.15s;
-        }
-        .upi-btn-primary:hover { background: #2563eb; }
-        .upi-saved-bar {
-          display: flex; align-items: center; gap: 8px;
-          background: #f0fdf4; border: 1px solid #bbf7d0;
-          border-radius: 8px; padding: 10px 14px;
-          font-size: 13px; color: #16a34a; font-weight: 500;
-        }
-        .upi-edit-link {
-          margin-left: auto; background: none; border: none;
-          color: #3b82f6; font-size: 12px; font-weight: 600;
-          cursor: pointer; text-decoration: underline;
-        }
-
+        .upi-error-banner { background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 10px 14px; color: #dc2626; font-size: 13px; margin-top: 10px; }
+        .upi-success-banner { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 10px 14px; color: #16a34a; font-size: 13px; margin-bottom: 8px; }
+        .upi-btn-primary { display: inline-flex; align-items: center; gap: 8px; padding: 9px 20px; background: #3b82f6; border: none; border-radius: 8px; color: #fff; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.15s; }
+        .upi-btn-primary:hover:not(:disabled) { background: #2563eb; }
+        .upi-btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+        .upi-saved-bar { display: flex; align-items: center; gap: 8px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 10px 14px; font-size: 13px; color: #16a34a; font-weight: 500; }
+        .upi-edit-link { margin-left: auto; background: none; border: none; color: #3b82f6; font-size: 12px; font-weight: 600; cursor: pointer; text-decoration: underline; }
         .upi-details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
         .upi-detail-item { display: flex; align-items: flex-start; gap: 10px; }
-        .upi-detail-icon { margin-top: 2px; flex-shrink: 0; }
         .upi-detail-label { font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 2px; }
         .upi-detail-value { font-size: 13px; font-weight: 600; color: #0f172a; }
-        .upi-status-chip {
-          display: inline-block; background: #dcfce7; color: #16a34a;
-          border-radius: 20px; padding: 2px 10px; font-size: 11px; font-weight: 600;
-        }
-
+        .upi-status-chip { display: inline-block; background: #dcfce7; color: #16a34a; border-radius: 20px; padding: 2px 10px; font-size: 11px; font-weight: 600; }
         .upi-qr-area { display: flex; gap: 20px; flex-wrap: wrap; }
-        .upi-qr-card {
-          background: #f8fafc; border: 1px solid #e2e8f0;
-          border-radius: 12px; padding: 16px 20px;
-          text-align: center; min-width: 180px;
-        }
+        .upi-qr-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 20px; text-align: center; min-width: 180px; }
         .upi-qr-merchant { font-size: 14px; font-weight: 700; color: #0f172a; }
         .upi-qr-sub { font-size: 11px; color: #64748b; margin-bottom: 12px; }
-        .upi-qr-img { width: 160px; height: 160px; border-radius: 8px; display: block; margin: 0 auto; }
-        .upi-qr-id { font-size: 11px; color: #94a3b8; margin-top: 8px; font-family: monospace; }
+        .upi-qr-img { width: 200px; height: 200px; border-radius: 8px; display: block; margin: 0 auto; }
+        .upi-qr-id { font-size: 10px; color: #94a3b8; margin-top: 8px; font-family: monospace; word-break: break-all; }
         .upi-qr-actions { display: flex; flex-direction: column; gap: 8px; justify-content: flex-start; padding-top: 4px; }
-        .upi-btn-outline {
-          display: inline-flex; align-items: center; gap: 7px;
-          padding: 8px 14px; border: 1.5px solid #3b82f6;
-          background: transparent; color: #3b82f6;
-          border-radius: 8px; font-size: 12px; font-weight: 600;
-          cursor: pointer; transition: background 0.15s;
-        }
+        .upi-qr-info { display: flex; gap: 8px; align-items: flex-start; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 10px 14px; font-size: 12px; color: #1e40af; margin-top: 12px; }
+        .upi-btn-outline { display: inline-flex; align-items: center; gap: 7px; padding: 8px 14px; border: 1.5px solid #3b82f6; background: transparent; color: #3b82f6; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; transition: background 0.15s; }
         .upi-btn-outline:hover { background: #eff6ff; }
-        .upi-btn-ghost {
-          padding: 8px 14px; background: none; border: 1.5px solid #e2e8f0;
-          border-radius: 8px; font-size: 12px; font-weight: 600;
-          color: #64748b; cursor: pointer;
-        }
-        .upi-btn-ghost:hover { border-color: #94a3b8; }
-
-        /* Terms */
+        .upi-btn-ghost { padding: 8px 14px; background: none; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 12px; font-weight: 600; color: #64748b; cursor: pointer; }
+        .upi-btn-ghost:disabled { opacity: 0.6; cursor: not-allowed; }
+        .upi-btn-ghost:hover:not(:disabled) { border-color: #94a3b8; }
         .upi-terms-title { font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 10px; }
         .upi-terms-list { margin: 0 0 14px; padding-left: 18px; display: flex; flex-direction: column; gap: 5px; }
         .upi-terms-list li { font-size: 12px; color: #475569; line-height: 1.6; }
         .upi-agree { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 500; color: #334155; cursor: pointer; }
         .upi-agree input { width: 15px; height: 15px; accent-color: #3b82f6; }
-
-        /* Info row */
-        .upi-info-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-        .upi-info-card {
-          border-radius: 10px; padding: 14px 16px;
-          border: 1px solid #e2e8f0;
-        }
-        .upi-info-card--pros { background: #f0fdf4; border-color: #bbf7d0; }
-        .upi-info-card--cons { background: #fef2f2; border-color: #fecaca; }
-        .upi-info-card--notes { background: #fffbeb; border-color: #fde68a; }
-        .upi-info-title { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; margin-bottom: 10px; color: #1e293b; }
-        .upi-info-card ul { margin: 0; padding-left: 14px; display: flex; flex-direction: column; gap: 5px; }
-        .upi-info-card ul li { font-size: 11px; color: #475569; line-height: 1.5; }
-
-        /* Footer */
         .upi-footer { display: flex; justify-content: flex-end; gap: 10px; padding-top: 4px; }
-        .upi-btn-cancel {
-          padding: 9px 20px; border: 1.5px solid #e2e8f0;
-          background: #fff; border-radius: 8px; color: #64748b;
-          font-size: 13px; font-weight: 600; cursor: pointer;
-        }
+        .upi-btn-cancel { padding: 9px 20px; border: 1.5px solid #e2e8f0; background: #fff; border-radius: 8px; color: #64748b; font-size: 13px; font-weight: 600; cursor: pointer; }
         .upi-btn-cancel:hover { border-color: #94a3b8; }
-        .upi-btn-activate {
-          display: inline-flex; align-items: center; gap: 8px;
-          padding: 9px 20px; background: #3b82f6; border: none;
-          border-radius: 8px; color: #fff; font-size: 13px;
-          font-weight: 600; cursor: pointer; transition: background 0.15s;
-        }
+        .upi-btn-activate { display: inline-flex; align-items: center; gap: 8px; padding: 9px 20px; background: #3b82f6; border: none; border-radius: 8px; color: #fff; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.15s; }
         .upi-btn-activate:hover:not(.upi-btn-activate--disabled) { background: #2563eb; }
         .upi-btn-activate--disabled { opacity: 0.5; cursor: not-allowed; }
-
-        /* Sidebar */
-        .upi-sidebar-card {
-          background: #fff; border: 1px solid #e2e8f0;
-          border-radius: 10px; padding: 14px 16px;
-        }
+        .upi-sidebar-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px 16px; }
         .upi-sidebar-title { font-size: 12px; font-weight: 700; color: #0f172a; margin-bottom: 10px; }
         .upi-sidebar-title--green { color: #16a34a; }
         .upi-how-list { margin: 0; padding-left: 16px; display: flex; flex-direction: column; gap: 7px; }
@@ -539,22 +519,12 @@ export default function UPIPayments({ onBack }) {
         .upi-charge-row { display: flex; justify-content: space-between; font-size: 12px; color: #64748b; padding: 4px 0; border-bottom: 1px solid #f1f5f9; }
         .upi-charge-row--total { font-weight: 700; color: #0f172a; border-bottom: none; padding-top: 8px; }
         .upi-zero { color: #16a34a; font-weight: 700; }
-        .upi-direct-badge {
-          display: flex; align-items: center; gap: 6px;
-          background: #f0fdf4; border-radius: 6px; padding: 6px 10px;
-          font-size: 11px; color: #16a34a; font-weight: 600; margin-top: 10px;
-        }
         .upi-apps-grid { display: flex; flex-wrap: wrap; gap: 6px; }
-        .upi-app-chip {
-          background: #f1f5f9; border-radius: 20px;
-          padding: 3px 10px; font-size: 11px; color: #475569;
-        }
-
+        .upi-app-chip { background: #f1f5f9; border-radius: 20px; padding: 3px 10px; font-size: 11px; color: #475569; }
         @media (max-width: 768px) {
           .upi-body { flex-direction: column; }
           .upi-sidebar { width: 100%; }
           .upi-details-grid { grid-template-columns: 1fr; }
-          .upi-info-row { grid-template-columns: 1fr; }
         }
       `}</style>
     </div>
