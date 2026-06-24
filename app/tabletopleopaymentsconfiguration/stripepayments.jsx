@@ -1,7 +1,4 @@
 "use client";
-// app/tabletopleopaymentsconfiguration/stripepayments.jsx
-// UPDATED — Shows existing keys on load + QR code generation for Stripe & PayPal
-
 import { useState, useEffect } from "react";
 import gatewayPaymentService from "../services/gatewayPaymentService";
 import qrService from "../services/qrService";

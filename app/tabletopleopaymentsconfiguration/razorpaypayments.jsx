@@ -1,7 +1,4 @@
 "use client";
-// app/tabletopleopaymentsconfiguration/razorpaypayments.jsx
-// UPDATED — Shows existing keys on load + QR code generation after save
-
 import { useState, useEffect } from "react";
 import gatewayPaymentService from "../services/gatewayPaymentService";
 import qrService from "../services/qrService";

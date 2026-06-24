@@ -1,8 +1,4 @@
 "use client";
-// app/tabletopleopaymentsconfiguration/upipayments.jsx
-// Phase 4 + 5 — UPI Payment Setup with full backend integration
-// Connects to: POST /api/payment/upi/save, POST /api/qr/generate
-
 import { useState, useEffect } from "react";
 import paymentService from "../services/paymentService";
 import qrService from "../services/qrService";
