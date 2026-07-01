@@ -7,9 +7,9 @@ import {
   CreditCard, FileText, BarChart2, Grid, MoreHorizontal,
   Search, LayoutGrid, Bell, Settings,
   User, LogOut, Moon, Sun, MessageSquare, Rocket,
-  Building2, UtensilsCrossed, Wallet,
+  Building2, UtensilsCrossed, Wallet, CheckCircle,
   X, Pencil, RotateCcw, PlusCircle, ChevronRight as ChevRight,
-  AlertTriangle,
+  ClipboardList
 } from 'lucide-react';
 import '../tabletopleodashboard/adminagedummydesign.css';
 
@@ -20,90 +20,62 @@ import HelpDeskPage        from '../ApplicationMainLayout/helpdesk';
 import PaymentSetup        from '../tabletopleopaymentsconfiguration/upisetups';
 
 const PAGE_COMPONENTS = {
-  'menu-category': MenuCategory,
-  'business-info': BusinessInformation,
-  'settings':      SettingsPage,
-  'help-desk':     HelpDeskPage,
-  'payment-setup': PaymentSetup,
+  'menu-category':  MenuCategory,
+  'business-info':  BusinessInformation,
+  'settings':       SettingsPage,
+  'help-desk':      HelpDeskPage,
+  'payment-setup':  PaymentSetup,
 };
 
 const MENU_ITEMS = [
-  { id: 'home',    label: 'Home',    icon: Home },
-  { id: 'orders',  label: 'Orders',  icon: ShoppingCart },
+  { id: 'home', label: 'Home', icon: Home },
+  { id: 'orders', label: 'Orders', icon: ShoppingCart },
   {
     id: 'admin-setup',
     label: 'Admin Setup',
     icon: Settings2,
     children: [
       { id: 'business-info', label: 'Business Information', icon: Building2 },
-      { id: 'menu-category', label: 'Menu & Category',      icon: UtensilsCrossed },
-      { id: 'payment-setup', label: 'Payment Setup',        icon: Wallet },
+      { id: 'menu-category', label: 'Menu & Category', icon: UtensilsCrossed },
+      { id: 'payment-setup', label: 'Payment Setup', icon: Wallet },
     ],
   },
+  { id: 'settings', label: 'Settings', icon: Settings },
   { id: 'inventory', label: 'Inventory', icon: Package },
   { id: 'help-desk', label: 'Help Desk', icon: HelpCircle },
 ];
 
 const PRODUCT_ITEMS = [
-  { id: 'payments',  label: 'Payments',  icon: CreditCard },
-  { id: 'billing',   label: 'Billing',   icon: FileText },
+  { id: 'payments', label: 'Payments', icon: CreditCard },
+  { id: 'billing', label: 'Billing', icon: FileText },
   { id: 'reporting', label: 'Reporting', icon: BarChart2 },
-  { id: 'apps',      label: 'Apps',      icon: Grid },
-  { id: 'more',      label: 'More',      icon: MoreHorizontal },
+  { id: 'apps', label: 'Apps', icon: Grid },
+  { id: 'more', label: 'More', icon: MoreHorizontal },
 ];
-
-function getGreeting() {
-  const h = new Date().getHours();
-  if (h < 12) return 'Good Morning';
-  if (h < 17) return 'Good Afternoon';
-  return 'Good Evening';
-}
-
-function getInitials(name) {
-  if (!name) return 'AD';
-  return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
-}
 
 const AdminDashboardNew = () => {
   const router = useRouter();
 
-  const [collapsed,    setCollapsed]    = useState(false);
-  const [dark,         setDark]         = useState(false);
-  const [activeMenu,   setActiveMenu]   = useState('home');
-  const [adminOpen,    setAdminOpen]    = useState(false);
-  const [recVisible,   setRecVisible]   = useState(true);
-  const [showNotif,    setShowNotif]    = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+  const [dark, setDark] = useState(false);
+  const [activeMenu, setActiveMenu] = useState('home');
+  const [adminOpen, setAdminOpen] = useState(false);
+  const [recVisible, setRecVisible] = useState(true);
+  const [showNotif, setShowNotif] = useState(false);
   const [userDropOpen, setUserDropOpen] = useState(false);
-  const [showLogout,   setShowLogout]   = useState(false);
-  const [user,         setUser]         = useState(null);
   const userRef = useRef(null);
 
   useEffect(() => {
-    const stored = localStorage.getItem('ttl_user');
-    if (stored) {
-      try { setUser(JSON.parse(stored)); } catch {}
-    }
-  }, []);
-
-  useEffect(() => {
     const handler = (e) => {
-      if (userRef.current && !userRef.current.contains(e.target)) setUserDropOpen(false);
+      if (userRef.current && !userRef.current.contains(e.target)) {
+        setUserDropOpen(false);
+      }
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  useEffect(() => {
-    if (dark) {
-      document.documentElement.setAttribute('data-afd-theme', 'dark');
-      document.body.setAttribute('data-afd-theme', 'dark');
-    } else {
-      document.documentElement.setAttribute('data-afd-theme', 'light');
-      document.body.setAttribute('data-afd-theme', 'light');
-    }
-  }, [dark]);
-
-  const confirmLogout = () => {
+  const handleLogout = () => {
     localStorage.removeItem('ttl_token');
     localStorage.removeItem('ttl_user');
     router.push('/logintabletopleo');
@@ -112,6 +84,7 @@ const AdminDashboardNew = () => {
   const handleMenuClick = (id, hasChildren) => {
     if (hasChildren) {
       setAdminOpen((o) => !o);
+      setActiveMenu(id);
       return;
     }
     setActiveMenu(id);
@@ -125,25 +98,14 @@ const AdminDashboardNew = () => {
     return id;
   };
 
-  const firstName  = user?.fullName?.split(' ')[0] || 'Admin';
-  const initials   = getInitials(user?.fullName);
-  const greeting   = getGreeting();
-
-  const isAdminSetupActive = MENU_ITEMS.find(m => m.id === 'admin-setup')?.children?.some(c => c.id === activeMenu);
-
   const renderContent = () => {
     const ActivePage = PAGE_COMPONENTS[activeMenu];
-    if (ActivePage) return <div data-afd-theme={dark ? 'dark' : 'light'}><ActivePage /></div>;
-
-    if (activeMenu === 'admin-setup') return null;
+    if (ActivePage) return <ActivePage />;
 
     if (activeMenu === 'home') {
       return (
         <>
-          <h1 className="afd-page-title">
-            {greeting},{' '}
-            <span style={{ color: '#635bff', fontWeight: 800 }}>{firstName}</span> 👋
-          </h1>
+          <h1 className="afd-page-title">Good Morning</h1>
 
           <div className="afd-chart-card">
             <div className="afd-metrics-row">
@@ -157,6 +119,7 @@ const AdminDashboardNew = () => {
                 <div className="afd-metric__value">0.00kr</div>
               </div>
             </div>
+
             <div className="afd-chart-wrap">
               <svg viewBox="0 0 1000 100" preserveAspectRatio="none">
                 <path d="M0 88 L1000 88" stroke="#635bff" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
@@ -167,6 +130,7 @@ const AdminDashboardNew = () => {
               <span>12:00 AM</span>
               <span>12:00 AM</span>
             </div>
+
             <div className="afd-balance-row">
               <div className="afd-balance-col">
                 <div className="afd-balance-hd">
@@ -222,6 +186,7 @@ const AdminDashboardNew = () => {
                   </div>
                 </div>
               )}
+
               <div className="afd-card">
                 <div className="afd-apikeys-hd">
                   <span>API keys</span>
@@ -244,7 +209,9 @@ const AdminDashboardNew = () => {
 
     return (
       <div className="afd-coming-soon-page">
-        <div className="afd-coming-soon-icon"><Rocket size={48} /></div>
+        <div className="afd-coming-soon-icon">
+          <Rocket size={48} />
+        </div>
         <h2>{menuLabel(activeMenu)}</h2>
         <p>This feature is under construction.</p>
         <p>We're working hard to bring it to you soon!</p>
@@ -254,52 +221,7 @@ const AdminDashboardNew = () => {
 
   return (
     <div className="afd-root" data-afd-theme={dark ? 'dark' : 'light'}>
-
-      {/* ── LOGOUT CONFIRMATION POPUP ───────────────────── */}
-      {showLogout && (
-        <>
-          <div
-            onClick={() => setShowLogout(false)}
-            style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', zIndex:1000, backdropFilter:'blur(3px)' }}
-          />
-          <div style={{
-            position:'fixed', top:'50%', left:'50%',
-            transform:'translate(-50%,-50%)',
-            background:'#fff', borderRadius:16, padding:'32px 28px',
-            width:340, zIndex:1001, textAlign:'center',
-            boxShadow:'0 20px 60px rgba(0,0,0,0.18)',
-          }}>
-            <div style={{
-              width:56, height:56, borderRadius:'50%',
-              background:'#fee2e2', display:'flex', alignItems:'center',
-              justifyContent:'center', margin:'0 auto 16px',
-            }}>
-              <AlertTriangle size={26} color="#dc2626" />
-            </div>
-            <h3 style={{ fontSize:18, fontWeight:800, color:'#111827', margin:'0 0 8px' }}>Sign Out?</h3>
-            <p style={{ fontSize:13.5, color:'#6b7280', lineHeight:1.6, margin:'0 0 24px' }}>
-              Are you sure you want to sign out of your TableTop Leo account?
-            </p>
-            <div style={{ display:'flex', gap:10 }}>
-              <button
-                onClick={() => setShowLogout(false)}
-                style={{ flex:1, padding:'10px', border:'1.5px solid #e5e7eb', borderRadius:9, background:'#fff', fontSize:13.5, fontWeight:600, color:'#374151', cursor:'pointer' }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmLogout}
-                style={{ flex:1, padding:'10px', border:'none', borderRadius:9, background:'linear-gradient(135deg,#ef4444,#dc2626)', fontSize:13.5, fontWeight:700, color:'#fff', cursor:'pointer', boxShadow:'0 4px 12px rgba(239,68,68,0.35)' }}
-              >
-                Yes, Sign Out
-              </button>
-            </div>
-          </div>
-        </>
-      )}
-
       <div className="afd-body">
-        {/* ── SIDEBAR ─────────────────────────────────────── */}
         <aside className={`afd-sidebar${collapsed ? ' collapsed' : ''}`}>
           <div className="afd-sidebar__header">
             {!collapsed && (
@@ -370,18 +292,13 @@ const AdminDashboardNew = () => {
               <HelpCircle size={17} />
               <span className="afd-item-label">Help</span>
             </button>
-            <button
-              className="afd-sidebar__item afd-sidebar__item--danger"
-              onClick={() => setShowLogout(true)}
-              style={{ color: '#e53e3e' }}
-            >
+            <button className="afd-sidebar__item afd-sidebar__item--danger" onClick={handleLogout} style={{ color: '#e53e3e' }}>
               <LogOut size={17} />
               <span className="afd-item-label">Logout</span>
             </button>
           </div>
         </aside>
 
-        {/* ── MAIN AREA ────────────────────────────────────── */}
         <div className="afd-main">
           <header className="afd-topbar">
             <div className="afd-topbar__search">
@@ -402,40 +319,20 @@ const AdminDashboardNew = () => {
 
               <div className="afd-dropdown-wrap" ref={userRef}>
                 <button className="afd-user-btn" onClick={() => setUserDropOpen((o) => !o)}>
-                  <div className="afd-user-avatar">{initials}</div>
-                  <span>{firstName}</span>
+                  <div className="afd-user-avatar">AD</div>
+                  <span>Admin</span>
                   <ChevronDown size={13} />
                 </button>
-
                 {userDropOpen && (
-                  <div className="afd-dropdown-menu" style={{ minWidth: 240 }}>
-                    <div style={{ padding: '12px 14px 14px', borderBottom: '1px solid #f3f4f6' }}>
-                      <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:10 }}>
-                        <div style={{ width:36, height:36, borderRadius:9, background:'linear-gradient(135deg,#635bff,#a855f7)', color:'#fff', fontWeight:800, fontSize:13, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                          {initials}
-                        </div>
-                        <div>
-                          <div style={{ fontSize:13.5, fontWeight:700, color:'#111827' }}>{user?.fullName || 'Admin'}</div>
-                          <div style={{ fontSize:11.5, color:'#6b7280', marginTop:1 }}>{user?.email || ''}</div>
-                        </div>
-                      </div>
-                      {user?.adminId && (
-                        <div style={{ background:'#f9fafb', border:'1px solid #f3f4f6', borderRadius:7, padding:'6px 10px' }}>
-                          <div style={{ fontSize:10, color:'#9ca3af', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:2 }}>Admin ID</div>
-                          <div style={{ fontSize:11, fontFamily:'monospace', color:'#374151', fontWeight:600, wordBreak:'break-all' }}>{user.adminId}</div>
-                        </div>
-                      )}
-                    </div>
-
+                  <div className="afd-dropdown-menu">
                     <button className="afd-dropdown-item" onClick={() => { setUserDropOpen(false); setActiveMenu('settings'); }}>
-                      <User size={15} /> Account Settings
+                      <User size={15} />
+                      Account Settings
                     </button>
                     <div className="afd-dropdown-divider" />
-                    <button
-                      className="afd-dropdown-item afd-dropdown-item--danger"
-                      onClick={() => { setUserDropOpen(false); setShowLogout(true); }}
-                    >
-                      <LogOut size={15} /> Logout
+                    <button className="afd-dropdown-item afd-dropdown-item--danger" onClick={() => { setUserDropOpen(false); handleLogout(); }}>
+                      <LogOut size={15} />
+                      Logout
                     </button>
                   </div>
                 )}
@@ -449,7 +346,6 @@ const AdminDashboardNew = () => {
         </div>
       </div>
 
-      {/* ── NOTIFICATIONS MODAL ──────────────────────────── */}
       {showNotif && (
         <>
           <div className="afd-notif-overlay" onClick={() => setShowNotif(false)} />

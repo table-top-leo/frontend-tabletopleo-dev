@@ -1,5 +1,5 @@
-import MainAdminDashboard from '../tabletopleodashboard/tabletopleodashboardpage'
+import AdminDashboardNew from '../tabletopleodashboard/tabletopleodashboardpage'
 
 export default function Page() {
-  return <MainAdminDashboard />;
+  return <AdminDashboardNew />;
 }
