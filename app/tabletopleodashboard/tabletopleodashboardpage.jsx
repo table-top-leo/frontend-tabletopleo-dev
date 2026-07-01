@@ -13,11 +13,13 @@ import {
 } from 'lucide-react';
 import '../tabletopleodashboard/adminagedummydesign.css';
 
+import NotificationTableTopLeo from '../notificationstabletopleo/notificationtabletopleopage';
 import MenuCategory        from '../menucategorypage/menucategorypage';
 import BusinessInformation from '../businessinformationpage/businessinformationpage';
 import SettingsPage        from '../ApplicationMainLayout/settingspage';
 import HelpDeskPage        from '../ApplicationMainLayout/helpdesk';
 import PaymentSetup        from '../tabletopleopaymentsconfiguration/upisetups';
+import MyOrderTableTopleoPage from '../orderstabletopleo/orderstabletopleopage'
 
 const PAGE_COMPONENTS = {
   'menu-category': MenuCategory,
@@ -25,6 +27,8 @@ const PAGE_COMPONENTS = {
   'settings':      SettingsPage,
   'help-desk':     HelpDeskPage,
   'payment-setup': PaymentSetup,
+  'notifications': NotificationTableTopLeo,
+  'orders':        MyOrderTableTopleoPage,
 };
 
 const MENU_ITEMS = [
@@ -72,7 +76,6 @@ const AdminDashboardNew = () => {
   const [activeMenu,   setActiveMenu]   = useState('home');
   const [adminOpen,    setAdminOpen]    = useState(false);
   const [recVisible,   setRecVisible]   = useState(true);
-  const [showNotif,    setShowNotif]    = useState(false);
   const [userDropOpen, setUserDropOpen] = useState(false);
   const [showLogout,   setShowLogout]   = useState(false);
   const [user,         setUser]         = useState(null);
@@ -110,10 +113,7 @@ const AdminDashboardNew = () => {
   };
 
   const handleMenuClick = (id, hasChildren) => {
-    if (hasChildren) {
-      setAdminOpen((o) => !o);
-      return;
-    }
+    if (hasChildren) { setAdminOpen((o) => !o); return; }
     setActiveMenu(id);
   };
 
@@ -125,16 +125,13 @@ const AdminDashboardNew = () => {
     return id;
   };
 
-  const firstName  = user?.fullName?.split(' ')[0] || 'Admin';
-  const initials   = getInitials(user?.fullName);
-  const greeting   = getGreeting();
-
-  const isAdminSetupActive = MENU_ITEMS.find(m => m.id === 'admin-setup')?.children?.some(c => c.id === activeMenu);
+  const firstName = user?.fullName?.split(' ')[0] || 'Admin';
+  const initials  = getInitials(user?.fullName);
+  const greeting  = getGreeting();
 
   const renderContent = () => {
     const ActivePage = PAGE_COMPONENTS[activeMenu];
     if (ActivePage) return <div data-afd-theme={dark ? 'dark' : 'light'}><ActivePage /></div>;
-
     if (activeMenu === 'admin-setup') return null;
 
     if (activeMenu === 'home') {
@@ -255,25 +252,12 @@ const AdminDashboardNew = () => {
   return (
     <div className="afd-root" data-afd-theme={dark ? 'dark' : 'light'}>
 
-      {/* ── LOGOUT CONFIRMATION POPUP ───────────────────── */}
+      {/* ── LOGOUT POPUP ─────────────────────────────────── */}
       {showLogout && (
         <>
-          <div
-            onClick={() => setShowLogout(false)}
-            style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', zIndex:1000, backdropFilter:'blur(3px)' }}
-          />
-          <div style={{
-            position:'fixed', top:'50%', left:'50%',
-            transform:'translate(-50%,-50%)',
-            background:'#fff', borderRadius:16, padding:'32px 28px',
-            width:340, zIndex:1001, textAlign:'center',
-            boxShadow:'0 20px 60px rgba(0,0,0,0.18)',
-          }}>
-            <div style={{
-              width:56, height:56, borderRadius:'50%',
-              background:'#fee2e2', display:'flex', alignItems:'center',
-              justifyContent:'center', margin:'0 auto 16px',
-            }}>
+          <div onClick={() => setShowLogout(false)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', zIndex:1000, backdropFilter:'blur(3px)' }} />
+          <div style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'#fff', borderRadius:16, padding:'32px 28px', width:340, zIndex:1001, textAlign:'center', boxShadow:'0 20px 60px rgba(0,0,0,0.18)' }}>
+            <div style={{ width:56, height:56, borderRadius:'50%', background:'#fee2e2', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 16px' }}>
               <AlertTriangle size={26} color="#dc2626" />
             </div>
             <h3 style={{ fontSize:18, fontWeight:800, color:'#111827', margin:'0 0 8px' }}>Sign Out?</h3>
@@ -281,16 +265,10 @@ const AdminDashboardNew = () => {
               Are you sure you want to sign out of your TableTop Leo account?
             </p>
             <div style={{ display:'flex', gap:10 }}>
-              <button
-                onClick={() => setShowLogout(false)}
-                style={{ flex:1, padding:'10px', border:'1.5px solid #e5e7eb', borderRadius:9, background:'#fff', fontSize:13.5, fontWeight:600, color:'#374151', cursor:'pointer' }}
-              >
+              <button onClick={() => setShowLogout(false)} style={{ flex:1, padding:'10px', border:'1.5px solid #e5e7eb', borderRadius:9, background:'#fff', fontSize:13.5, fontWeight:600, color:'#374151', cursor:'pointer' }}>
                 Cancel
               </button>
-              <button
-                onClick={confirmLogout}
-                style={{ flex:1, padding:'10px', border:'none', borderRadius:9, background:'linear-gradient(135deg,#ef4444,#dc2626)', fontSize:13.5, fontWeight:700, color:'#fff', cursor:'pointer', boxShadow:'0 4px 12px rgba(239,68,68,0.35)' }}
-              >
+              <button onClick={confirmLogout} style={{ flex:1, padding:'10px', border:'none', borderRadius:9, background:'linear-gradient(135deg,#ef4444,#dc2626)', fontSize:13.5, fontWeight:700, color:'#fff', cursor:'pointer', boxShadow:'0 4px 12px rgba(239,68,68,0.35)' }}>
                 Yes, Sign Out
               </button>
             </div>
@@ -370,11 +348,7 @@ const AdminDashboardNew = () => {
               <HelpCircle size={17} />
               <span className="afd-item-label">Help</span>
             </button>
-            <button
-              className="afd-sidebar__item afd-sidebar__item--danger"
-              onClick={() => setShowLogout(true)}
-              style={{ color: '#e53e3e' }}
-            >
+            <button className="afd-sidebar__item afd-sidebar__item--danger" onClick={() => setShowLogout(true)} style={{ color: '#e53e3e' }}>
               <LogOut size={17} />
               <span className="afd-item-label">Logout</span>
             </button>
@@ -388,41 +362,99 @@ const AdminDashboardNew = () => {
               <Search size={14} />
               <span>Search</span>
             </div>
+
             <div className="afd-topbar__actions">
-              <button className="afd-topbar__icon-btn" title="Apps"><LayoutGrid size={17} /></button>
-              <button className="afd-topbar__icon-btn" title="Notifications" onClick={() => setShowNotif(true)}>
-                <Bell size={17} />
+              <button className="afd-topbar__icon-btn" title="Apps">
+                <LayoutGrid size={17} />
               </button>
-              <button className="afd-topbar__icon-btn" title="Settings" onClick={() => setActiveMenu('settings')}>
+
+              {/* ── BELL — toggle notifications page ─── */}
+              <button
+                className="afd-topbar__icon-btn"
+                title="Notifications"
+                onClick={() => setActiveMenu(prev => prev === 'notifications' ? 'home' : 'notifications')}
+                style={{ position: 'relative' }}
+              >
+                <Bell size={17} />
+                <span style={{ position:'absolute', top:4, right:4, width:7, height:7, background:'#635bff', borderRadius:'50%', border:'2px solid #fff', display:'block' }} />
+              </button>
+
+              {/* ── SETTINGS — toggle settings page ──── */}
+              <button
+                className="afd-topbar__icon-btn"
+                title="Settings"
+                onClick={() => setActiveMenu(prev => prev === 'settings' ? 'home' : 'settings')}
+              >
                 <Settings size={17} />
               </button>
+
               <button className="afd-topbar__icon-btn" title={dark ? 'Light mode' : 'Dark mode'} onClick={() => setDark((d) => !d)}>
                 {dark ? <Sun size={17} /> : <Moon size={17} />}
               </button>
 
+              {/* ── PROFILE DROPDOWN ─────────────────── */}
               <div className="afd-dropdown-wrap" ref={userRef}>
                 <button className="afd-user-btn" onClick={() => setUserDropOpen((o) => !o)}>
-                  <div className="afd-user-avatar">{initials}</div>
+
+                  {/* Avatar — shows logo if available, else initials */}
+                  <div className="afd-user-avatar" style={{ overflow: 'hidden', padding: 0 }}>
+                    {user?.logoUrl ? (
+                      <img
+                        src={user.logoUrl}
+                        alt="logo"
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', borderRadius: 'inherit' }}
+                        onError={e => { e.target.style.display = 'none'; }}
+                      />
+                    ) : (
+                      initials
+                    )}
+                  </div>
+
                   <span>{firstName}</span>
                   <ChevronDown size={13} />
                 </button>
 
                 {userDropOpen && (
-                  <div className="afd-dropdown-menu" style={{ minWidth: 240 }}>
-                    <div style={{ padding: '12px 14px 14px', borderBottom: '1px solid #f3f4f6' }}>
-                      <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:10 }}>
-                        <div style={{ width:36, height:36, borderRadius:9, background:'linear-gradient(135deg,#635bff,#a855f7)', color:'#fff', fontWeight:800, fontSize:13, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                          {initials}
+                  <div className="afd-dropdown-menu" style={{ minWidth: 260 }}>
+
+                    {/* ── DROPDOWN HEADER with logo ── */}
+                    <div style={{ padding: '14px 14px 14px', borderBottom: '1px solid #f3f4f6' }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:12 }}>
+
+                        {/* Big logo or initials */}
+                        <div style={{ width:44, height:44, borderRadius:10, overflow:'hidden', flexShrink:0, border:'2px solid #f3f4f6', background:'linear-gradient(135deg,#635bff,#a855f7)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                          {user?.logoUrl ? (
+                            <>
+                              <img
+                                src={user.logoUrl}
+                                alt="Business Logo"
+                                style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }}
+                                onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='flex'; }}
+                              />
+                              <span style={{ display:'none', color:'#fff', fontWeight:800, fontSize:14, alignItems:'center', justifyContent:'center', width:'100%', height:'100%' }}>
+                                {initials}
+                              </span>
+                            </>
+                          ) : (
+                            <span style={{ color:'#fff', fontWeight:800, fontSize:14 }}>{initials}</span>
+                          )}
                         </div>
-                        <div>
-                          <div style={{ fontSize:13.5, fontWeight:700, color:'#111827' }}>{user?.fullName || 'Admin'}</div>
-                          <div style={{ fontSize:11.5, color:'#6b7280', marginTop:1 }}>{user?.email || ''}</div>
+
+                        <div style={{ minWidth:0 }}>
+                          <div style={{ fontSize:14, fontWeight:800, color:'#111827', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                            {user?.fullName || 'Admin'}
+                          </div>
+                          <div style={{ fontSize:12, color:'#6b7280', marginTop:2, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                            {user?.email || ''}
+                          </div>
                         </div>
                       </div>
+
+                      {/* Admin ID box */}
                       {user?.adminId && (
-                        <div style={{ background:'#f9fafb', border:'1px solid #f3f4f6', borderRadius:7, padding:'6px 10px' }}>
-                          <div style={{ fontSize:10, color:'#9ca3af', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:2 }}>Admin ID</div>
-                          <div style={{ fontSize:11, fontFamily:'monospace', color:'#374151', fontWeight:600, wordBreak:'break-all' }}>{user.adminId}</div>
+                        <div style={{ background:'#f9fafb', border:'1px solid #f3f4f6', borderRadius:7, padding:'7px 10px' }}>
+                          <div style={{ fontSize:10, color:'#9ca3af', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:3, fontWeight:600 }}>Admin ID</div>
+                          <div style={{ fontSize:11.5, fontFamily:'monospace', color:'#374151', fontWeight:600, wordBreak:'break-all' }}>{user.adminId}</div>
                         </div>
                       )}
                     </div>
@@ -431,10 +463,7 @@ const AdminDashboardNew = () => {
                       <User size={15} /> Account Settings
                     </button>
                     <div className="afd-dropdown-divider" />
-                    <button
-                      className="afd-dropdown-item afd-dropdown-item--danger"
-                      onClick={() => { setUserDropOpen(false); setShowLogout(true); }}
-                    >
+                    <button className="afd-dropdown-item afd-dropdown-item--danger" onClick={() => { setUserDropOpen(false); setShowLogout(true); }}>
                       <LogOut size={15} /> Logout
                     </button>
                   </div>
@@ -448,19 +477,6 @@ const AdminDashboardNew = () => {
           </main>
         </div>
       </div>
-
-      {/* ── NOTIFICATIONS MODAL ──────────────────────────── */}
-      {showNotif && (
-        <>
-          <div className="afd-notif-overlay" onClick={() => setShowNotif(false)} />
-          <div className="afd-notif-toast">
-            <Bell size={32} style={{ margin: '0 auto 12px', color: '#635bff', display: 'block' }} />
-            <h3>Notifications</h3>
-            <p>Coming soon! You'll be able to view all your alerts and updates here.</p>
-            <button className="afd-coming-soon-close" onClick={() => setShowNotif(false)}>Got it</button>
-          </div>
-        </>
-      )}
     </div>
   );
 };

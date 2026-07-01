@@ -42,6 +42,7 @@ const TableTopLeoLoginPage = () => {
           fullName: data.fullName,
           email: data.email,
           businessId: data.businessId,
+          logoUrl: data.logoUrl || null,
         })
       );
       router.push("/tabletopleodashboard");

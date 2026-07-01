@@ -4,6 +4,9 @@ import PhoneInput, { isValidPhoneNumber } from "react-phone-number-input";
 import "react-phone-number-input/style.css";
 import "../designadminaccountsetup/businessinformation.css";
 import { setupBusiness } from "../services/businessService";
+import axios from "axios";
+
+const BASE_URL = "http://localhost:6163";
 
 const COUNTRIES = [
   "Afghanistan","Albania","Algeria","Andorra","Angola","Argentina","Armenia","Australia",
@@ -67,6 +70,7 @@ export default function BusinessInformation({ onNext, onBack, initialData, busin
     businessEmail: initialData?.businessEmail || "",
     businessPhone: initialData?.businessPhone || "",
     logoPreview: initialData?.logoPreview || null,
+    logoUrl: initialData?.logoUrl || null,
     licenseNumber: initialData?.licenseNumber || "",
     gstNumber: initialData?.gstNumber || "",
     website: initialData?.website || "",
@@ -84,6 +88,7 @@ export default function BusinessInformation({ onNext, onBack, initialData, busin
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  const [logoUploading, setLogoUploading] = useState(false);
   const [apiError, setApiError] = useState("");
   const fileRef = useRef();
 
@@ -98,13 +103,40 @@ export default function BusinessInformation({ onNext, onBack, initialData, busin
     setErrors((er) => ({ ...er, workingDays: "" }));
   };
 
-  const handleLogo = (e) => {
+  // ── UPDATED: Upload to backend, get real URL ──────────────
+  const handleLogo = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
+    // Show local preview immediately
     const reader = new FileReader();
-    reader.onload = (ev) =>
-      setForm((f) => ({ ...f, logoPreview: ev.target.result }));
+    reader.onload = (ev) => setForm((f) => ({ ...f, logoPreview: ev.target.result }));
     reader.readAsDataURL(file);
+
+    // Upload to backend
+    setLogoUploading(true);
+    try {
+      const token = localStorage.getItem("ttl_token");
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await axios.post(`${BASE_URL}/api/images/logo`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+
+      if (res.data?.success && res.data?.data?.imageUrl) {
+        setForm((f) => ({ ...f, logoUrl: res.data.data.imageUrl }));
+      }
+    } catch (err) {
+      console.error("Logo upload failed:", err);
+      setApiError("Failed to upload logo. Please try again.");
+      setForm((f) => ({ ...f, logoPreview: null, logoUrl: null }));
+    } finally {
+      setLogoUploading(false);
+    }
   };
 
   const validate = () => {
@@ -126,10 +158,9 @@ export default function BusinessInformation({ onNext, onBack, initialData, busin
 
   const handleSubmit = async () => {
     const e = validate();
-    if (Object.keys(e).length) {
-      setErrors(e);
-      return;
-    }
+    if (Object.keys(e).length) { setErrors(e); return; }
+    if (logoUploading) { setApiError("Please wait for logo upload to finish."); return; }
+
     setLoading(true);
     setApiError("");
     try {
@@ -137,7 +168,9 @@ export default function BusinessInformation({ onNext, onBack, initialData, busin
       if (!adminId) throw new Error("Admin ID is missing. Please restart registration.");
 
       const businessType = businessTypeData?.businessTypeLabel || businessTypeData?.businessType || "";
-      const workingDaysStr = form.workingDays.length > 0 ? form.workingDays.join(",") : "Monday,Tuesday,Wednesday,Thursday,Friday";
+      const workingDaysStr = form.workingDays.length > 0
+        ? form.workingDays.join(",")
+        : "Monday,Tuesday,Wednesday,Thursday,Friday";
 
       const payload = {
         adminId,
@@ -145,7 +178,7 @@ export default function BusinessInformation({ onNext, onBack, initialData, busin
         businessName: form.businessName,
         businessEmail: form.businessEmail,
         businessPhone: form.businessPhone,
-        logoUrl: form.logoPreview || null,
+        logoUrl: form.logoUrl || null,
         gstNumber: form.gstNumber || null,
         licenseNumber: form.licenseNumber || null,
         website: form.website || null,
@@ -233,25 +266,54 @@ export default function BusinessInformation({ onNext, onBack, initialData, busin
           {errors.businessPhone && <div className="field-error">⚠ {errors.businessPhone}</div>}
         </div>
 
+        {/* ── LOGO UPLOAD ── */}
         <div className="form-group">
-          <label className="form-label">Business Logo <span style={{ color: "#71717a", fontWeight: 400 }}>(Optional)</span></label>
-          <div className={`logo-upload-area ${form.logoPreview ? "has-image" : ""}`}
-            onClick={() => fileRef.current?.click()} role="button" tabIndex={0}
-            onKeyDown={(e) => e.key === "Enter" && fileRef.current?.click()} aria-label="Upload business logo">
+          <label className="form-label">
+            Business Logo <span style={{ color: "#71717a", fontWeight: 400 }}>(Optional)</span>
+          </label>
+          <div
+            className={`logo-upload-area ${form.logoPreview ? "has-image" : ""}`}
+            onClick={() => !logoUploading && fileRef.current?.click()}
+            role="button" tabIndex={0}
+            onKeyDown={(e) => e.key === "Enter" && !logoUploading && fileRef.current?.click()}
+            aria-label="Upload business logo"
+            style={{ cursor: logoUploading ? "not-allowed" : "pointer" }}
+          >
             <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/jpg,image/webp" className="logo-input" onChange={handleLogo} />
             {form.logoPreview ? (
-              <img src={form.logoPreview} alt="Logo preview" className="logo-preview" />
+              <div style={{ position: "relative", display: "inline-block" }}>
+                <img src={form.logoPreview} alt="Logo preview" className="logo-preview" />
+                {logoUploading && (
+                  <div style={{ position: "absolute", inset: 0, background: "rgba(255,255,255,0.75)", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 8, fontSize: 12, fontWeight: 600, color: "#6b7280" }}>
+                    Uploading...
+                  </div>
+                )}
+              </div>
             ) : (
               <>
-                <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-                  <path d="M14 18V8M14 8l-4 4M14 8l4 4" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  <path d="M5 20a3 3 0 003 3h12a3 3 0 003-3" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round" />
-                </svg>
-                <div className="logo-upload-text">Click to upload logo</div>
-                <div className="logo-upload-hint">PNG, JPG up to 2MB</div>
+                {logoUploading ? (
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+                    <div style={{ width: 28, height: 28, border: "3px solid #f3f4f6", borderTop: "3px solid #7c3aed", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
+                    <div className="logo-upload-text">Uploading...</div>
+                  </div>
+                ) : (
+                  <>
+                    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                      <path d="M14 18V8M14 8l-4 4M14 8l4 4" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M5 20a3 3 0 003 3h12a3 3 0 003-3" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round" />
+                    </svg>
+                    <div className="logo-upload-text">Click to upload logo</div>
+                    <div className="logo-upload-hint">PNG, JPG up to 5MB</div>
+                  </>
+                )}
               </>
             )}
           </div>
+          {form.logoUrl && !logoUploading && (
+            <div style={{ fontSize: 11.5, color: "#16a34a", marginTop: 4, fontWeight: 600 }}>
+              ✓ Logo uploaded successfully
+            </div>
+          )}
         </div>
 
         <div className="form-group">
@@ -450,14 +512,16 @@ export default function BusinessInformation({ onNext, onBack, initialData, busin
 
       <div className="step-nav">
         <button className="btn-back" onClick={onBack} type="button">← Back</button>
-        <button className="btn-complete" onClick={handleSubmit} type="button" disabled={loading}>
-          {loading ? "Saving..." : "Complete Setup →"}
+        <button className="btn-complete" onClick={handleSubmit} type="button" disabled={loading || logoUploading}>
+          {loading ? "Saving..." : logoUploading ? "Uploading logo..." : "Complete Setup →"}
         </button>
       </div>
 
       <div className="secure-note">
         🔒 Your information is secure and will never be shared with anyone.
       </div>
+
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   );
 }

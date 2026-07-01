@@ -1,0 +1,655 @@
+/* ═══════════════════════════════════════════════
+   TableTop Leo — Orders Page CSS
+   Prefix: mor-  (my orders)
+═══════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+.mor-root {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  flex: 1;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 13px;
+  color: #111827;
+  background: #f9fafb;
+  overflow: hidden;
+  animation: morFadeIn 0.2s ease;
+}
+
+@keyframes morFadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes morSlideIn {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* ── LEFT PANEL ─────────────────────────────── */
+.mor-left {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+}
+
+/* ── TOP HEADER ─────────────────────────────── */
+.mor-header {
+  padding: 18px 20px 14px;
+  background: #fff;
+  border-bottom: 1px solid #f3f4f6;
+  flex-shrink: 0;
+}
+
+.mor-header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.mor-title { font-size: 20px; font-weight: 800; color: #111827; margin: 0; letter-spacing: -0.4px; }
+.mor-sub   { font-size: 12px; color: #6b7280; margin: 2px 0 0; }
+
+.mor-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.mor-search-wrap {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 9px;
+  padding: 7px 12px;
+  background: #f9fafb;
+  min-width: 260px;
+  transition: border-color 0.15s;
+}
+.mor-search-wrap:focus-within { border-color: #635bff; background: #fff; }
+.mor-search-icon { color: #9ca3af; flex-shrink: 0; }
+.mor-search-input {
+  border: none; outline: none; background: transparent;
+  font-size: 12.5px; color: #111827; flex: 1; font-family: inherit;
+}
+.mor-search-input::placeholder { color: #9ca3af; }
+.mor-search-kbd {
+  font-size: 10px; color: #9ca3af; background: #f3f4f6;
+  border: 1px solid #e5e7eb; border-radius: 4px; padding: 1px 5px; flex-shrink: 0;
+}
+
+.mor-date-btn {
+  display: flex; align-items: center; gap: 6px;
+  border: 1.5px solid #e5e7eb; border-radius: 9px; padding: 7px 12px;
+  background: #fff; font-size: 12.5px; font-weight: 500; color: #374151;
+  cursor: pointer; font-family: inherit; transition: border-color 0.15s;
+  white-space: nowrap;
+}
+.mor-date-btn:hover { border-color: #635bff; color: #635bff; }
+
+.mor-filter-btn {
+  display: flex; align-items: center; gap: 6px;
+  border: 1.5px solid #e5e7eb; border-radius: 9px; padding: 7px 12px;
+  background: #fff; font-size: 12.5px; font-weight: 600; color: #374151;
+  cursor: pointer; font-family: inherit; transition: background 0.15s;
+  white-space: nowrap;
+}
+.mor-filter-btn:hover { background: #f9fafb; }
+
+.mor-notif-btn {
+  position: relative; width: 34px; height: 34px;
+  border: 1.5px solid #e5e7eb; border-radius: 9px; background: #fff;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: #374151; transition: background 0.15s;
+}
+.mor-notif-btn:hover { background: #f9fafb; }
+.mor-notif-badge {
+  position: absolute; top: -4px; right: -4px;
+  width: 17px; height: 17px; background: #ef4444; border-radius: 50%;
+  font-size: 9.5px; font-weight: 800; color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  border: 2px solid #fff;
+}
+
+/* ── STAT CARDS ─────────────────────────────── */
+.mor-stats {
+  display: flex; gap: 10px; padding: 14px 20px;
+  flex-shrink: 0; flex-wrap: nowrap; overflow-x: auto;
+  scrollbar-width: none;
+}
+.mor-stats::-webkit-scrollbar { display: none; }
+
+.mor-stat-card {
+  flex: 1; min-width: 130px;
+  background: #fff; border: 1px solid #f3f4f6;
+  border-radius: 10px; padding: 12px 14px;
+  display: flex; align-items: center; gap: 11px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  transition: box-shadow 0.15s;
+}
+.mor-stat-card:hover { box-shadow: 0 3px 10px rgba(0,0,0,0.08); }
+
+.mor-stat-icon {
+  width: 38px; height: 38px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+.mor-stat-body {}
+.mor-stat-label { font-size: 11px; font-weight: 600; color: #6b7280; margin-bottom: 2px; }
+.mor-stat-val   { font-size: 22px; font-weight: 900; color: #111827; letter-spacing: -0.5px; line-height: 1; }
+.mor-stat-trend {
+  display: flex; align-items: center; gap: 3px;
+  font-size: 11px; font-weight: 600; margin-top: 3px;
+}
+.mor-stat-trend.up   { color: #16a34a; }
+.mor-stat-trend.down { color: #dc2626; }
+.mor-stat-vs { color: #9ca3af; font-weight: 400; font-size: 10.5px; }
+
+/* ── STATUS TABS ─────────────────────────────── */
+.mor-tabs-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 20px; border-bottom: 1px solid #f3f4f6;
+  background: #fff; flex-shrink: 0; gap: 10px; flex-wrap: wrap;
+}
+
+.mor-tabs {
+  display: flex; gap: 0; overflow-x: auto; scrollbar-width: none;
+}
+.mor-tabs::-webkit-scrollbar { display: none; }
+
+.mor-tab {
+  padding: 10px 14px; font-size: 12.5px; font-weight: 600;
+  color: #6b7280; border: none; background: none; cursor: pointer;
+  font-family: inherit; white-space: nowrap;
+  border-bottom: 2px solid transparent; transition: all 0.15s;
+}
+.mor-tab:hover { color: #111827; }
+.mor-tab.active { color: #635bff; border-bottom-color: #635bff; }
+
+.mor-sort-wrap {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; color: #6b7280; cursor: pointer; flex-shrink: 0;
+}
+.mor-sort-btn {
+  display: flex; align-items: center; gap: 5px;
+  border: 1px solid #e5e7eb; border-radius: 7px; padding: 5px 10px;
+  background: #fff; font-size: 12px; font-weight: 500; color: #374151;
+  cursor: pointer; font-family: inherit;
+}
+
+/* ── TABLE AREA ─────────────────────────────── */
+.mor-table-wrap {
+  flex: 1; overflow-y: auto; overflow-x: auto;
+  background: #fff;
+}
+.mor-table-wrap::-webkit-scrollbar { width: 4px; }
+.mor-table-wrap::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 4px; }
+
+.mor-table {
+  width: 100%; border-collapse: collapse; min-width: 700px;
+}
+
+.mor-th {
+  padding: 9px 14px; text-align: left; font-size: 11px;
+  font-weight: 700; color: #6b7280; text-transform: uppercase;
+  letter-spacing: 0.05em; border-bottom: 1px solid #f3f4f6;
+  background: #fafafa; white-space: nowrap;
+}
+
+.mor-tr {
+  border-bottom: 1px solid #f9fafb;
+  transition: background 0.1s;
+  cursor: pointer;
+}
+.mor-tr:hover { background: #f9fafb; }
+.mor-tr.selected { background: #f5f3ff; }
+
+.mor-td {
+  padding: 10px 14px; font-size: 12.5px; color: #374151;
+  vertical-align: middle; white-space: nowrap;
+}
+
+.mor-order-id  { font-weight: 800; color: #111827; font-size: 12.5px; }
+.mor-order-sub { font-size: 11px; color: #9ca3af; margin-top: 1px; }
+
+.mor-customer-cell { display: flex; align-items: center; gap: 8px; }
+.mor-avatar {
+  width: 30px; height: 30px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 800; color: #fff; flex-shrink: 0;
+}
+.mor-cust-name  { font-weight: 600; color: #111827; font-size: 12.5px; }
+.mor-cust-phone { font-size: 11px; color: #9ca3af; margin-top: 1px; }
+
+.mor-type-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 9px; border-radius: 6px;
+  font-size: 11.5px; font-weight: 700;
+}
+.mor-type-dine    { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; }
+.mor-type-takeaway{ background: #fff7ed; color: #ea580c; border: 1px solid #fed7aa; }
+
+.mor-items-main { font-weight: 600; color: #111827; font-size: 12.5px; }
+.mor-items-sub  { font-size: 11px; color: #9ca3af; margin-top: 1px; max-width: 180px; overflow: hidden; text-overflow: ellipsis; }
+
+.mor-amount { font-weight: 800; color: #111827; font-size: 13px; }
+.mor-paid   { font-size: 11px; color: #16a34a; font-weight: 600; margin-top: 1px; }
+.mor-refund { font-size: 11px; color: #dc2626; font-weight: 600; margin-top: 1px; }
+
+.mor-status-pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 10px; border-radius: 20px;
+  font-size: 11.5px; font-weight: 700;
+}
+.mor-status-pill .mor-dot {
+  width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+}
+.mor-s-new       { background: #eff6ff; color: #2563eb; }
+.mor-s-new .mor-dot { background: #2563eb; }
+.mor-s-prep      { background: #fffbeb; color: #b45309; }
+.mor-s-prep .mor-dot { background: #f59e0b; }
+.mor-s-delivery  { background: #fff7ed; color: #ea580c; }
+.mor-s-delivery .mor-dot { background: #f97316; }
+.mor-s-completed { background: #f0fdf4; color: #16a34a; }
+.mor-s-completed .mor-dot { background: #16a34a; }
+.mor-s-cancelled { background: #fef2f2; color: #dc2626; }
+.mor-s-cancelled .mor-dot { background: #dc2626; }
+
+.mor-time-main { font-size: 12.5px; color: #374151; font-weight: 500; }
+.mor-time-sub  { font-size: 11px; color: #9ca3af; margin-top: 1px; }
+
+.mor-more-btn {
+  width: 26px; height: 26px; border: none; background: none;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: #9ca3af; border-radius: 6px;
+  transition: background 0.15s;
+}
+.mor-more-btn:hover { background: #f3f4f6; color: #374151; }
+
+/* ── PAGINATION ─────────────────────────────── */
+.mor-pagination {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 20px; border-top: 1px solid #f3f4f6;
+  background: #fff; flex-shrink: 0;
+}
+
+.mor-pg-info { font-size: 12px; color: #6b7280; }
+
+.mor-pg-controls { display: flex; align-items: center; gap: 4px; }
+
+.mor-pg-btn {
+  min-width: 30px; height: 30px; border-radius: 7px;
+  border: 1.5px solid #e5e7eb; background: #fff;
+  font-size: 12.5px; font-weight: 600; color: #374151;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-family: inherit; padding: 0 6px;
+  transition: all 0.15s;
+}
+.mor-pg-btn:hover    { border-color: #635bff; color: #635bff; background: #f5f3ff; }
+.mor-pg-btn.active   { background: #635bff; color: #fff; border-color: #635bff; }
+.mor-pg-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.mor-pg-dots { padding: 0 4px; color: #9ca3af; font-size: 13px; }
+
+/* ══════════════════════════════════════════════
+   RIGHT PANEL — Order Details
+══════════════════════════════════════════════ */
+.mor-right {
+  width: 320px;
+  flex-shrink: 0;
+  background: #fff;
+  border-left: 1px solid #f3f4f6;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: morSlideIn 0.2s ease;
+}
+
+.mor-detail-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px; border-bottom: 1px solid #f3f4f6; flex-shrink: 0;
+}
+.mor-detail-title { font-size: 14px; font-weight: 800; color: #111827; }
+.mor-close-btn {
+  width: 26px; height: 26px; border: none; background: #f3f4f6;
+  border-radius: 6px; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: #6b7280; transition: background 0.15s;
+}
+.mor-close-btn:hover { background: #e5e7eb; }
+
+.mor-detail-body { flex: 1; overflow-y: auto; padding: 14px 16px; }
+.mor-detail-body::-webkit-scrollbar { width: 4px; }
+.mor-detail-body::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 4px; }
+
+.mor-detail-id-row {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px;
+}
+.mor-detail-id { font-size: 18px; font-weight: 900; color: #111827; letter-spacing: -0.3px; }
+
+.mor-detail-meta { display: flex; flex-direction: column; gap: 3px; margin-bottom: 14px; }
+.mor-detail-meta-row {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11.5px; color: #6b7280;
+}
+
+.mor-section-label {
+  font-size: 11px; font-weight: 700; color: #9ca3af;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  margin: 14px 0 8px;
+}
+
+.mor-cust-detail {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 0; border-bottom: 1px solid #f9fafb;
+  margin-bottom: 4px;
+}
+.mor-cust-detail-name  { font-size: 13px; font-weight: 700; color: #111827; }
+.mor-cust-detail-phone { font-size: 11.5px; color: #6b7280; margin-top: 1px; }
+.mor-cust-actions { display: flex; gap: 6px; margin-left: auto; }
+.mor-cust-action-btn {
+  width: 28px; height: 28px; border-radius: 7px; border: 1.5px solid #e5e7eb;
+  background: #fff; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: #6b7280; transition: all 0.15s;
+}
+.mor-cust-action-btn:hover { border-color: #635bff; color: #635bff; }
+
+.mor-type-detail {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 0;
+}
+.mor-table-tag { font-size: 12px; color: #6b7280; }
+
+.mor-items-detail { display: flex; flex-direction: column; gap: 4px; margin-bottom: 4px; }
+.mor-item-row {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 12.5px; padding: 5px 0; border-bottom: 1px solid #f9fafb;
+}
+.mor-item-row:last-child { border-bottom: none; }
+.mor-item-name  { color: #374151; font-weight: 500; }
+.mor-item-price { color: #111827; font-weight: 700; flex-shrink: 0; }
+
+.mor-totals { background: #f9fafb; border-radius: 8px; padding: 10px 12px; margin-top: 6px; }
+.mor-total-row {
+  display: flex; justify-content: space-between; font-size: 12.5px;
+  padding: 3px 0; color: #6b7280;
+}
+.mor-total-row.main { font-weight: 800; font-size: 14px; color: #111827; padding-top: 7px; border-top: 1.5px solid #e5e7eb; margin-top: 4px; }
+.mor-total-val { font-weight: 600; color: #111827; }
+
+.mor-pay-row {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 8px; padding-top: 8px;
+}
+.mor-pay-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 8px; border-radius: 20px; font-size: 11px; font-weight: 700;
+}
+.mor-pay-paid { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+.mor-pay-method { font-size: 11.5px; color: #6b7280; display: flex; align-items: center; gap: 4px; }
+
+.mor-timeline { display: flex; flex-direction: column; gap: 0; margin-bottom: 4px; }
+.mor-tl-item { display: flex; gap: 10px; position: relative; }
+.mor-tl-item:not(:last-child) .mor-tl-line {
+  position: absolute; left: 8px; top: 18px; bottom: -4px; width: 2px; background: #e5e7eb; z-index: 0;
+}
+.mor-tl-item.tl-done:not(:last-child) .mor-tl-line { background: #635bff; }
+
+.mor-tl-dot {
+  width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0;
+  border: 2px solid #e5e7eb; background: #fff; display: flex;
+  align-items: center; justify-content: center; z-index: 1; margin-top: 1px;
+}
+.mor-tl-item.tl-done .mor-tl-dot { background: #635bff; border-color: #635bff; }
+.mor-tl-dot-inner { width: 7px; height: 7px; border-radius: 50%; background: #fff; }
+
+.mor-tl-content { flex: 1; padding-bottom: 14px; }
+.mor-tl-label { font-size: 12.5px; font-weight: 600; color: #374151; }
+.mor-tl-item.tl-done .mor-tl-label { color: #111827; }
+.mor-tl-item.tl-pending .mor-tl-label { color: #9ca3af; }
+.mor-tl-time { font-size: 11px; color: #9ca3af; margin-top: 1px; }
+
+/* ── DETAIL FOOTER ──────────────────────────── */
+.mor-detail-footer {
+  padding: 12px 16px; border-top: 1px solid #f3f4f6; flex-shrink: 0;
+  display: flex; align-items: center; gap: 8px;
+}
+.mor-print-btn {
+  display: flex; align-items: center; gap: 6px;
+  border: 1.5px solid #e5e7eb; border-radius: 9px; padding: 8px 14px;
+  background: #fff; font-size: 12.5px; font-weight: 600; color: #374151;
+  cursor: pointer; font-family: inherit; transition: background 0.15s;
+  flex-shrink: 0;
+}
+.mor-print-btn:hover { background: #f9fafb; }
+
+.mor-update-wrap { display: flex; flex: 1; gap: 1px; }
+.mor-update-btn {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  gap: 6px; background: #635bff; color: #fff; border: none;
+  border-radius: 9px 0 0 9px; padding: 8px 14px;
+  font-size: 12.5px; font-weight: 700; cursor: pointer; font-family: inherit;
+  transition: background 0.15s;
+}
+.mor-update-btn:hover { background: #4f46e5; }
+.mor-update-chevron {
+  width: 34px; background: #635bff; color: #fff; border: none;
+  border-radius: 0 9px 9px 0; border-left: 1px solid rgba(255,255,255,0.2);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: background 0.15s;
+}
+.mor-update-chevron:hover { background: #4f46e5; }
+
+/* ── RESPONSIVE ─────────────────────────────── */
+@media (max-width: 1100px) {
+  .mor-right { width: 280px; }
+}
+@media (max-width: 900px) {
+  .mor-right { position: fixed; top: 0; right: 0; bottom: 0; z-index: 200; box-shadow: -4px 0 24px rgba(0,0,0,0.12); }
+  .mor-stat-card { min-width: 110px; }
+}
+
+.mor-cal-wrap { position: relative; }
+
+.mor-date-btn-active {
+  border-color: #635bff;
+  color: #635bff;
+  background: #f5f3ff;
+}
+
+.mor-date-clear {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 4px;
+  color: #9ca3af;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+.mor-date-clear:hover { color: #dc2626; }
+
+.mor-cal-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: #fff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.12);
+  padding: 14px;
+  z-index: 300;
+  width: 240px;
+  animation: morFadeIn 0.15s ease;
+}
+
+.mor-cal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.mor-cal-nav {
+  width: 26px; height: 26px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 7px;
+  background: #fff;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: #374151;
+  transition: background 0.12s;
+}
+.mor-cal-nav:hover { background: #f9fafb; }
+
+.mor-cal-month { font-size: 13px; font-weight: 700; color: #111827; }
+
+.mor-cal-grid-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  margin-bottom: 6px;
+}
+.mor-cal-day-label {
+  text-align: center;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #9ca3af;
+  padding: 3px 0;
+}
+
+.mor-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.mor-cal-day {
+  width: 100%; aspect-ratio: 1;
+  border: none; background: transparent;
+  border-radius: 6px;
+  font-size: 12px; font-weight: 500; color: #374151;
+  cursor: pointer; font-family: inherit;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.12s, color 0.12s;
+}
+.mor-cal-day:hover    { background: #f3f4f6; }
+.mor-cal-day.today    { color: #635bff; font-weight: 800; }
+.mor-cal-day.selected { background: #635bff; color: #fff; font-weight: 700; }
+
+.mor-cal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #f3f4f6;
+}
+.mor-cal-clear {
+  background: none; border: none; font-size: 12px; font-weight: 600;
+  color: #6b7280; cursor: pointer; font-family: inherit;
+  transition: color 0.12s;
+}
+.mor-cal-clear:hover { color: #dc2626; }
+.mor-cal-today {
+  background: #635bff; color: #fff; border: none;
+  border-radius: 7px; padding: 5px 12px;
+  font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit;
+  transition: background 0.12s;
+}
+.mor-cal-today:hover { background: #4f46e5; }
+
+.mor-filter-wrap    { position: relative; }
+.mor-filter-btn-active { border-color: #635bff; color: #635bff; background: #f5f3ff; }
+.mor-filter-count {
+  background: #635bff; color: #fff;
+  border-radius: 20px; padding: 1px 6px;
+  font-size: 10.5px; font-weight: 800;
+  margin-left: 3px;
+}
+
+.mor-filter-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: #fff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.12);
+  padding: 14px;
+  z-index: 300;
+  width: 240px;
+  animation: morFadeIn 0.15s ease;
+}
+
+.mor-fd-title {
+  font-size: 13px; font-weight: 800; color: #111827;
+  margin-bottom: 12px; padding-bottom: 10px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.mor-fd-group { margin-bottom: 12px; }
+.mor-fd-label { font-size: 11px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 7px; }
+
+.mor-fd-pills { display: flex; flex-wrap: wrap; gap: 5px; }
+.mor-fd-pill {
+  padding: 4px 10px; border-radius: 20px;
+  border: 1.5px solid #e5e7eb; background: #fff;
+  font-size: 12px; font-weight: 600; color: #6b7280;
+  cursor: pointer; font-family: inherit;
+  transition: all 0.12s; white-space: nowrap;
+}
+.mor-fd-pill:hover  { border-color: #635bff; color: #635bff; }
+.mor-fd-pill.active { background: #635bff; color: #fff; border-color: #635bff; }
+
+.mor-fd-actions {
+  display: flex; gap: 7px; padding-top: 10px;
+  border-top: 1px solid #f3f4f6; margin-top: 4px;
+}
+.mor-fd-clear {
+  flex: 1; padding: 7px; border: 1.5px solid #e5e7eb; border-radius: 8px;
+  background: #fff; font-size: 12.5px; font-weight: 600; color: #6b7280;
+  cursor: pointer; font-family: inherit; transition: background 0.12s;
+}
+.mor-fd-clear:hover { background: #f9fafb; }
+.mor-fd-apply {
+  flex: 1; padding: 7px; border: none; border-radius: 8px;
+  background: #635bff; font-size: 12.5px; font-weight: 700; color: #fff;
+  cursor: pointer; font-family: inherit; transition: background 0.12s;
+}
+.mor-fd-apply:hover { background: #4f46e5; }
+
+.mor-active-filters {
+  display: flex; align-items: center; gap: 6px;
+  flex-wrap: wrap; margin-top: 10px;
+  padding-top: 10px; border-top: 1px solid #f3f4f6;
+}
+.mor-af-label { font-size: 11.5px; color: #6b7280; font-weight: 600; flex-shrink: 0; }
+
+.mor-af-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: #f3f4f6; border: 1px solid #e5e7eb;
+  border-radius: 20px; padding: 3px 8px 3px 9px;
+  font-size: 11.5px; font-weight: 600; color: #374151;
+}
+.mor-af-chip button {
+  background: none; border: none; cursor: pointer; color: #9ca3af;
+  display: flex; align-items: center; padding: 0; margin-left: 2px;
+  transition: color 0.12s;
+}
+.mor-af-chip button:hover { color: #dc2626; }
+
+.mor-af-clear-all {
+  background: none; border: none; font-size: 11.5px; font-weight: 700;
+  color: #dc2626; cursor: pointer; font-family: inherit;
+  margin-left: auto; padding: 3px 8px;
+  border-radius: 6px; transition: background 0.12s;
+}
+.mor-af-clear-all:hover { background: #fef2f2; }
