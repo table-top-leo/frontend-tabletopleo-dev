@@ -4,6 +4,26 @@ import { useRouter } from "next/navigation";
 import "../logintabletopleo/designloginpage.css";
 import Link from "next/link";
 import { loginUser } from "../services/authService";
+import ForgotPasswordModal from "../forgotpassword/forgotpasswordmodal";
+
+const CHARSET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+const SPECIALS = "@#$!~";
+
+function generateSessionToken() {
+  const ts    = Date.now().toString(36).toUpperCase();
+  const rand  = () => CHARSET[Math.floor(Math.random() * CHARSET.length)];
+  const spec  = () => SPECIALS[Math.floor(Math.random() * SPECIALS.length)];
+  let token   = "";
+  for (let i = 0; i < 24; i++) token += rand();
+  token += spec();
+  for (let i = 0; i < 24; i++) token += rand();
+  token += spec();
+  for (let i = 0; i < 24; i++) token += rand();
+  token += spec();
+  for (let i = 0; i < 8;  i++) token += rand();
+  const withTs = ts + token;
+  return withTs.match(/.{1,8}/g).join("-");
+}
 
 const TableTopLeoLoginPage = () => {
   const router = useRouter();
@@ -14,6 +34,7 @@ const TableTopLeoLoginPage = () => {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState("");
+  const [showForgot, setShowForgot] = useState(false);
 
   const validate = () => {
     const newErrors = {};
@@ -45,7 +66,8 @@ const TableTopLeoLoginPage = () => {
           logoUrl: data.logoUrl || null,
         })
       );
-      router.push("/tabletopleodashboard");
+      const sessionToken = generateSessionToken();
+      router.push(`/tabletopleodashboard?app=tabletopleo&session=${sessionToken}`);
     } catch (err) {
       const msg = err.response?.data?.message || "Invalid email or password.";
       setApiError(msg);
@@ -250,7 +272,7 @@ const TableTopLeoLoginPage = () => {
                 </span>
                 Remember me
               </label>
-              <button className="ttl-forgot" type="button" onClick={() => alert("Password reset — coming soon!")}>
+              <button className="ttl-forgot" type="button" onClick={() => setShowForgot(true)}>
                 Forgot Password?
               </button>
             </div>
@@ -274,7 +296,7 @@ const TableTopLeoLoginPage = () => {
               )}
             </button>
 
-            <div className="ttl-divider"><span>or continue with</span></div>
+            {/* <div className="ttl-divider"><span>or continue with</span></div>
 
             <div className="ttl-social-row">
               <button className="ttl-social-btn" type="button" onClick={() => alert("Google login — coming soon!")}>
@@ -298,17 +320,32 @@ const TableTopLeoLoginPage = () => {
                 </svg>
                 Apple
               </button>
-            </div>
+            </div> */}
 
-            <div className="ttl-secure-note">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-              </svg>
-              Your data is 100% secure with us.
-            </div>
-          </div>
-        </section>
+<div style={{ marginTop: "18px",display: "flex",flexDirection: "column",alignItems: "center",gap: "6px",}}>
+  <div style={{ display: "flex",alignItems: "center",gap: "6px",fontSize: "13px",color: "#16a34a",fontWeight: "600",}}>
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+    </svg>
+    <span>Your data is 100% secure with us.</span>
+  </div>
+
+  <div style={{fontSize: "12px",color: "#6b7280",textAlign: "center",lineHeight: "18px",}}>
+    By continuing, you agree to our{" "}
+    <Link href="/privacy-policy" style={{ color: "#4f46e5",textDecoration: "none",fontWeight: "600",}}>
+      Privacy Policy
+    </Link>{" "}
+    and{" "}
+    <Link href="/terms-and-conditions" style={{color: "#4f46e5",textDecoration: "none",fontWeight: "600",}}>
+      Terms &amp; Conditions
+    </Link>
+    .
+  </div>
+</div>
+</div>
+</section>
       </main>
+      {showForgot && <ForgotPasswordModal onClose={() => setShowForgot(false)} />}
     </div>
   );
 };
