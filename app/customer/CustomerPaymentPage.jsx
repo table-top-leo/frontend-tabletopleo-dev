@@ -34,11 +34,11 @@ const METHODS = [
       { name:"Mastercard", src:"https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Mastercard-logo.svg/512px-Mastercard-logo.svg.png" },
     ],
   },
-  {
-    id: "paypal", label: "PayPal",
-    sub: "Fast, secure — available in 200+ countries",
-    apps: [],
-  },
+  // {
+  //   id: "paypal", label: "PayPal",
+  //   sub: "Fast, secure — available in 200+ countries",
+  //   apps: [],
+  // },
 ];
 
 const CustomerPaymentPage = ({ total, business, diningInfo, onBack, onInitiatePayment, onConfirmPayment }) => {
@@ -322,7 +322,7 @@ const CustomerPaymentPage = ({ total, business, diningInfo, onBack, onInitiatePa
         )}
 
         {/* PayPal Section */}
-        {selectedMethod==="paypal" && paymentData && !loading && (
+        {/* {selectedMethod==="paypal" && paymentData && !loading && (
           <div style={{ margin:"0 16px", animation:"fadeIn 0.22s ease" }}>
             <div style={{ background:"#e8f4fd", border:"1.5px solid #b3d7f5", borderRadius:"var(--radius-lg)", padding:20, textAlign:"center" }}>
               <div style={{ fontSize:13, color:"#555", marginBottom:6 }}>Fast · Secure · Available worldwide</div>
@@ -334,7 +334,7 @@ const CustomerPaymentPage = ({ total, business, diningInfo, onBack, onInitiatePa
               </button>
             </div>
           </div>
-        )}
+        )} */}
       </div>
 
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}`}</style>
