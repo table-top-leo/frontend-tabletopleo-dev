@@ -27,7 +27,6 @@ const CustomerMenuPage = ({
   });
 
   const cartCount = propCart.reduce((s, c) => s + (c.qty || 0), 0);
-  const cartTotal = propCart.reduce((s, c) => s + (c.price || 0) * (c.qty || 0), 0);
 
   const getCartQty = (id) => propCart.find(c => c.id === id)?.qty || 0;
 
@@ -36,14 +35,34 @@ const CustomerMenuPage = ({
       <div className="cx-topbar">
         <button className="back-btn cx-topbar-action" onClick={onBack}><ArrowLeft size={20} /></button>
         <span className="cx-topbar-title">{business?.businessName || "Menu"}</span>
-        <button className="cx-topbar-action" onClick={() => onViewCart()}><Search size={18} /></button>
+        <div style={{ width: 36 }} />
       </div>
 
-      <div style={{ padding: "8px 16px 0" }}>
-        <div className="cx-search-wrap" style={{ margin: 0 }}>
+      <div style={{ padding: "8px 16px 0", display: "flex", alignItems: "center", gap: 8 }}>
+        <div className="cx-search-wrap" style={{ margin: 0, flex: 1 }}>
           <Search size={14} color="var(--text-muted)" />
           <input placeholder="Search items..." value={search} onChange={e => setSearch(e.target.value)} />
         </div>
+        <button
+          className="cx-topbar-action"
+          onClick={() => onViewCart()}
+          aria-label="View cart"
+          style={{ position: "relative", flexShrink: 0 }}
+        >
+          <ShoppingCart size={18} />
+          {cartCount > 0 && (
+            <span style={{
+              position: "absolute", top: -4, right: -4,
+              background: "var(--brand)", color: "#fff",
+              fontSize: 10, fontWeight: 700, lineHeight: 1,
+              borderRadius: "9999px", minWidth: 16, height: 16,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              padding: "0 3px",
+            }}>
+              {cartCount}
+            </span>
+          )}
+        </button>
       </div>
 
       <div className="menu-cat-tabs">
@@ -85,19 +104,8 @@ const CustomerMenuPage = ({
             </div>
           );
         })}
-        <div style={{ height: cartCount > 0 ? 80 : 16 }} />
+        <div style={{ height: 16 }} />
       </div>
-
-      {cartCount > 0 && (
-        <div className="cart-float-bar" onClick={() => onViewCart()}>
-          <div className="cart-float-left">
-            <ShoppingCart size={18} color="#fff" />
-            <span className="cart-float-count">{cartCount}</span>
-            <span className="cart-float-label">View Cart</span>
-          </div>
-          <span className="cart-float-price">₹{cartTotal}</span>
-        </div>
-      )}
     </div>
   );
 };

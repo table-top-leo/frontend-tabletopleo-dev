@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import UPIPayments from "../tabletopleopaymentsconfiguration/upipayments";
 import RazorPayPayments from "../tabletopleopaymentsconfiguration/razorpaypayments";
 import StripePaypalPayments from "../tabletopleopaymentsconfiguration/stripepayments";
@@ -46,25 +46,87 @@ const PAYMENT_METHODS = [
     features: ["Cards, Apple Pay", "Google Pay, Link", "Global payment support"],
     badge: "International",
   },
-  {
-    id: "paypal",
-    name: "PayPal",
-    desc: "Accept payments globally via PayPal",
-    icon: (
-      <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
-        <rect width="48" height="48" rx="10" fill="#F0F4FF" />
-        <path d="M32 16c0 4-2.5 7-7.5 7H21l-1.5 9H16l3-18h7.5C29.5 14 32 13 32 16z" fill="#003087" />
-        <path d="M34 19c0 4.5-2.8 7.5-8 7.5h-3l-1.5 8.5H18l3-19h8C33 16 34 16.5 34 19z" fill="#009CDE" />
-      </svg>
-    ),
-    features: ["International payments", "Buyer protection", "Trusted worldwide"],
-    badge: "International",
-  },
+  // {
+  //   id: "paypal",
+  //   name: "PayPal",
+  //   desc: "Accept payments globally via PayPal",
+  //   icon: (
+  //     <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
+  //       <rect width="48" height="48" rx="10" fill="#F0F4FF" />
+  //       <path d="M32 16c0 4-2.5 7-7.5 7H21l-1.5 9H16l3-18h7.5C29.5 14 32 13 32 16z" fill="#003087" />
+  //       <path d="M34 19c0 4.5-2.8 7.5-8 7.5h-3l-1.5 8.5H18l3-19h8C33 16 34 16.5 34 19z" fill="#009CDE" />
+  //     </svg>
+  //   ),
+  //   features: ["International payments", "Buyer protection", "Trusted worldwide"],
+  //   badge: "International",
+  // },
 ];
 
 const PaymentSetup =() =>{
-  const [activePage, setActivePage] = useState(null);
-  const [enabledMethods, setEnabledMethods] = useState(["upi"]);
+  const [activePage,         setActivePage]         = useState(null);
+  const [enabledMethods,     setEnabledMethods]     = useState(["upi"]);
+
+  // ── Pay at Counter: draft (what the admin is toggling right now, unsaved)
+  //    vs saved (what's actually persisted in the DB) ─────────────────────
+  // The toggle ONLY changes `payAtCounterDraft`. Nothing is sent to the
+  // backend until the admin explicitly clicks "Save". This is what fixes
+  // the "disables itself" bug — the switch used to call the API instantly
+  // on every click and never loaded the real saved value on page load, so
+  // it looked like it silently reset. Now it always mirrors the DB value
+  // until the admin (and only the admin) chooses to change and save it.
+  const [payAtCounterSaved,  setPayAtCounterSaved]  = useState(false);
+  const [payAtCounterDraft,  setPayAtCounterDraft]  = useState(false);
+  const [pacInitialLoading,  setPacInitialLoading]  = useState(true);
+  const [pacLoading,         setPacLoading]         = useState(false);
+  const [pacMsg,             setPacMsg]             = useState("");
+
+  const payAtCounterDirty = payAtCounterDraft !== payAtCounterSaved;
+
+  // Load the currently SAVED Pay at Counter status from the backend once,
+  // on mount, so the toggle always reflects what's actually in the DB.
+  useEffect(() => {
+    const loadStatus = async () => {
+      setPacInitialLoading(true);
+      try {
+        const token = localStorage.getItem("ttl_token");
+        const res = await fetch(`http://localhost:6163/api/payment/pay-at-counter/my-status`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        const current = data?.data === true;
+        setPayAtCounterSaved(current);
+        setPayAtCounterDraft(current);
+      } catch {
+        // If the status can't be loaded, default to false rather than
+        // guessing — the admin can still toggle + save to set it.
+        setPayAtCounterSaved(false);
+        setPayAtCounterDraft(false);
+      } finally {
+        setPacInitialLoading(false);
+      }
+    };
+    loadStatus();
+  }, []);
+
+  const handleSavePayAtCounter = async () => {
+    setPacLoading(true);
+    setPacMsg("");
+    try {
+      const token = localStorage.getItem("ttl_token");
+      const res = await fetch(
+        `http://localhost:6163/api/payment/pay-at-counter/toggle?enabled=${payAtCounterDraft}`,
+        { method: "PUT", headers: { Authorization: `Bearer ${token}` } }
+      );
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.message || "Failed to save.");
+      setPayAtCounterSaved(payAtCounterDraft);
+      setPacMsg(data?.message || (payAtCounterDraft ? "Pay at Counter enabled." : "Pay at Counter disabled."));
+    } catch (e) {
+      setPacMsg(e.message || "Failed to update. Please try again.");
+    } finally {
+      setPacLoading(false);
+    }
+  };
 
   const toggleMethod = (id) => {
     setEnabledMethods((prev) =>
@@ -158,9 +220,89 @@ const PaymentSetup =() =>{
         </div>
       )}
 
+      {/* ── PAY AT COUNTER SECTION ───────────────────────────── */}
+      <div style={{ background:"#fff", border:"1.5px solid #e2e8f0", borderRadius:12, padding:"18px 20px", marginBottom:20 }}>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:16 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:14 }}>
+            <div style={{ width:44, height:44, borderRadius:10, background:"#f0fdf4", display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, flexShrink:0 }}>
+              🏪
+            </div>
+            <div>
+              <div style={{ fontSize:14, fontWeight:700, color:"#0f172a", marginBottom:3 }}>Pay at Counter</div>
+              <div style={{ fontSize:12, color:"#64748b", lineHeight:1.5 }}>
+                Allow customers to place an order now and pay cash or card at the counter. No online gateway needed.
+              </div>
+            </div>
+          </div>
+          <div style={{ flexShrink:0 }}>
+            <label style={{ display:"flex", alignItems:"center", gap:8, cursor: pacInitialLoading ? "default" : "pointer" }}>
+              <div
+                onClick={() => {
+                  if (pacInitialLoading || pacLoading) return;
+                  // Only stage the change locally — nothing is sent to the
+                  // backend here. The DB value changes only when the admin
+                  // clicks "Save" below.
+                  setPayAtCounterDraft((v) => !v);
+                  setPacMsg("");
+                }}
+                style={{
+                  width:44, height:24, borderRadius:12,
+                  background: payAtCounterDraft ? "#16a34a" : "#d1d5db",
+                  position:"relative", cursor: pacInitialLoading ? "default" : "pointer",
+                  transition:"background 0.2s",
+                  flexShrink:0,
+                  opacity: pacInitialLoading ? 0.6 : 1,
+                }}
+              >
+                <div style={{
+                  position:"absolute", top:3, left: payAtCounterDraft ? 22 : 2,
+                  width:18, height:18, borderRadius:"50%", background:"#fff",
+                  boxShadow:"0 1px 4px rgba(0,0,0,0.2)",
+                  transition:"left 0.2s",
+                }}/>
+              </div>
+              <span style={{ fontSize:13, fontWeight:600, color: payAtCounterDraft ? "#16a34a" : "#6b7280" }}>
+                {pacInitialLoading ? "Loading..." : payAtCounterDraft ? "Enabled" : "Disabled"}
+              </span>
+            </label>
+          </div>
+        </div>
+
+        {payAtCounterDirty && !pacInitialLoading && (
+          <div style={{ marginTop:14, display:"flex", alignItems:"center", justifyContent:"space-between", gap:12, background:"#fffbeb", border:"1px solid #fde68a", borderRadius:8, padding:"10px 12px" }}>
+            <span style={{ fontSize:12, fontWeight:600, color:"#92400e" }}>
+              You have unsaved changes to Pay at Counter. Save to apply — customers won&apos;t see this until you do.
+            </span>
+            <div style={{ display:"flex", gap:8, flexShrink:0 }}>
+              <button
+                type="button"
+                onClick={() => { setPayAtCounterDraft(payAtCounterSaved); setPacMsg(""); }}
+                disabled={pacLoading}
+                style={{ padding:"7px 14px", borderRadius:7, border:"1.5px solid #e2e8f0", background:"#fff", color:"#475569", fontSize:12.5, fontWeight:600, cursor:"pointer" }}
+              >
+                Discard
+              </button>
+              <button
+                type="button"
+                onClick={handleSavePayAtCounter}
+                disabled={pacLoading}
+                style={{ padding:"7px 16px", borderRadius:7, border:"none", background:"#16a34a", color:"#fff", fontSize:12.5, fontWeight:600, cursor: pacLoading ? "default" : "pointer", opacity: pacLoading ? 0.7 : 1 }}
+              >
+                {pacLoading ? "Saving..." : "Save"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {pacMsg && (
+          <div style={{ marginTop:10, fontSize:12, fontWeight:600, color: pacMsg.toLowerCase().includes("fail") ? "#dc2626" : "#16a34a", background: pacMsg.toLowerCase().includes("fail") ? "#fef2f2" : "#f0fdf4", padding:"6px 12px", borderRadius:7 }}>
+            {pacMsg}
+          </div>
+        )}
+      </div>
+
       <div className="ps-terms">
-        <div className="ps-terms-title">Terms &amp; Conditions</div>
-        <ol className="ps-terms-list">
+        <div className="ps-terms-title">Terms &amp; Conditions</div>        <ol className="ps-terms-list">
           <li>You are responsible for ensuring your payment provider accounts are active and compliant.</li>
           <li>TableTop Leo does not store or process any card or bank details directly.</li>
           <li>All transaction fees are charged by the respective payment providers.</li>

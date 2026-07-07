@@ -1,7 +1,7 @@
 "use client";
 import { CheckCircle2 } from "lucide-react";
 
-const METHOD_LABEL = { upi:"UPI", razorpay:"Cards / Net Banking", stripe:"International Card", paypal:"PayPal" };
+const METHOD_LABEL = { upi:"UPI", razorpay:"Cards / Net Banking", stripe:"International Card", paypal:"PayPal", pay_at_counter:"🏪 Pay at Counter" };
 
 const CustomerOrderSuccess = ({ confirmedData, onTrack, onHome }) => {
   const now = new Date();

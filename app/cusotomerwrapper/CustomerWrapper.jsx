@@ -34,9 +34,10 @@ const CustomerWrapper = ({ businessId }) => {
 
   // From backend after placeOrder
   const [sessionId,     setSessionId]     = useState(null);
-  const [orderData,     setOrderData]     = useState(null);   // PlaceOrderResponse
-  const [paymentData,   setPaymentData]   = useState(null);   // InitiatePaymentResponse
-  const [confirmedData, setConfirmedData] = useState(null);   // ConfirmPaymentResponse
+  const [orderData,     setOrderData]     = useState(null);
+  const [paymentData,   setPaymentData]   = useState(null);
+  const [confirmedData, setConfirmedData] = useState(null);
+  const [payAtCounterAvailable, setPayAtCounterAvailable] = useState(false);
 
   // Cart calculations
   const cartCount = cart.reduce((s, c) => s + c.qty, 0);
@@ -75,6 +76,19 @@ const CustomerWrapper = ({ businessId }) => {
         if (sessionRes.success) {
           setSessionId(sessionRes.data.sessionId);
         }
+
+        // Check if Pay at Counter is enabled for this business
+        try {
+          const pacRes = await fetch(`http://localhost:6163/api/payment/pay-at-counter/status?businessId=${businessId}`);
+          const pacData = await pacRes.json();
+          if (!pacRes.ok) {
+            console.warn("Pay at Counter status check failed:", pacRes.status, pacData);
+          }
+          setPayAtCounterAvailable(pacData?.data === true);
+        } catch (pacErr) {
+          console.warn("Pay at Counter status check errored:", pacErr);
+          setPayAtCounterAvailable(false);
+        }
       } else {
         setError("Failed to load menu");
       }
@@ -106,10 +120,46 @@ const CustomerWrapper = ({ businessId }) => {
   // Called from CustomerPaymentPage — place order ONCE then initiate payment
   const handleInitiatePayment = async (gatewayName) => {
     try {
+      // PAY AT COUNTER — place order directly, skip payment gateway
+      if (gatewayName === "pay_at_counter") {
+        const orderPayload = {
+          sessionId:    sessionId,
+          businessId:   businessId,
+          orderType:    diningInfo.type === "dine-in" ? "DINE_IN" : "TAKE_AWAY",
+          tableNumber:  diningInfo.table  || null,
+          customerName: diningInfo.name   || null,
+          customerPhone:diningInfo.phone  || null,
+          customerEmail:diningInfo.email  || null,
+          customerNote: diningInfo.note   || null,
+          payAtCounter: true,
+          items: cart.map(c => ({
+            productId:          c.id,
+            productName:        c.name,
+            productDescription: c.desc,
+            productImageUrl:    c.img,
+            categoryName:       c.catName,
+            unitPrice:          c.price,
+            quantity:           c.qty,
+            specialRequest:     null,
+          })),
+        };
+        const orderRes = await customerOrderService.placeOrder(orderPayload);
+        if (!orderRes.success) throw new Error(orderRes.message);
+        setOrderData(orderRes.data);
+        return {
+          paymentId:    "PAC-" + Date.now(),
+          orderId:      orderRes.data.orderId,
+          orderNumber:  orderRes.data.orderNumber,
+          grandTotal:   orderRes.data.grandTotal,
+          orderType:    orderRes.data.orderType,
+          customerName: orderRes.data.customerName,
+          createdAt:    orderRes.data.createdAt,
+          gatewayName:  "pay_at_counter",
+        };
+      }
+
       let currentOrderId = orderData?.orderId;
 
-      // Only call placeOrder if we don't have an order yet
-      // This prevents "session no longer active" when customer switches payment method
       if (!currentOrderId) {
         const orderPayload = {
           sessionId:    sessionId,
@@ -120,6 +170,7 @@ const CustomerWrapper = ({ businessId }) => {
           customerPhone:diningInfo.phone  || null,
           customerEmail:diningInfo.email  || null,
           customerNote: diningInfo.note   || null,
+          payAtCounter: false,
           items: cart.map(c => ({
             productId:          c.id,
             productName:        c.name,
@@ -138,7 +189,6 @@ const CustomerWrapper = ({ businessId }) => {
         currentOrderId = orderRes.data.orderId;
       }
 
-      // Always initiate payment (can be called multiple times for different methods)
       const currency = ["stripe", "paypal"].includes(gatewayName) ? "USD" : "INR";
       const payRes = await customerOrderService.initiatePayment(currentOrderId, gatewayName, currency);
       if (!payRes.success) throw new Error(payRes.message);
@@ -150,9 +200,33 @@ const CustomerWrapper = ({ businessId }) => {
     }
   };
 
-  // Called after gateway returns success on frontend
   const handleConfirmPayment = async (confirmPayload) => {
     try {
+      // Pay at Counter — directly confirm without gateway call.
+      // Uses confirmPayload (passed fresh from CustomerPaymentPage, which
+      // itself came straight from the placeOrder API response) instead of
+      // the `orderData` state variable — reading from state here was the
+      // cause of the blank Order Number / Order ID / Amount on the success
+      // screen, since this closure could still see the pre-update value.
+      if (confirmPayload.gatewayName === "pay_at_counter") {
+        const fakeConfirmed = {
+          orderId:         confirmPayload.orderId,
+          orderNumber:     confirmPayload.orderNumber,
+          orderStatus:     "ACCEPTED",
+          paymentStatus:   "PAY_AT_COUNTER",
+          grandTotal:      confirmPayload.grandTotal,
+          gatewayName:     "pay_at_counter",
+          businessName:    business?.businessName,
+          orderType:       confirmPayload.orderType,
+          customerName:    confirmPayload.customerName,
+          estimatedMinutes:20,
+          createdAt:       confirmPayload.createdAt,
+        };
+        setConfirmedData(fakeConfirmed);
+        setScreen(SCREENS.SUCCESS);
+        return;
+      }
+
       const res = await customerOrderService.confirmPayment(confirmPayload);
       if (!res.success) throw new Error(res.message);
       setConfirmedData(res.data);
@@ -239,6 +313,7 @@ const CustomerWrapper = ({ businessId }) => {
             onBack={() => setScreen(SCREENS.DINING)}
             onInitiatePayment={handleInitiatePayment}
             onConfirmPayment={handleConfirmPayment}
+            payAtCounterAvailable={payAtCounterAvailable}
           />
         )}
 

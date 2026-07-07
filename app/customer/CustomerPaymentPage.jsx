@@ -1,37 +1,172 @@
 "use client";
 import { useState } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, CreditCard } from "lucide-react";
 import QRCode from "react-qr-code";
+
+const ICON_URLS = {
+  "PhonePe":     "https://img.icons8.com/color/96/000000/phone-pe.png",
+  "Google Pay":  "https://img.icons8.com/color/96/000000/google-pay.png",
+  "Paytm":       "https://img.icons8.com/color/96/000000/paytm.png",
+  "BHIM":        "https://img.icons8.com/color/96/000000/bhim.png",
+  "Visa":        "https://img.icons8.com/color/96/000000/visa.png",
+  "Mastercard":  "https://img.icons8.com/color/96/000000/mastercard-logo.png",
+  "Apple Pay":   "https://img.icons8.com/color/96/000000/apple-pay.png",
+  "Mobile Pay":  "https://img.icons8.com/color/96/000000/mobile-payment.png",
+};
+
+const PaymentIcon = ({ name, size = 36 }) => {
+  const [broken, setBroken] = useState(false);
+  const r = Math.round(size * 0.28);
+  const url = ICON_URLS[name];
+
+  const badge = (bg, content, border) => (
+    <div
+      title={name}
+      style={{
+        width: size, height: size, borderRadius: r, background: bg,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        border: border ? "1px solid var(--border)" : "none",
+        flexShrink: 0, overflow: "hidden",
+      }}
+    >
+      {content}
+    </div>
+  );
+
+  if (url && !broken) {
+    return (
+      <div
+        title={name}
+        style={{
+          width: size, height: size, borderRadius: r, background: "#fff",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          border: "1px solid var(--border)", flexShrink: 0, overflow: "hidden",
+          padding: Math.round(size * 0.1), boxSizing: "border-box",
+        }}
+      >
+        <img
+          src={url}
+          alt={name}
+          style={{ width: "100%", height: "100%", objectFit: "contain" }}
+          onError={() => setBroken(true)}
+        />
+      </div>
+    );
+  }
+
+  switch (name) {
+    case "PhonePe":
+      return badge("#5F259F", (
+        <svg width={size * 0.62} height={size * 0.62} viewBox="0 0 24 24" fill="none">
+          <path d="M8.2 6.5h5.1c2.1 0 3.6 1.35 3.6 3.35 0 1.75-1.15 3-2.85 3.25l3.05 4.9h-2.35l-2.85-4.75h-1.9v4.75H8.2V6.5zm1.8 1.7v3.5h3.1c1.15 0 1.85-.65 1.85-1.75s-.7-1.75-1.85-1.75H10z" fill="#fff" />
+        </svg>
+      ));
+    case "Google Pay":
+      return badge("#fff", (
+        <svg width={size * 0.72} height={size * 0.72} viewBox="0 0 48 48">
+          <path fill="#4285F4" d="M24 9.5c3.15 0 5.98 1.09 8.2 3.22l6.1-6.1C34.5 3 29.6 1 24 1 14.9 1 7.1 6.2 3.5 13.8l7.1 5.5C12.3 13.6 17.6 9.5 24 9.5z" />
+          <path fill="#34A853" d="M24 47c6.5 0 11.9-2.15 15.9-5.85l-7.4-5.75C30.4 37 27.4 38 24 38c-6.4 0-11.8-4.3-13.7-10.1l-7.2 5.6C6.9 41.7 14.7 47 24 47z" />
+          <path fill="#FBBC05" d="M10.3 27.9C9.8 26.3 9.5 24.7 9.5 23s.3-3.3.8-4.9l-7.1-5.5C1.9 15.9 1 19.35 1 23s.9 7.1 2.4 10.4l6.9-5.5z" />
+          <path fill="#EA4335" d="M24 23v-9.5h16.1c.4 1.9.6 3.9.6 6 0 8.4-3 15.3-8.2 19.65l-7.4-5.75c2.7-1.8 4.6-4.6 5.3-8.3H24z" />
+        </svg>
+      ), true);
+    case "Paytm":
+      return badge("#fff", (
+        <span style={{ fontSize: size * 0.30, fontWeight: 800, color: "#00B9F1", fontFamily: "Arial, sans-serif" }}>
+          pay<span style={{ color: "#002E6E" }}>tm</span>
+        </span>
+      ), true);
+    case "BHIM":
+      return badge("#fff", (
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 1 }}>
+          <div style={{ display: "flex", width: size * 0.6, height: 4, borderRadius: 2, overflow: "hidden" }}>
+            <div style={{ flex: 1, background: "#FF9933" }} />
+            <div style={{ flex: 1, background: "#fff" }} />
+            <div style={{ flex: 1, background: "#138808" }} />
+          </div>
+          <span style={{ fontSize: size * 0.26, fontWeight: 800, color: "#0B3D91", letterSpacing: 0.3 }}>BHIM</span>
+        </div>
+      ), true);
+    case "Visa":
+      return badge("#fff", (
+        <span style={{ fontSize: size * 0.34, fontWeight: 900, color: "#1A1F71", fontStyle: "italic", letterSpacing: 0.5 }}>
+          VISA
+        </span>
+      ), true);
+    case "Mastercard":
+      return badge("#fff", (
+        <svg width={size * 0.62} height={size * 0.62} viewBox="0 0 24 14">
+          <circle cx="8" cy="7" r="7" fill="#EB001B" />
+          <circle cx="16" cy="7" r="7" fill="#F79E1B" />
+          <path d="M12 1.7a7 7 0 010 10.6 7 7 0 010-10.6z" fill="#FF5F00" />
+        </svg>
+      ), true);
+    case "Apple Pay":
+      return badge("#000", (
+        <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+          <svg width={size * 0.3} height={size * 0.3} viewBox="0 0 24 24" fill="#fff">
+            <path d="M16.5 7.6c-.9.05-2 .6-2.6 1.35-.55.65-1 1.65-.85 2.6 1 .1 2.05-.55 2.65-1.3.6-.7.95-1.6.8-2.65zM19.2 12c-.05-2 1.65-3 1.75-3.05-1-1.45-2.5-1.65-3.05-1.7-1.3-.13-2.5.75-3.15.75-.65 0-1.65-.73-2.7-.71-1.4.02-2.7.8-3.4 2.05-1.45 2.5-.37 6.2 1.05 8.25.7 1 1.5 2.1 2.6 2.06 1.05-.04 1.45-.68 2.7-.68 1.25 0 1.6.68 2.7.66 1.1-.02 1.8-1.02 2.5-2.02.55-.8.9-1.6 1.15-2.45-.85-.35-2.15-1.35-2.15-3.16z" />
+          </svg>
+          <span style={{ fontSize: size * 0.28, fontWeight: 700, color: "#fff" }}>Pay</span>
+        </div>
+      ));
+    case "Mobile Pay":
+      return badge("#5A67D8", (
+        <svg width={size * 0.5} height={size * 0.5} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2">
+          <rect x="7" y="2" width="10" height="20" rx="2" />
+          <line x1="11" y1="18" x2="13" y2="18" />
+        </svg>
+      ));
+    default:
+      return badge("#f1f1f1", <span style={{ fontSize: size * 0.22, fontWeight: 700, color: "#666" }}>{name?.[0] || "?"}</span>, true);
+  }
+};
+
+const OtherCardsIcon = ({ size = 36 }) => (
+  <div
+    title="Other Cards & Net Banking"
+    style={{
+      width: size, height: size, borderRadius: Math.round(size * 0.28), background: "var(--surface-2)",
+      display: "flex", alignItems: "center", justifyContent: "center",
+      border: "1px solid var(--border)", flexShrink: 0,
+    }}
+  >
+    <CreditCard size={size * 0.55} color="var(--brand)" strokeWidth={2} />
+  </div>
+);
+
+const renderAppIcon = (a, size) =>
+  a.generic ? <OtherCardsIcon key={a.name} size={size} /> : <PaymentIcon key={a.name} name={a.name} size={size} />;
 
 const METHODS = [
   {
     id: "upi", label: "UPI",
     sub: "PhonePe · GPay · Paytm · BHIM · Any UPI App",
     apps: [
-      { name:"PhonePe",   src:"https://upload.wikimedia.org/wikipedia/commons/thumb/5/5f/PhonePe_Logo.png/512px-PhonePe_Logo.png" },
-      { name:"Google Pay", src:"https://upload.wikimedia.org/wikipedia/commons/thumb/f/f2/Google_Pay_Logo.svg/512px-Google_Pay_Logo.svg.png" },
-      { name:"Paytm",     src:"https://upload.wikimedia.org/wikipedia/commons/thumb/2/24/Paytm_Logo_%28standalone%29.svg/512px-Paytm_Logo_%28standalone%29.svg.png" },
-      { name:"BHIM",      src:"https://upload.wikimedia.org/wikipedia/en/thumb/4/44/BHIM_logo.svg/512px-BHIM_logo.svg.png" },
+      { name:"PhonePe" },
+      { name:"Google Pay" },
+      { name:"Paytm" },
+      { name:"BHIM" },
     ],
   },
   {
     id: "razorpay", label: "Cards & Net Banking",
     sub: "Powered by Razorpay — PhonePe · GPay · Paytm · Cards · Net Banking",
     apps: [
-      { name:"PhonePe",    src:"https://upload.wikimedia.org/wikipedia/commons/thumb/5/5f/PhonePe_Logo.png/512px-PhonePe_Logo.png" },
-      { name:"Google Pay", src:"https://upload.wikimedia.org/wikipedia/commons/thumb/f/f2/Google_Pay_Logo.svg/512px-Google_Pay_Logo.svg.png" },
-      { name:"Paytm",      src:"https://upload.wikimedia.org/wikipedia/commons/thumb/2/24/Paytm_Logo_%28standalone%29.svg/512px-Paytm_Logo_%28standalone%29.svg.png" },
-      { name:"Visa",       src:"https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Visa_Inc._logo.svg/512px-Visa_Inc._logo.svg.png" },
+      { name:"PhonePe" },
+      { name:"Google Pay" },
+      { name:"Paytm" },
+      { name:"Visa" },
     ],
   },
   {
     id: "stripe", label: "International Cards",
-    sub: "Powered by Stripe — Apple Pay · GPay · MobilePay · Cards · Wallets",
+    sub: "Powered by Stripe — Apple Pay · Mobile Pay · GPay · Cards · Net Banking",
     apps: [
-      { name:"Apple Pay",  src:"https://upload.wikimedia.org/wikipedia/commons/thumb/b/b0/Apple_Pay_logo.svg/512px-Apple_Pay_logo.svg.png" },
-      { name:"Google Pay", src:"https://upload.wikimedia.org/wikipedia/commons/thumb/f/f2/Google_Pay_Logo.svg/512px-Google_Pay_Logo.svg.png" },
-      { name:"Visa",       src:"https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Visa_Inc._logo.svg/512px-Visa_Inc._logo.svg.png" },
-      { name:"Mastercard", src:"https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Mastercard-logo.svg/512px-Mastercard-logo.svg.png" },
+      { name:"Apple Pay" },
+      { name:"Mobile Pay" },
+      { name:"Google Pay" },
+      { name:"Other Cards & Net Banking", generic:true },
     ],
   },
   // {
@@ -41,13 +176,14 @@ const METHODS = [
   // },
 ];
 
-const CustomerPaymentPage = ({ total, business, diningInfo, onBack, onInitiatePayment, onConfirmPayment }) => {
+const CustomerPaymentPage = ({ total, business, diningInfo, onBack, onInitiatePayment, onConfirmPayment, payAtCounterAvailable }) => {
   const [selectedMethod, setSelectedMethod] = useState(null);
   const [paymentData,    setPaymentData]    = useState(null);
   const [loading,        setLoading]        = useState(false);
   const [confirming,     setConfirming]     = useState(false);
   const [error,          setError]          = useState("");
   const [upiRef,         setUpiRef]         = useState("");
+  const [payAtCounter,   setPayAtCounter]   = useState(false);
 
   const handleSelectMethod = async (methodId) => {
     setSelectedMethod(methodId);
@@ -212,12 +348,7 @@ const CustomerPaymentPage = ({ total, business, diningInfo, onBack, onInitiatePa
                 <div style={{ fontSize:11.5, color:"var(--text-muted)", marginTop:2 }}>{m.sub}</div>
                 {m.apps.length > 0 && (
                   <div style={{ display:"flex", gap:6, marginTop:6, flexWrap:"wrap" }}>
-                    {m.apps.map(a => (
-                      <img key={a.name} src={a.src} alt={a.name} title={a.name}
-                        style={{ width:24, height:24, objectFit:"contain", borderRadius:6, background:"#fff", border:"1px solid var(--border)", padding:2 }}
-                        onError={e => { e.target.style.display="none"; }}
-                      />
-                    ))}
+                    {m.apps.map(a => renderAppIcon(a, 24))}
                   </div>
                 )}
               </div>
@@ -253,7 +384,7 @@ const CustomerPaymentPage = ({ total, business, diningInfo, onBack, onInitiatePa
               <div style={{ display:"flex", gap:10, flexWrap:"wrap", justifyContent:"center" }}>
                 {METHODS[0].apps.map(a => (
                   <a key={a.name} href={paymentData.upiString} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:3, textDecoration:"none" }}>
-                    <img src={a.src} alt={a.name} style={{ width:36, height:36, objectFit:"contain", borderRadius:10, background:"#fff", border:"1px solid var(--border)", padding:2 }} onError={e => { e.target.style.display="none"; }}/>
+                    <PaymentIcon name={a.name} size={36} />
                     <span style={{ fontSize:10, color:"var(--text-muted)", fontWeight:600 }}>{a.name}</span>
                   </a>
                 ))}
@@ -288,7 +419,7 @@ const CustomerPaymentPage = ({ total, business, diningInfo, onBack, onInitiatePa
               <div style={{ fontSize:26, fontWeight:900, color:"var(--brand)", marginBottom:12 }}>₹{total}</div>
               <div style={{ display:"flex", gap:8, justifyContent:"center", marginBottom:16, flexWrap:"wrap" }}>
                 {METHODS[1].apps.map(a => (
-                  <img key={a.name} src={a.src} alt={a.name} style={{ width:36, height:36, objectFit:"contain", borderRadius:10, background:"#fff", border:"1px solid var(--border)", padding:3 }} onError={e => { e.target.style.display="none"; }}/>
+                  <PaymentIcon key={a.name} name={a.name} size={36} />
                 ))}
               </div>
             </div>
@@ -305,12 +436,10 @@ const CustomerPaymentPage = ({ total, business, diningInfo, onBack, onInitiatePa
         {selectedMethod==="stripe" && paymentData && !loading && (
           <div style={{ margin:"0 16px", animation:"fadeIn 0.22s ease" }}>
             <div style={{ background:"var(--surface-2)", border:"1.5px solid var(--border)", borderRadius:"var(--radius-lg)", padding:20, textAlign:"center" }}>
-              <div style={{ fontSize:13, color:"var(--text-muted)", marginBottom:6 }}>Apple Pay · Google Pay · MobilePay · Visa · Mastercard</div>
+              <div style={{ fontSize:13, color:"var(--text-muted)", marginBottom:6 }}>Apple Pay · Mobile Pay · Google Pay · Cards · Net Banking</div>
               <div style={{ fontSize:26, fontWeight:900, color:"var(--brand)", marginBottom:12 }}>₹{total}</div>
               <div style={{ display:"flex", gap:8, justifyContent:"center", marginBottom:16, flexWrap:"wrap" }}>
-                {METHODS[2].apps.map(a => (
-                  <img key={a.name} src={a.src} alt={a.name} style={{ width:36, height:36, objectFit:"contain", borderRadius:10, background:"#fff", border:"1px solid var(--border)", padding:3 }} onError={e => { e.target.style.display="none"; }}/>
-                ))}
+                {METHODS[2].apps.map(a => renderAppIcon(a, 36))}
               </div>
             </div>
             <div style={{ marginTop:12 }}>
@@ -335,6 +464,84 @@ const CustomerPaymentPage = ({ total, business, diningInfo, onBack, onInitiatePa
             </div>
           </div>
         )} */}
+
+        {/* ── PAY AT COUNTER TOGGLE ──────────────────────────── */}
+        {payAtCounterAvailable && (
+          <div style={{ margin:"16px 16px 4px", animation:"fadeIn 0.2s ease" }}>
+            <div
+              onClick={() => {
+                setPayAtCounter(p => !p);
+                if (!payAtCounter) {
+                  setSelectedMethod(null);
+                  setPaymentData(null);
+                  setError("");
+                }
+              }}
+              style={{
+                display:"flex", alignItems:"center", gap:12, padding:"14px 16px",
+                borderRadius:"var(--radius-md)",
+                border:`2px solid ${payAtCounter ? "var(--green)" : "var(--border)"}`,
+                background: payAtCounter ? "var(--green-bg)" : "var(--surface-2)",
+                cursor:"pointer", transition:"all 0.18s",
+              }}
+            >
+              <div style={{
+                width:22, height:22, borderRadius:6,
+                border:`2px solid ${payAtCounter ? "var(--green)" : "var(--border)"}`,
+                background: payAtCounter ? "var(--green)" : "transparent",
+                display:"flex", alignItems:"center", justifyContent:"center",
+                flexShrink:0, transition:"all 0.15s",
+              }}>
+                {payAtCounter && <span style={{ color:"#fff", fontSize:13, fontWeight:900, lineHeight:1 }}>✓</span>}
+              </div>
+              <div style={{ flex:1 }}>
+                <div style={{ fontSize:14, fontWeight:700, color: payAtCounter ? "var(--green)" : "var(--text-primary)" }}>
+                  🏪 Pay at Counter
+                </div>
+                <div style={{ fontSize:12, color:"var(--text-muted)", marginTop:2 }}>
+                  Place your order now and pay cash / card at the counter
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── STICKY BOTTOM BUTTON ──────────────────────────────── */}
+      <div className="cx-sticky-bottom">
+        {payAtCounter ? (
+          <button
+            style={s.payBtn(confirming)}
+            disabled={confirming}
+            onClick={async () => {
+              setConfirming(true);
+              setError("");
+              try {
+                const initData = await onInitiatePayment("pay_at_counter");
+                await onConfirmPayment({
+                  payAtCounter:     true,
+                  gatewayName:      "pay_at_counter",
+                  orderId:          initData.orderId,
+                  orderNumber:      initData.orderNumber,
+                  grandTotal:       initData.grandTotal,
+                  orderType:        initData.orderType,
+                  customerName:     initData.customerName,
+                  createdAt:        initData.createdAt,
+                  gatewayResponse:  JSON.stringify({ method:"pay_at_counter", ts: new Date().toISOString() }),
+                });
+              } catch (e) { setError(e.message); } finally { setConfirming(false); }
+            }}
+          >
+            {confirming ? "Placing Order..." : "Proceed with Order with Pay at Counter →"}
+          </button>
+        ) : (
+          <button
+            style={s.payBtn(!selectedMethod || loading)}
+            disabled={!selectedMethod || loading}
+          >
+            {!selectedMethod ? "Select a Payment Method" : `Pay ₹${total}`}
+          </button>
+        )}
       </div>
 
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}`}</style>
