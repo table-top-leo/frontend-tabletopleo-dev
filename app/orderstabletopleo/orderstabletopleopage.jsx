@@ -5,65 +5,41 @@ import {
   ChevronLeft, ChevronRight, MoreHorizontal, X,
   ShoppingBag, ChefHat, Truck, CheckCircle2, XCircle,
   Printer, Phone, MessageSquare, CreditCard, Utensils,
-  Package, ArrowUpRight, ArrowDownRight, Filter,
+  Package, ArrowUpRight, ArrowDownRight, Filter, RefreshCw,
+  Banknote, Smartphone, Globe, Store,
 } from "lucide-react";
 import "../orderstabletopleo/designorderspage.css";
+import adminOrderService from "../services/adminOrderService";
 
 const AVATAR_COLORS = [
   "#635bff","#0ea5e9","#16a34a","#f59e0b","#ef4444",
   "#8b5cf6","#06b6d4","#84cc16","#f97316","#ec4899",
 ];
 
-const ORDERS = [
-  { id:"#ORD-1028", date:"2025-05-27", type:"dine",     table:"Table 05", customer:"Rahul Sharma",   phone:"+91 98765 43210", initials:"RS", color:0, items:3, itemList:["2 x Cappuccino","1 x Brownie","1 x Garlic Bread"],        amount:450,  paid:true,  refund:false, status:"preparing",  time:"10:24 AM", ago:"2 mins ago",  payment:"UPI",      timeline:["Order Placed","Confirmed","Preparing","Out for Delivery","Delivered"], tlDone:3 },
-  { id:"#ORD-1027", date:"2025-05-27", type:"takeaway", table:null,        customer:"Priya Nair",     phone:"+91 91234 56789", initials:"PN", color:1, items:4, itemList:["1 x Latte","1 x Sandwich","2 x Cold Coffee"],             amount:680,  paid:true,  refund:false, status:"delivery",   time:"10:18 AM", ago:"8 mins ago",  payment:"Razorpay", timeline:["Order Placed","Confirmed","Preparing","Out for Delivery","Delivered"], tlDone:4 },
-  { id:"#ORD-1026", date:"2025-05-27", type:"dine",     table:"Table 03", customer:"Amit Verma",    phone:"+91 99887 76655", initials:"AV", color:2, items:2, itemList:["1 x Americano","1 x Muffin"],                              amount:280,  paid:true,  refund:false, status:"new",        time:"10:15 AM", ago:"11 mins ago", payment:"UPI",      timeline:["Order Placed","Confirmed","Preparing","Out for Delivery","Delivered"], tlDone:1 },
-  { id:"#ORD-1025", date:"2025-05-27", type:"takeaway", table:null,        customer:"Sneha Iyer",    phone:"+91 88991 23456", initials:"SI", color:3, items:5, itemList:["2 x Cold Coffee","1 x Pastry","2 x Tea"],                  amount:750,  paid:true,  refund:false, status:"preparing",  time:"10:10 AM", ago:"16 mins ago", payment:"Stripe",   timeline:["Order Placed","Confirmed","Preparing","Out for Delivery","Delivered"], tlDone:3 },
-  { id:"#ORD-1024", date:"2025-05-27", type:"dine",     table:"Table 08", customer:"Vikram Singh",  phone:"+91 77665 44332", initials:"VS", color:4, items:1, itemList:["1 x Cappuccino"],                                          amount:150,  paid:true,  refund:false, status:"completed",  time:"10:05 AM", ago:"21 mins ago", payment:"UPI",      timeline:["Order Placed","Confirmed","Preparing","Out for Delivery","Delivered"], tlDone:5 },
-  { id:"#ORD-1023", date:"2025-05-27", type:"takeaway", table:null,        customer:"Neha Gupta",    phone:"+91 90011 22334", initials:"NG", color:5, items:3, itemList:["1 x Latte","1 x Brownie","1 x Tea"],                      amount:520,  paid:false, refund:true,  status:"cancelled",  time:"10:02 AM", ago:"24 mins ago", payment:"PayPal",   timeline:["Order Placed","Confirmed","Preparing","Out for Delivery","Delivered"], tlDone:2 },
-  { id:"#ORD-1022", date:"2025-05-27", type:"dine",     table:"Table 01", customer:"Rohit Patel",   phone:"+91 78899 66554", initials:"RP", color:6, items:2, itemList:["1 x Mocha","1 x Sandwich"],                               amount:390,  paid:true,  refund:false, status:"completed",  time:"09:58 AM", ago:"28 mins ago", payment:"UPI",      timeline:["Order Placed","Confirmed","Preparing","Out for Delivery","Delivered"], tlDone:5 },
-  { id:"#ORD-1021", date:"2025-05-27", type:"takeaway", table:null,        customer:"Kavya Reddy",   phone:"+91 91212 34343", initials:"KR", color:7, items:4, itemList:["2 x Tea","1 x Pastry","1 x Cold Coffee"],                 amount:610,  paid:true,  refund:false, status:"delivery",   time:"09:55 AM", ago:"31 mins ago", payment:"Razorpay", timeline:["Order Placed","Confirmed","Preparing","Out for Delivery","Delivered"], tlDone:4 },
-  { id:"#ORD-1020", date:"2025-05-26", type:"dine",     table:"Table 06", customer:"Arjun Mehta",   phone:"+91 88001 55667", initials:"AM", color:8, items:2, itemList:["2 x Espresso"],                                            amount:240,  paid:true,  refund:false, status:"new",        time:"09:50 AM", ago:"36 mins ago", payment:"UPI",      timeline:["Order Placed","Confirmed","Preparing","Out for Delivery","Delivered"], tlDone:1 },
-  { id:"#ORD-1019", date:"2025-05-26", type:"takeaway", table:null,        customer:"Divya Krishnan",phone:"+91 90123 45678", initials:"DK", color:9, items:6, itemList:["2 x Cappuccino","2 x Latte","1 x Brownie","1 x Muffin"],  amount:920,  paid:true,  refund:false, status:"preparing",  time:"09:44 AM", ago:"42 mins ago", payment:"Stripe",   timeline:["Order Placed","Confirmed","Preparing","Out for Delivery","Delivered"], tlDone:3 },
-  { id:"#ORD-1018", date:"2025-05-26", type:"dine",     table:"Table 12", customer:"Sanjay Kapoor", phone:"+91 77889 00112", initials:"SK", color:0, items:3, itemList:["1 x Mocha","1 x Sandwich","1 x Tea"],                     amount:480,  paid:true,  refund:false, status:"completed",  time:"09:38 AM", ago:"48 mins ago", payment:"UPI",      timeline:["Order Placed","Confirmed","Preparing","Out for Delivery","Delivered"], tlDone:5 },
-  { id:"#ORD-1017", date:"2025-05-26", type:"dine",     table:"Table 09", customer:"Meera Pillai",  phone:"+91 88234 56789", initials:"MP", color:1, items:2, itemList:["1 x Cold Coffee","1 x Pastry"],                           amount:320,  paid:true,  refund:false, status:"completed",  time:"09:30 AM", ago:"56 mins ago", payment:"UPI",      timeline:["Order Placed","Confirmed","Preparing","Out for Delivery","Delivered"], tlDone:5 },
-  { id:"#ORD-1016", date:"2025-05-26", type:"takeaway", table:null,        customer:"Rajan Nair",    phone:"+91 91345 67890", initials:"RN", color:2, items:1, itemList:["1 x Americano"],                                          amount:130,  paid:false, refund:false, status:"cancelled",  time:"09:22 AM", ago:"1 hr ago",    payment:"UPI",      timeline:["Order Placed","Confirmed","Preparing","Out for Delivery","Delivered"], tlDone:1 },
-  { id:"#ORD-1015", date:"2025-05-25", type:"dine",     table:"Table 02", customer:"Pooja Shah",    phone:"+91 99012 23456", initials:"PS", color:3, items:4, itemList:["2 x Latte","2 x Brownie"],                                amount:660,  paid:true,  refund:false, status:"completed",  time:"09:15 AM", ago:"1 hr ago",    payment:"Razorpay", timeline:["Order Placed","Confirmed","Preparing","Out for Delivery","Delivered"], tlDone:5 },
-  { id:"#ORD-1014", date:"2025-05-25", type:"takeaway", table:null,        customer:"Kiran Bose",    phone:"+91 88567 89012", initials:"KB", color:4, items:3, itemList:["1 x Cappuccino","1 x Tea","1 x Muffin"],                  amount:370,  paid:true,  refund:false, status:"completed",  time:"09:05 AM", ago:"1 hr ago",    payment:"UPI",      timeline:["Order Placed","Confirmed","Preparing","Out for Delivery","Delivered"], tlDone:5 },
-  { id:"#ORD-1013", date:"2025-05-25", type:"dine",     table:"Table 07", customer:"Suresh Kumar",  phone:"+91 77012 34567", initials:"SK", color:5, items:5, itemList:["2 x Mocha","1 x Sandwich","2 x Pastry"],                  amount:840,  paid:true,  refund:false, status:"completed",  time:"08:58 AM", ago:"1 hr ago",    payment:"Stripe",   timeline:["Order Placed","Confirmed","Preparing","Out for Delivery","Delivered"], tlDone:5 },
-  { id:"#ORD-1012", date:"2025-05-25", type:"takeaway", table:null,        customer:"Anita Joshi",   phone:"+91 90234 56781", initials:"AJ", color:6, items:2, itemList:["1 x Americano","1 x Brownie"],                           amount:280,  paid:true,  refund:false, status:"completed",  time:"08:44 AM", ago:"2 hrs ago",   payment:"UPI",      timeline:["Order Placed","Confirmed","Preparing","Out for Delivery","Delivered"], tlDone:5 },
-  { id:"#ORD-1011", date:"2025-05-24", type:"dine",     table:"Table 04", customer:"Ravi Shankar",  phone:"+91 88112 34560", initials:"RS", color:7, items:3, itemList:["1 x Latte","2 x Muffin"],                                 amount:310,  paid:true,  refund:false, status:"completed",  time:"08:30 AM", ago:"2 hrs ago",   payment:"Razorpay", timeline:["Order Placed","Confirmed","Preparing","Out for Delivery","Delivered"], tlDone:5 },
-];
-
-const TABS = [
-  { key:"all",       label:"All Orders",       count:128 },
-  { key:"new",       label:"New",              count:12  },
-  { key:"preparing", label:"Preparing",        count:32  },
-  { key:"delivery",  label:"Out for Delivery", count:18  },
-  { key:"completed", label:"Completed",        count:76  },
-  { key:"cancelled", label:"Cancelled",        count:2   },
-];
-
-const STATS = [
-  { label:"Total Orders",     val:128, trend:"+18.6%", up:true,  icon:ShoppingBag, iconBg:"#eff6ff", iconColor:"#2563eb" },
-  { label:"Preparing",        val:32,  trend:"+12.4%", up:true,  icon:ChefHat,     iconBg:"#fef3c7", iconColor:"#b45309" },
-  { label:"Out for Delivery", val:18,  trend:"+8.3%",  up:true,  icon:Truck,       iconBg:"#fff7ed", iconColor:"#ea580c" },
-  { label:"Completed",        val:76,  trend:"+22.1%", up:true,  icon:CheckCircle2,iconBg:"#f0fdf4", iconColor:"#16a34a" },
-  { label:"Cancelled",        val:2,   trend:"-4.5%",  up:false, icon:XCircle,     iconBg:"#fef2f2", iconColor:"#dc2626" },
-];
-
-const STATUS_CFG = {
-  new:       { label:"New",              cls:"mor-s-new"       },
-  preparing: { label:"Preparing",        cls:"mor-s-prep"      },
-  delivery:  { label:"Out for Delivery", cls:"mor-s-delivery"  },
-  completed: { label:"Completed",        cls:"mor-s-completed" },
-  cancelled: { label:"Cancelled",        cls:"mor-s-cancelled" },
-};
-
 const ITEMS_PER_PAGE = 8;
 
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const DAYS   = ["Su","Mo","Tu","We","Th","Fr","Sa"];
+
+const STATUS_CFG = {
+  PLACED:    { label:"New",              cls:"mor-s-new",       tabKey:"new"       },
+  ACCEPTED:  { label:"Accepted",         cls:"mor-s-new",       tabKey:"new"       },
+  PREPARING: { label:"Preparing",        cls:"mor-s-prep",      tabKey:"preparing" },
+  READY:     { label:"Ready",            cls:"mor-s-delivery",  tabKey:"delivery"  },
+  COMPLETED: { label:"Completed",        cls:"mor-s-completed", tabKey:"completed" },
+  CANCELLED: { label:"Cancelled",        cls:"mor-s-cancelled", tabKey:"cancelled" },
+};
+
+const PAYMENT_ICON = {
+  upi:            { icon: Smartphone,  label: "UPI",            color: "#7c3aed" },
+  razorpay:       { icon: CreditCard,  label: "Razorpay",       color: "#3395ff" },
+  stripe:         { icon: Globe,       label: "Stripe",         color: "#635bff" },
+  paypal:         { icon: Globe,       label: "PayPal",         color: "#003087" },
+  pay_at_counter: { icon: Store,       label: "Pay at Counter", color: "#b45309" },
+  cash:           { icon: Banknote,    label: "Cash",           color: "#16a34a" },
+};
+
+const TIMELINE_STEPS = ["PLACED","ACCEPTED","PREPARING","READY","COMPLETED"];
 
 function formatDate(dateStr) {
   if (!dateStr) return "";
@@ -71,136 +47,241 @@ function formatDate(dateStr) {
   return `${MONTHS[parseInt(m)-1].slice(0,3)} ${parseInt(d)}, ${y}`;
 }
 
+function formatDateTime(isoStr) {
+  if (!isoStr) return { date: "—", time: "—", ago: "" };
+  const dt = new Date(isoStr);
+  const date = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,"0")}-${String(dt.getDate()).padStart(2,"0")}`;
+  const time = dt.toLocaleTimeString("en-IN", { hour:"2-digit", minute:"2-digit" });
+  const now  = Date.now();
+  const diff = Math.floor((now - dt.getTime()) / 1000);
+  let ago = "";
+  if (diff < 60)        ago = "Just now";
+  else if (diff < 3600) ago = `${Math.floor(diff/60)} min ago`;
+  else if (diff < 86400)ago = `${Math.floor(diff/3600)} hr ago`;
+  else                  ago = `${Math.floor(diff/86400)} days ago`;
+  return { date, time, ago };
+}
+
+function getInitials(name) {
+  if (!name) return "?";
+  const parts = name.trim().split(" ");
+  return parts.length >= 2
+    ? (parts[0][0] + parts[parts.length-1][0]).toUpperCase()
+    : name.slice(0,2).toUpperCase();
+}
+
 function CalendarPicker({ value, onChange, onClose }) {
   const today = new Date();
   const initDate = value ? new Date(value) : today;
   const [viewYear,  setViewYear]  = useState(initDate.getFullYear());
   const [viewMonth, setViewMonth] = useState(initDate.getMonth());
-
-  const firstDay = new Date(viewYear, viewMonth, 1).getDay();
-  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
-
-  const prevMonth = () => { if (viewMonth === 0) { setViewMonth(11); setViewYear(y => y-1); } else setViewMonth(m => m-1); };
-  const nextMonth = () => { if (viewMonth === 11) { setViewMonth(0); setViewYear(y => y+1); } else setViewMonth(m => m+1); };
-
+  const firstDay    = new Date(viewYear, viewMonth, 1).getDay();
+  const daysInMonth = new Date(viewYear, viewMonth+1, 0).getDate();
+  const prevMonth = () => { if (viewMonth===0) { setViewMonth(11); setViewYear(y=>y-1); } else setViewMonth(m=>m-1); };
+  const nextMonth = () => { if (viewMonth===11) { setViewMonth(0); setViewYear(y=>y+1); } else setViewMonth(m=>m+1); };
   const cells = [];
-  for (let i = 0; i < firstDay; i++) cells.push(null);
-  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
-
+  for (let i=0; i<firstDay; i++) cells.push(null);
+  for (let d=1; d<=daysInMonth; d++) cells.push(d);
   const selectedVal = value ? new Date(value) : null;
-
   return (
-    <div className="mor-cal-dropdown" onClick={e => e.stopPropagation()}>
+    <div className="mor-cal-dropdown" onClick={e=>e.stopPropagation()}>
       <div className="mor-cal-header">
         <button className="mor-cal-nav" onClick={prevMonth}><ChevronLeft size={14}/></button>
         <span className="mor-cal-month">{MONTHS[viewMonth]} {viewYear}</span>
         <button className="mor-cal-nav" onClick={nextMonth}><ChevronRight size={14}/></button>
       </div>
-      <div className="mor-cal-grid-days">
-        {DAYS.map(d => <span key={d} className="mor-cal-day-label">{d}</span>)}
-      </div>
+      <div className="mor-cal-grid-days">{DAYS.map(d=><span key={d} className="mor-cal-day-label">{d}</span>)}</div>
       <div className="mor-cal-grid">
-        {cells.map((day, i) => {
-          if (!day) return <span key={`e-${i}`} />;
+        {cells.map((day,i) => {
+          if (!day) return <span key={`e-${i}`}/>;
           const dateStr = `${viewYear}-${String(viewMonth+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
-          const isSelected = selectedVal &&
-            selectedVal.getFullYear() === viewYear &&
-            selectedVal.getMonth() === viewMonth &&
-            selectedVal.getDate() === day;
-          const isToday = today.getFullYear() === viewYear && today.getMonth() === viewMonth && today.getDate() === day;
-          return (
-            <button
-              key={day}
-              className={`mor-cal-day ${isSelected ? "selected" : ""} ${isToday && !isSelected ? "today" : ""}`}
-              onClick={() => { onChange(dateStr); onClose(); }}
-            >
-              {day}
-            </button>
-          );
+          const isSelected = selectedVal && selectedVal.getFullYear()===viewYear && selectedVal.getMonth()===viewMonth && selectedVal.getDate()===day;
+          const isToday = today.getFullYear()===viewYear && today.getMonth()===viewMonth && today.getDate()===day;
+          return <button key={day} className={`mor-cal-day ${isSelected?"selected":""} ${isToday&&!isSelected?"today":""}`} onClick={()=>{onChange(dateStr);onClose();}}>{day}</button>;
         })}
       </div>
       <div className="mor-cal-footer">
-        <button className="mor-cal-clear" onClick={() => { onChange(null); onClose(); }}>Clear</button>
-        <button className="mor-cal-today" onClick={() => {
-          const t = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,"0")}-${String(today.getDate()).padStart(2,"0")}`;
-          onChange(t); onClose();
-        }}>Today</button>
+        <button className="mor-cal-clear" onClick={()=>{onChange(null);onClose();}}>Clear</button>
+        <button className="mor-cal-today" onClick={()=>{const t=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,"0")}-${String(today.getDate()).padStart(2,"0")}`;onChange(t);onClose();}}>Today</button>
       </div>
     </div>
   );
 }
 
 const MyOrderTableTopleoPage = () => {
-  const [activeTab,    setActiveTab]    = useState("all");
-  const [selected,     setSelected]     = useState(null);
-  const [search,       setSearch]       = useState("");
-  const [page,         setPage]         = useState(1);
-  const [dateFilter,   setDateFilter]   = useState(null);
-  const [calOpen,      setCalOpen]      = useState(false);
-  const [filterOpen,   setFilterOpen]   = useState(false);
-  const [filterType,   setFilterType]   = useState("all");
-  const [filterPay,    setFilterPay]    = useState("all");
+  const [orders,      setOrders]      = useState([]);
+  const [loading,     setLoading]     = useState(true);
+  const [error,       setError]       = useState("");
+  const [activeTab,   setActiveTab]   = useState("all");
+  const [selected,    setSelected]    = useState(null);
+  const [search,      setSearch]      = useState("");
+  const [page,        setPage]        = useState(1);
+  const [dateFilter,  setDateFilter]  = useState(null);
+  const [calOpen,     setCalOpen]     = useState(false);
+  const [filterOpen,  setFilterOpen]  = useState(false);
+  const [filterType,  setFilterType]  = useState("all");
+  const [filterPay,   setFilterPay]   = useState("all");
+  const [updatingId,  setUpdatingId]  = useState(null);
+  const [showStatusDd,setShowStatusDd]= useState(false);
   const calRef    = useRef(null);
   const filterRef = useRef(null);
+  const statusRef = useRef(null);
+
+  useEffect(() => { fetchOrders(); }, []);
 
   useEffect(() => {
     const fn = (e) => {
       if (calRef.current    && !calRef.current.contains(e.target))    setCalOpen(false);
       if (filterRef.current && !filterRef.current.contains(e.target)) setFilterOpen(false);
+      if (statusRef.current && !statusRef.current.contains(e.target)) setShowStatusDd(false);
     };
     document.addEventListener("mousedown", fn);
     return () => document.removeEventListener("mousedown", fn);
   }, []);
 
+  const fetchOrders = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const res = await adminOrderService.getAllOrders();
+      if (res.success) {
+        setOrders(res.data || []);
+      } else {
+        setError(res.message || "Failed to load orders.");
+      }
+    } catch (e) {
+      setError("Failed to load orders. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateStatus = async (orderId, newStatus) => {
+    setUpdatingId(orderId);
+    setShowStatusDd(false);
+    try {
+      const res = await adminOrderService.updateOrderStatus(orderId, newStatus);
+      if (res.success) {
+        setOrders(prev => prev.map(o =>
+          o.orderId === orderId ? { ...o, orderStatus: newStatus.toUpperCase() } : o
+        ));
+        if (selected?.orderId === orderId) {
+          setSelected(prev => ({ ...prev, orderStatus: newStatus.toUpperCase() }));
+        }
+      }
+    } catch {} finally {
+      setUpdatingId(null);
+    }
+  };
+
+  const stats = useMemo(() => ({
+    total:     orders.length,
+    preparing: orders.filter(o => o.orderStatus === "PREPARING").length,
+    ready:     orders.filter(o => o.orderStatus === "READY").length,
+    completed: orders.filter(o => o.orderStatus === "COMPLETED").length,
+    cancelled: orders.filter(o => o.orderStatus === "CANCELLED").length,
+  }), [orders]);
+
+  const STATS = [
+    { label:"Total Orders",     val:stats.total,     icon:ShoppingBag, iconBg:"#eff6ff", iconColor:"#2563eb" },
+    { label:"Preparing",        val:stats.preparing, icon:ChefHat,     iconBg:"#fef3c7", iconColor:"#b45309" },
+    { label:"Ready for Pickup", val:stats.ready,     icon:Truck,       iconBg:"#fff7ed", iconColor:"#ea580c" },
+    { label:"Completed",        val:stats.completed, icon:CheckCircle2,iconBg:"#f0fdf4", iconColor:"#16a34a" },
+    { label:"Cancelled",        val:stats.cancelled, icon:XCircle,     iconBg:"#fef2f2", iconColor:"#dc2626" },
+  ];
+
+  const tabCounts = useMemo(() => ({
+    all:       orders.length,
+    new:       orders.filter(o => ["PLACED","ACCEPTED"].includes(o.orderStatus)).length,
+    preparing: orders.filter(o => o.orderStatus === "PREPARING").length,
+    delivery:  orders.filter(o => o.orderStatus === "READY").length,
+    completed: orders.filter(o => o.orderStatus === "COMPLETED").length,
+    cancelled: orders.filter(o => o.orderStatus === "CANCELLED").length,
+  }), [orders]);
+
+  const TABS = [
+    { key:"all",       label:"All Orders"       },
+    { key:"new",       label:"New"              },
+    { key:"preparing", label:"Preparing"        },
+    { key:"delivery",  label:"Out for Delivery" },
+    { key:"completed", label:"Completed"        },
+    { key:"cancelled", label:"Cancelled"        },
+  ];
+
   const filtered = useMemo(() => {
-    let list = ORDERS;
-    if (activeTab !== "all")  list = list.filter(o => o.status === activeTab);
-    if (dateFilter)           list = list.filter(o => o.date === dateFilter);
-    if (filterType !== "all") list = list.filter(o => o.type === filterType);
-    if (filterPay  !== "all") list = list.filter(o => o.payment.toLowerCase() === filterPay);
-    if (search.trim())        list = list.filter(o =>
-      o.id.toLowerCase().includes(search.toLowerCase()) ||
-      o.customer.toLowerCase().includes(search.toLowerCase())
-    );
-    return list;
-  }, [activeTab, dateFilter, filterType, filterPay, search]);
+    return orders.filter(o => {
+      const cfg = STATUS_CFG[o.orderStatus] || STATUS_CFG.PLACED;
+      if (activeTab !== "all" && cfg.tabKey !== activeTab) return false;
+      if (dateFilter) {
+        const { date } = formatDateTime(o.createdAt);
+        if (date !== dateFilter) return false;
+      }
+      if (filterType !== "all") {
+        const oType = o.orderType === "DINE_IN" ? "dine" : "takeaway";
+        if (oType !== filterType) return false;
+      }
+      if (filterPay !== "all") {
+        if ((o.paymentMethod || "").toLowerCase() !== filterPay) return false;
+      }
+      if (search.trim()) {
+        const q = search.toLowerCase();
+        if (
+          !o.orderId?.toLowerCase().includes(q) &&
+          !o.orderNumber?.toLowerCase().includes(q) &&
+          !o.customerName?.toLowerCase().includes(q) &&
+          !o.customerPhone?.toLowerCase().includes(q)
+        ) return false;
+      }
+      return true;
+    });
+  }, [orders, activeTab, dateFilter, filterType, filterPay, search]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
-  const safePage   = Math.min(page, totalPages);
-  const paged      = filtered.slice((safePage - 1) * ITEMS_PER_PAGE, safePage * ITEMS_PER_PAGE);
-
-  const handleTab = (key) => { setActiveTab(key); setPage(1); };
-
-  const activeFiltersCount = [
-    dateFilter,
-    filterType !== "all" ? filterType : null,
-    filterPay  !== "all" ? filterPay  : null,
-  ].filter(Boolean).length;
+  const totalPages  = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
+  const safePage    = Math.min(page, totalPages);
+  const paged       = filtered.slice((safePage-1)*ITEMS_PER_PAGE, safePage*ITEMS_PER_PAGE);
+  const activeFiltersCount = [dateFilter, filterType!=="all"?filterType:null, filterPay!=="all"?filterPay:null].filter(Boolean).length;
 
   const clearAllFilters = () => { setDateFilter(null); setFilterType("all"); setFilterPay("all"); setSearch(""); setPage(1); };
+  const handleTab = (key) => { setActiveTab(key); setPage(1); };
 
   const renderPages = () => {
     const pages = [];
-    if (totalPages <= 7) { for (let i = 1; i <= totalPages; i++) pages.push(i); }
+    if (totalPages<=7) { for(let i=1;i<=totalPages;i++) pages.push(i); }
     else {
       pages.push(1,2,3);
-      if (safePage > 4) pages.push("...");
-      if (safePage > 3 && safePage < totalPages - 2) pages.push(safePage);
-      if (safePage < totalPages - 3) pages.push("...");
+      if (safePage>4) pages.push("...");
+      if (safePage>3 && safePage<totalPages-2) pages.push(safePage);
+      if (safePage<totalPages-3) pages.push("...");
       pages.push(totalPages);
     }
     return pages;
   };
 
-  const tl     = selected?.timeline || [];
-  const tlDone = selected?.tlDone   || 0;
+  const getStatusCfg = (status) => STATUS_CFG[status] || STATUS_CFG.PLACED;
+  const getPayIcon   = (method) => PAYMENT_ICON[(method||"").toLowerCase()] || PAYMENT_ICON.upi;
+  const getTimelineDone = (status) => {
+    const idx = TIMELINE_STEPS.indexOf(status);
+    return idx >= 0 ? idx + 1 : 1;
+  };
 
-  const itemPrices = selected ? selected.itemList.map(item => {
-    const match = item.match(/^(\d+)\s*x\s*/);
-    const qty   = match ? parseInt(match[1]) : 1;
-    const base  = Math.round(selected.amount / (selected.items || 1));
-    return { name: item, price: qty * base };
-  }) : [];
+  if (loading) return (
+    <div className="mor-root" style={{ alignItems:"center", justifyContent:"center", flexDirection:"column", gap:16 }}>
+      <div style={{ width:44, height:44, border:"3px solid #f1f5f9", borderTop:"3px solid #635bff", borderRadius:"50%", animation:"morSpin 0.8s linear infinite" }}/>
+      <p style={{ color:"#6b7280", fontSize:14 }}>Loading orders...</p>
+      <style>{`@keyframes morSpin{to{transform:rotate(360deg)}}`}</style>
+    </div>
+  );
+
+  if (error) return (
+    <div className="mor-root" style={{ alignItems:"center", justifyContent:"center", flexDirection:"column", gap:14 }}>
+      <div style={{ fontSize:48 }}>⚠️</div>
+      <p style={{ color:"#374151", fontSize:15, fontWeight:700, margin:0 }}>Failed to load orders</p>
+      <p style={{ color:"#6b7280", fontSize:13, margin:0 }}>{error}</p>
+      <button onClick={fetchOrders} style={{ padding:"10px 24px", background:"#635bff", color:"#fff", border:"none", borderRadius:9, fontSize:13, fontWeight:600, cursor:"pointer", display:"flex", alignItems:"center", gap:6 }}>
+        <RefreshCw size={14}/> Retry
+      </button>
+    </div>
+  );
 
   return (
     <div className="mor-root">
@@ -214,109 +295,81 @@ const MyOrderTableTopleoPage = () => {
             </div>
             <div className="mor-header-right">
               <div className="mor-search-wrap">
-                <Search size={14} className="mor-search-icon" />
-                <input
-                  className="mor-search-input"
-                  placeholder="Search by Order ID, Customer, Phone..."
-                  value={search}
-                  onChange={e => { setSearch(e.target.value); setPage(1); }}
-                />
+                <Search size={14} className="mor-search-icon"/>
+                <input className="mor-search-input" placeholder="Search by Order ID, Customer, Phone..." value={search} onChange={e=>{setSearch(e.target.value);setPage(1);}}/>
                 <span className="mor-search-kbd">Ctrl + K</span>
               </div>
 
               <div className="mor-cal-wrap" ref={calRef}>
-                <button
-                  className={`mor-date-btn ${dateFilter ? "mor-date-btn-active" : ""}`}
-                  onClick={() => { setCalOpen(o => !o); setFilterOpen(false); }}
-                >
-                  <Calendar size={13} />
+                <button className={`mor-date-btn ${dateFilter?"mor-date-btn-active":""}`} onClick={()=>{setCalOpen(o=>!o);setFilterOpen(false);}}>
+                  <Calendar size={13}/>
                   {dateFilter ? formatDate(dateFilter) : "Pick Date"}
-                  {dateFilter && (
-                    <span className="mor-date-clear" onClick={e => { e.stopPropagation(); setDateFilter(null); setPage(1); }}>
-                      <X size={11} />
-                    </span>
-                  )}
+                  {dateFilter && <span className="mor-date-clear" onClick={e=>{e.stopPropagation();setDateFilter(null);setPage(1);}}><X size={11}/></span>}
                 </button>
-                {calOpen && (
-                  <CalendarPicker
-                    value={dateFilter}
-                    onChange={v => { setDateFilter(v); setPage(1); }}
-                    onClose={() => setCalOpen(false)}
-                  />
-                )}
+                {calOpen && <CalendarPicker value={dateFilter} onChange={v=>{setDateFilter(v);setPage(1);}} onClose={()=>setCalOpen(false)}/>}
               </div>
 
               <div className="mor-filter-wrap" ref={filterRef}>
-                <button
-                  className={`mor-filter-btn ${activeFiltersCount > 0 ? "mor-filter-btn-active" : ""}`}
-                  onClick={() => { setFilterOpen(o => !o); setCalOpen(false); }}
-                >
-                  <SlidersHorizontal size={13} /> Filters
-                  {activeFiltersCount > 0 && <span className="mor-filter-count">{activeFiltersCount}</span>}
+                <button className={`mor-filter-btn ${activeFiltersCount>0?"mor-filter-btn-active":""}`} onClick={()=>{setFilterOpen(o=>!o);setCalOpen(false);}}>
+                  <SlidersHorizontal size={13}/> Filters
+                  {activeFiltersCount>0 && <span className="mor-filter-count">{activeFiltersCount}</span>}
                 </button>
                 {filterOpen && (
-                  <div className="mor-filter-dropdown" onClick={e => e.stopPropagation()}>
+                  <div className="mor-filter-dropdown" onClick={e=>e.stopPropagation()}>
                     <div className="mor-fd-title">Filter Orders</div>
-
                     <div className="mor-fd-group">
                       <div className="mor-fd-label">Order Type</div>
                       <div className="mor-fd-pills">
-                        {[["all","All"],["dine","Dine In"],["takeaway","Take Away"]].map(([v,l]) => (
-                          <button key={v} className={`mor-fd-pill ${filterType===v?"active":""}`} onClick={() => { setFilterType(v); setPage(1); }}>{l}</button>
+                        {[["all","All"],["dine","Dine In"],["takeaway","Take Away"]].map(([v,l])=>(
+                          <button key={v} className={`mor-fd-pill ${filterType===v?"active":""}`} onClick={()=>{setFilterType(v);setPage(1);}}>{l}</button>
                         ))}
                       </div>
                     </div>
-
                     <div className="mor-fd-group">
                       <div className="mor-fd-label">Payment Method</div>
                       <div className="mor-fd-pills">
-                        {[["all","All"],["upi","UPI"],["razorpay","Razorpay"],["stripe","Stripe"],["paypal","PayPal"]].map(([v,l]) => (
-                          <button key={v} className={`mor-fd-pill ${filterPay===v?"active":""}`} onClick={() => { setFilterPay(v); setPage(1); }}>{l}</button>
+                        {[["all","All"],["upi","UPI"],["razorpay","Razorpay"],["stripe","Stripe"],["paypal","PayPal"],["pay_at_counter","At Counter"]].map(([v,l])=>(
+                          <button key={v} className={`mor-fd-pill ${filterPay===v?"active":""}`} onClick={()=>{setFilterPay(v);setPage(1);}}>{l}</button>
                         ))}
                       </div>
                     </div>
-
                     <div className="mor-fd-actions">
-                      <button className="mor-fd-clear" onClick={() => { setFilterType("all"); setFilterPay("all"); setPage(1); }}>Clear</button>
-                      <button className="mor-fd-apply" onClick={() => setFilterOpen(false)}>Apply</button>
+                      <button className="mor-fd-clear" onClick={()=>{setFilterType("all");setFilterPay("all");setPage(1);}}>Clear</button>
+                      <button className="mor-fd-apply" onClick={()=>setFilterOpen(false)}>Apply</button>
                     </div>
                   </div>
                 )}
               </div>
 
-              <button className="mor-notif-btn">
-                <Bell size={15} />
-                <span className="mor-notif-badge">12</span>
+              <button className="mor-date-btn" onClick={fetchOrders} title="Refresh" style={{ gap:5 }}>
+                <RefreshCw size={13}/> Refresh
               </button>
             </div>
           </div>
 
-          {(activeFiltersCount > 0 || search) && (
+          {(activeFiltersCount>0 || search) && (
             <div className="mor-active-filters">
               <span className="mor-af-label">Active filters:</span>
-              {dateFilter && <span className="mor-af-chip">📅 {formatDate(dateFilter)} <button onClick={() => { setDateFilter(null); setPage(1); }}><X size={10}/></button></span>}
-              {filterType !== "all" && <span className="mor-af-chip">{filterType === "dine" ? "🍽️ Dine In" : "🥡 Take Away"} <button onClick={() => { setFilterType("all"); setPage(1); }}><X size={10}/></button></span>}
-              {filterPay  !== "all" && <span className="mor-af-chip">💳 {filterPay} <button onClick={() => { setFilterPay("all"); setPage(1); }}><X size={10}/></button></span>}
-              {search && <span className="mor-af-chip">🔍 "{search}" <button onClick={() => { setSearch(""); setPage(1); }}><X size={10}/></button></span>}
+              {dateFilter && <span className="mor-af-chip">📅 {formatDate(dateFilter)} <button onClick={()=>{setDateFilter(null);setPage(1);}}><X size={10}/></button></span>}
+              {filterType!=="all" && <span className="mor-af-chip">{filterType==="dine"?"🍽️ Dine In":"🥡 Take Away"} <button onClick={()=>{setFilterType("all");setPage(1);}}><X size={10}/></button></span>}
+              {filterPay!=="all" && <span className="mor-af-chip">💳 {filterPay} <button onClick={()=>{setFilterPay("all");setPage(1);}}><X size={10}/></button></span>}
+              {search && <span className="mor-af-chip">🔍 "{search}" <button onClick={()=>{setSearch("");setPage(1);}}><X size={10}/></button></span>}
               <button className="mor-af-clear-all" onClick={clearAllFilters}>Clear all</button>
             </div>
           )}
         </div>
 
         <div className="mor-stats">
-          {STATS.map(s => {
-            const Icon = s.icon;
+          {STATS.map(s=>{
+            const Icon=s.icon;
             return (
               <div className="mor-stat-card" key={s.label}>
-                <div className="mor-stat-icon" style={{ background: s.iconBg }}>
-                  <Icon size={18} color={s.iconColor} />
-                </div>
+                <div className="mor-stat-icon" style={{background:s.iconBg}}><Icon size={18} color={s.iconColor}/></div>
                 <div className="mor-stat-body">
                   <div className="mor-stat-label">{s.label}</div>
                   <div className="mor-stat-val">{s.val}</div>
-                  <div className={`mor-stat-trend ${s.up ? "up" : "down"}`}>
-                    {s.up ? <ArrowUpRight size={11}/> : <ArrowDownRight size={11}/>}
-                    {s.trend} <span className="mor-stat-vs">vs yesterday</span>
+                  <div className="mor-stat-trend up" style={{color:"#6b7280",fontSize:11}}>
+                    Real-time data
                   </div>
                 </div>
               </div>
@@ -326,9 +379,9 @@ const MyOrderTableTopleoPage = () => {
 
         <div className="mor-tabs-row">
           <div className="mor-tabs">
-            {TABS.map(t => (
-              <button key={t.key} className={`mor-tab ${activeTab===t.key?"active":""}`} onClick={() => handleTab(t.key)}>
-                {t.label} ({t.count})
+            {TABS.map(t=>(
+              <button key={t.key} className={`mor-tab ${activeTab===t.key?"active":""}`} onClick={()=>handleTab(t.key)}>
+                {t.label} ({tabCounts[t.key]})
               </button>
             ))}
           </div>
@@ -354,65 +407,74 @@ const MyOrderTableTopleoPage = () => {
               </tr>
             </thead>
             <tbody>
-              {paged.length === 0 ? (
+              {paged.length===0 ? (
                 <tr>
-                  <td colSpan={8} style={{ textAlign:"center", padding:"48px 20px", color:"#9ca3af", fontSize:13 }}>
-                    <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:8 }}>
+                  <td colSpan={8} style={{textAlign:"center",padding:"48px 20px",color:"#9ca3af",fontSize:13}}>
+                    <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:8}}>
                       <Filter size={32} strokeWidth={1.2} color="#d1d5db"/>
-                      <span>No orders found for selected filters</span>
-                      <button className="mor-af-clear-all" onClick={clearAllFilters} style={{ marginTop:4 }}>Clear filters</button>
+                      <span>{orders.length===0 ? "No orders yet. Orders placed by customers will appear here." : "No orders found for selected filters."}</span>
+                      {orders.length>0 && <button className="mor-af-clear-all" onClick={clearAllFilters} style={{marginTop:4}}>Clear filters</button>}
                     </div>
                   </td>
                 </tr>
-              ) : paged.map(order => {
-                const sc = STATUS_CFG[order.status];
+              ) : paged.map((order,idx) => {
+                const cfg    = getStatusCfg(order.orderStatus);
+                const dt     = formatDateTime(order.createdAt);
+                const inits  = getInitials(order.customerName);
+                const color  = AVATAR_COLORS[idx % AVATAR_COLORS.length];
+                const isDine = order.orderType === "DINE_IN";
+                const itemCount = order.items?.length || 0;
+                const itemNames = (order.items||[]).slice(0,2).map(i=>`${i.quantity} x ${i.productName}`);
+                const PayI   = getPayIcon(order.paymentMethod);
                 return (
-                  <tr
-                    key={order.id}
-                    className={`mor-tr ${selected?.id === order.id ? "selected" : ""}`}
-                    onClick={() => setSelected(selected?.id === order.id ? null : order)}
-                  >
+                  <tr key={order.orderId} className={`mor-tr ${selected?.orderId===order.orderId?"selected":""}`}
+                    onClick={()=>setSelected(selected?.orderId===order.orderId?null:order)}>
                     <td className="mor-td">
-                      <div className="mor-order-id">{order.id}</div>
-                      <div className="mor-order-sub">Online Order</div>
+                      <div className="mor-order-id">{order.orderNumber || order.orderId}</div>
+                      <div className="mor-order-sub" style={{fontSize:10,fontFamily:"monospace",color:"#9ca3af"}}>{order.orderId.slice(0,16)}...</div>
                     </td>
                     <td className="mor-td">
                       <div className="mor-customer-cell">
-                        <div className="mor-avatar" style={{ background: AVATAR_COLORS[order.color] }}>{order.initials}</div>
+                        <div className="mor-avatar" style={{background:color}}>{inits}</div>
                         <div>
-                          <div className="mor-cust-name">{order.customer}</div>
-                          <div className="mor-cust-phone">{order.phone}</div>
+                          <div className="mor-cust-name">{order.customerName||"Guest"}</div>
+                          <div className="mor-cust-phone">{order.customerPhone||"—"}</div>
                         </div>
                       </div>
                     </td>
                     <td className="mor-td">
-                      {order.type === "dine" ? (
+                      {isDine ? (
                         <div>
                           <span className="mor-type-badge mor-type-dine"><Utensils size={11}/> Dine In</span>
-                          {order.table && <div style={{ fontSize:11, color:"#6b7280", marginTop:3 }}>{order.table}</div>}
+                          {order.tableNumber && <div style={{fontSize:11,color:"#6b7280",marginTop:3}}>{order.tableNumber}</div>}
                         </div>
                       ) : (
                         <span className="mor-type-badge mor-type-takeaway"><Package size={11}/> Take Away</span>
                       )}
                     </td>
                     <td className="mor-td">
-                      <div className="mor-items-main">{order.items} Item{order.items!==1?"s":""}</div>
-                      <div className="mor-items-sub">{order.itemList.slice(0,2).join(", ")}{order.itemList.length>2?"...":""}</div>
+                      <div className="mor-items-main">{itemCount} Item{itemCount!==1?"s":""}</div>
+                      <div className="mor-items-sub">{itemNames.join(", ")}{itemCount>2?"...":""}</div>
                     </td>
                     <td className="mor-td">
-                      <div className="mor-amount">₹{order.amount.toLocaleString("en-IN")}.00</div>
-                      {order.refund ? <div className="mor-refund">Refunded</div> : <div className="mor-paid">Paid</div>}
+                      <div className="mor-amount">₹{Number(order.grandTotal||0).toLocaleString("en-IN")}</div>
+                      {order.payAtCounter
+                        ? <div style={{fontSize:11,color:"#b45309",fontWeight:600}}>Pay at Counter</div>
+                        : order.paymentStatus==="PAID"
+                          ? <div className="mor-paid">Paid</div>
+                          : <div style={{fontSize:11,color:"#f59e0b",fontWeight:600}}>{order.paymentStatus}</div>
+                      }
                     </td>
                     <td className="mor-td">
-                      <span className={`mor-status-pill ${sc.cls}`}>
-                        <span className="mor-dot"/>{sc.label}
+                      <span className={`mor-status-pill ${cfg.cls}`}>
+                        <span className="mor-dot"/>{cfg.label}
                       </span>
                     </td>
                     <td className="mor-td">
-                      <div className="mor-time-main">{order.time}</div>
-                      <div className="mor-time-sub">{order.ago}</div>
+                      <div className="mor-time-main">{dt.time}</div>
+                      <div className="mor-time-sub">{dt.ago}</div>
                     </td>
-                    <td className="mor-td" onClick={e => e.stopPropagation()}>
+                    <td className="mor-td" onClick={e=>e.stopPropagation()}>
                       <button className="mor-more-btn"><MoreHorizontal size={15}/></button>
                     </td>
                   </tr>
@@ -427,12 +489,12 @@ const MyOrderTableTopleoPage = () => {
             Showing {filtered.length===0?0:(safePage-1)*ITEMS_PER_PAGE+1} to {Math.min(safePage*ITEMS_PER_PAGE,filtered.length)} of {filtered.length} orders
           </span>
           <div className="mor-pg-controls">
-            <button className="mor-pg-btn" disabled={safePage===1} onClick={() => setPage(p => Math.max(1,p-1))}><ChevronLeft size={14}/></button>
-            {renderPages().map((pg,i) =>
-              pg==="..." ? <span key={`d${i}`} className="mor-pg-dots">...</span> :
-              <button key={pg} className={`mor-pg-btn ${safePage===pg?"active":""}`} onClick={() => setPage(pg)}>{pg}</button>
+            <button className="mor-pg-btn" disabled={safePage===1} onClick={()=>setPage(p=>Math.max(1,p-1))}><ChevronLeft size={14}/></button>
+            {renderPages().map((pg,i)=>
+              pg==="..."?<span key={`d${i}`} className="mor-pg-dots">...</span>:
+              <button key={pg} className={`mor-pg-btn ${safePage===pg?"active":""}`} onClick={()=>setPage(pg)}>{pg}</button>
             )}
-            <button className="mor-pg-btn" disabled={safePage===totalPages} onClick={() => setPage(p => Math.min(totalPages,p+1))}><ChevronRight size={14}/></button>
+            <button className="mor-pg-btn" disabled={safePage===totalPages} onClick={()=>setPage(p=>Math.min(totalPages,p+1))}><ChevronRight size={14}/></button>
           </div>
         </div>
       </div>
@@ -441,90 +503,148 @@ const MyOrderTableTopleoPage = () => {
         <div className="mor-right">
           <div className="mor-detail-header">
             <span className="mor-detail-title">Order Details</span>
-            <button className="mor-close-btn" onClick={() => setSelected(null)}><X size={14}/></button>
+            <button className="mor-close-btn" onClick={()=>setSelected(null)}><X size={14}/></button>
           </div>
 
           <div className="mor-detail-body">
-            <div className="mor-detail-id-row">
-              <span className="mor-detail-id">{selected.id}</span>
-              <span className={`mor-status-pill ${STATUS_CFG[selected.status].cls}`}>
-                <span className="mor-dot"/>{STATUS_CFG[selected.status].label}
-              </span>
-            </div>
+            {(() => {
+              const cfg  = getStatusCfg(selected.orderStatus);
+              const dt   = formatDateTime(selected.createdAt);
+              const PayI = getPayIcon(selected.paymentMethod);
+              const inits= getInitials(selected.customerName);
+              const isDine = selected.orderType === "DINE_IN";
+              const tlDone = getTimelineDone(selected.orderStatus);
+              return (
+                <>
+                  <div className="mor-detail-id-row">
+                    <span className="mor-detail-id">{selected.orderNumber}</span>
+                    <span className={`mor-status-pill ${cfg.cls}`}><span className="mor-dot"/>{cfg.label}</span>
+                  </div>
 
-            <div className="mor-detail-meta">
-              <div className="mor-detail-meta-row"><Calendar size={12}/> {formatDate(selected.date)} | {selected.time}</div>
-              <div className="mor-detail-meta-row"><ShoppingBag size={12}/> Online Order</div>
-            </div>
+                  <div className="mor-detail-meta">
+                    <div className="mor-detail-meta-row"><Calendar size={12}/> {formatDate(dt.date)} | {dt.time}</div>
+                    <div className="mor-detail-meta-row"><ShoppingBag size={12}/> {isDine ? "Dine In" : "Take Away"}</div>
+                    {selected.customerNote && (
+                      <div className="mor-detail-meta-row" style={{fontSize:11.5,color:"#f59e0b",fontStyle:"italic"}}>
+                        📝 Note: {selected.customerNote}
+                      </div>
+                    )}
+                  </div>
 
-            <div className="mor-section-label">Customer Details</div>
-            <div className="mor-cust-detail">
-              <div className="mor-avatar" style={{ background: AVATAR_COLORS[selected.color], width:32, height:32, fontSize:12 }}>
-                {selected.initials}
-              </div>
-              <div>
-                <div className="mor-cust-detail-name">{selected.customer}</div>
-                <div className="mor-cust-detail-phone">{selected.phone}</div>
-              </div>
-              <div className="mor-cust-actions">
-                <button className="mor-cust-action-btn"><Phone size={12}/></button>
-                <button className="mor-cust-action-btn"><MessageSquare size={12}/></button>
-              </div>
-            </div>
-
-            <div className="mor-section-label">Order Type</div>
-            <div className="mor-type-detail">
-              {selected.type==="dine"
-                ? <span className="mor-type-badge mor-type-dine"><Utensils size={11}/> Dine In</span>
-                : <span className="mor-type-badge mor-type-takeaway"><Package size={11}/> Take Away</span>
-              }
-              {selected.table && <span className="mor-table-tag">{selected.table}</span>}
-            </div>
-
-            <div className="mor-section-label">Order Items</div>
-            <div className="mor-items-detail">
-              {itemPrices.map((item,i) => (
-                <div key={i} className="mor-item-row">
-                  <span className="mor-item-name">{item.name}</span>
-                  <span className="mor-item-price">₹{item.price.toFixed(2)}</span>
-                </div>
-              ))}
-            </div>
-
-            <div className="mor-totals">
-              <div className="mor-total-row"><span>Subtotal</span><span className="mor-total-val">₹{selected.amount.toLocaleString("en-IN")}.00</span></div>
-              <div className="mor-total-row"><span>Discount</span><span className="mor-total-val" style={{ color:"#dc2626" }}>- ₹0.00</span></div>
-              <div className="mor-total-row"><span>Tax (5%)</span><span className="mor-total-val">₹0.00</span></div>
-              <div className="mor-total-row main"><span>Total Amount</span><span>₹{selected.amount.toLocaleString("en-IN")}.00</span></div>
-            </div>
-            <div className="mor-pay-row">
-              <span className="mor-pay-badge mor-pay-paid"><CheckCircle2 size={11}/> Paid</span>
-              <span className="mor-pay-method"><CreditCard size={12}/> {selected.payment}</span>
-            </div>
-
-            <div className="mor-section-label">Order Timeline</div>
-            <div className="mor-timeline">
-              {tl.map((step,i) => {
-                const done = i < tlDone;
-                return (
-                  <div key={step} className={`mor-tl-item ${done?"tl-done":"tl-pending"}`}>
-                    <div className="mor-tl-line"/>
-                    <div className="mor-tl-dot">{done && <div className="mor-tl-dot-inner"/>}</div>
-                    <div className="mor-tl-content">
-                      <div className="mor-tl-label">{step}</div>
-                      <div className="mor-tl-time">{done ? selected.time : "—"}</div>
+                  <div className="mor-section-label">Customer Details</div>
+                  <div className="mor-cust-detail">
+                    <div className="mor-avatar" style={{background:AVATAR_COLORS[0],width:32,height:32,fontSize:12}}>{inits}</div>
+                    <div>
+                      <div className="mor-cust-detail-name">{selected.customerName||"Guest"}</div>
+                      <div className="mor-cust-detail-phone">{selected.customerPhone||"—"}</div>
+                      {selected.customerEmail && <div style={{fontSize:11,color:"#9ca3af",marginTop:1}}>{selected.customerEmail}</div>}
+                    </div>
+                    <div className="mor-cust-actions">
+                      {selected.customerPhone && (
+                        <a href={`tel:${selected.customerPhone}`} className="mor-cust-action-btn"><Phone size={12}/></a>
+                      )}
+                      <button className="mor-cust-action-btn"><MessageSquare size={12}/></button>
                     </div>
                   </div>
-                );
-              })}
-            </div>
+
+                  <div className="mor-section-label">Order Type</div>
+                  <div className="mor-type-detail">
+                    {isDine
+                      ? <span className="mor-type-badge mor-type-dine"><Utensils size={11}/> Dine In</span>
+                      : <span className="mor-type-badge mor-type-takeaway"><Package size={11}/> Take Away</span>
+                    }
+                    {selected.tableNumber && <span className="mor-table-tag">{selected.tableNumber}</span>}
+                  </div>
+
+                  <div className="mor-section-label">Order Items</div>
+                  <div className="mor-items-detail">
+                    {(selected.items||[]).map((item,i)=>(
+                      <div key={i} className="mor-item-row">
+                        <div style={{display:"flex",alignItems:"center",gap:8,minWidth:0}}>
+                          {item.productImageUrl && (
+                            <img src={item.productImageUrl} alt={item.productName}
+                              style={{width:28,height:28,borderRadius:6,objectFit:"cover",flexShrink:0,border:"1px solid #f1f5f9"}}
+                              onError={e=>{e.target.style.display="none";}}
+                            />
+                          )}
+                          <span className="mor-item-name">
+                            {item.quantity} × {item.productName}
+                            {item.specialRequest && <span style={{fontSize:11,color:"#9ca3af",fontStyle:"italic",display:"block"}}>↳ {item.specialRequest}</span>}
+                          </span>
+                        </div>
+                        <span className="mor-item-price">₹{Number(item.lineTotal||0).toFixed(2)}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mor-totals">
+                    <div className="mor-total-row"><span>Subtotal</span><span className="mor-total-val">₹{Number(selected.subtotal||0).toFixed(2)}</span></div>
+                    <div className="mor-total-row"><span>Tax</span><span className="mor-total-val">₹{Number(selected.taxAmount||0).toFixed(2)}</span></div>
+                    <div className="mor-total-row"><span>Discount</span><span className="mor-total-val" style={{color:"#dc2626"}}>- ₹{Number(selected.discountAmount||0).toFixed(2)}</span></div>
+                    <div className="mor-total-row main"><span>Total Amount</span><span>₹{Number(selected.grandTotal||0).toFixed(2)}</span></div>
+                  </div>
+
+                  <div className="mor-pay-row">
+                    {selected.payAtCounter ? (
+                      <span className="mor-pay-badge" style={{background:"#fef3c7",color:"#b45309",border:"1px solid #fde68a"}}>
+                        <Store size={11}/> Pay at Counter
+                      </span>
+                    ) : (
+                      <span className={`mor-pay-badge ${selected.paymentStatus==="PAID"?"mor-pay-paid":""}`}>
+                        <CheckCircle2 size={11}/> {selected.paymentStatus}
+                      </span>
+                    )}
+                    <span className="mor-pay-method">
+                      <PayI.icon size={12} color={PayI.color}/> {PayI.label}
+                    </span>
+                  </div>
+
+                  <div className="mor-section-label">Order Timeline</div>
+                  <div className="mor-timeline">
+                    {TIMELINE_STEPS.map((step,i)=>{
+                      const done = i < tlDone;
+                      return (
+                        <div key={step} className={`mor-tl-item ${done?"tl-done":"tl-pending"}`}>
+                          <div className="mor-tl-line"/>
+                          <div className="mor-tl-dot">{done && <div className="mor-tl-dot-inner"/>}</div>
+                          <div className="mor-tl-content">
+                            <div className="mor-tl-label">{step.charAt(0)+step.slice(1).toLowerCase().replace("_"," ")}</div>
+                            <div className="mor-tl-time">{done ? dt.time : "—"}</div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              );
+            })()}
           </div>
 
           <div className="mor-detail-footer">
             <button className="mor-print-btn"><Printer size={13}/> Print Invoice</button>
-            <div className="mor-update-wrap">
-              <button className="mor-update-btn">Update Status</button>
-              <button className="mor-update-chevron"><ChevronDown size={14}/></button>
+            <div className="mor-update-wrap" ref={statusRef}>
+              <button
+                className="mor-update-btn"
+                disabled={!!updatingId}
+                onClick={()=>setShowStatusDd(o=>!o)}
+              >
+                {updatingId===selected?.orderId ? "Updating..." : "Update Status"}
+              </button>
+              <button className="mor-update-chevron" onClick={()=>setShowStatusDd(o=>!o)}>
+                <ChevronDown size={14}/>
+              </button>
+              {showStatusDd && (
+                <div style={{position:"absolute",bottom:"100%",right:0,background:"#fff",border:"1.5px solid #e5e7eb",borderRadius:10,boxShadow:"0 8px 24px rgba(0,0,0,0.12)",overflow:"hidden",minWidth:180,zIndex:100,marginBottom:4}}>
+                  {["ACCEPTED","PREPARING","READY","COMPLETED","CANCELLED"].map(s=>(
+                    <button key={s} onClick={()=>handleUpdateStatus(selected.orderId,s)}
+                      style={{display:"flex",alignItems:"center",gap:8,width:"100%",padding:"10px 14px",border:"none",background:selected.orderStatus===s?"#f5f3ff":"#fff",fontSize:13,fontWeight:selected.orderStatus===s?700:500,color:selected.orderStatus===s?"#635bff":"#374151",cursor:"pointer",textAlign:"left"}}>
+                      <span className={`mor-dot ${getStatusCfg(s).cls}`} style={{width:7,height:7,borderRadius:"50%",background: s==="COMPLETED"?"#16a34a":s==="CANCELLED"?"#dc2626":s==="PREPARING"?"#f59e0b":s==="READY"?"#f97316":"#2563eb",display:"inline-block",flexShrink:0}}/>
+                      {getStatusCfg(s).label}
+                      {selected.orderStatus===s && <CheckCircle2 size={13} color="#635bff" style={{marginLeft:"auto"}}/>}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
