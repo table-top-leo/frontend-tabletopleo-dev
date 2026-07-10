@@ -519,6 +519,7 @@ const CustomerPaymentPage = ({ total, business, diningInfo, onBack, onInitiatePa
               try {
                 const initData = await onInitiatePayment("pay_at_counter");
                 await onConfirmPayment({
+                  paymentId:        initData.paymentId,
                   payAtCounter:     true,
                   gatewayName:      "pay_at_counter",
                   orderId:          initData.orderId,

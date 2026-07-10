@@ -32,14 +32,12 @@ const CustomerWrapper = ({ businessId }) => {
   const [loading,       setLoading]       = useState(false);
   const [error,         setError]         = useState("");
 
-  // From backend after placeOrder
   const [sessionId,     setSessionId]     = useState(null);
   const [orderData,     setOrderData]     = useState(null);
   const [paymentData,   setPaymentData]   = useState(null);
   const [confirmedData, setConfirmedData] = useState(null);
   const [payAtCounterAvailable, setPayAtCounterAvailable] = useState(false);
 
-  // Cart calculations
   const cartCount = cart.reduce((s, c) => s + c.qty, 0);
   const subtotal  = cart.reduce((s, c) => s + c.price * c.qty, 0);
   const gst       = Math.round(subtotal * 0.05);
@@ -71,13 +69,11 @@ const CustomerWrapper = ({ businessId }) => {
         );
         setItems(allItems);
 
-        // Create session immediately on menu load
         const sessionRes = await customerOrderService.createSession(businessId, null);
         if (sessionRes.success) {
           setSessionId(sessionRes.data.sessionId);
         }
 
-        // Check if Pay at Counter is enabled for this business
         try {
           const pacRes = await fetch(`http://localhost:6163/api/payment/pay-at-counter/status?businessId=${businessId}`);
           const pacData = await pacRes.json();
@@ -108,19 +104,16 @@ const CustomerWrapper = ({ businessId }) => {
     setPopupItem(null);
   };
 
-  const updateQty     = (id, delta) => setCart(prev => prev.map(c => c.id === id ? { ...c, qty: Math.max(1, c.qty + delta) } : c));
+  const updateQty      = (id, delta) => setCart(prev => prev.map(c => c.id === id ? { ...c, qty: Math.max(1, c.qty + delta) } : c));
   const removeFromCart = (id)        => setCart(prev => prev.filter(c => c.id !== id));
 
-  // Called from CustomerDiningSelection when customer clicks Continue
   const handleDiningContinue = (info) => {
     setDiningInfo(info);
     setScreen(SCREENS.PAYMENT);
   };
 
-  // Called from CustomerPaymentPage — place order ONCE then initiate payment
   const handleInitiatePayment = async (gatewayName) => {
     try {
-      // PAY AT COUNTER — place order directly, skip payment gateway
       if (gatewayName === "pay_at_counter") {
         const orderPayload = {
           sessionId:    sessionId,
@@ -146,8 +139,15 @@ const CustomerWrapper = ({ businessId }) => {
         const orderRes = await customerOrderService.placeOrder(orderPayload);
         if (!orderRes.success) throw new Error(orderRes.message);
         setOrderData(orderRes.data);
+
+        const payRes = await customerOrderService.initiatePayment(
+          orderRes.data.orderId, "pay_at_counter", "INR"
+        );
+        if (!payRes.success) throw new Error(payRes.message);
+        setPaymentData(payRes.data);
+
         return {
-          paymentId:    "PAC-" + Date.now(),
+          paymentId:    payRes.data.paymentId,
           orderId:      orderRes.data.orderId,
           orderNumber:  orderRes.data.orderNumber,
           grandTotal:   orderRes.data.grandTotal,
@@ -202,27 +202,31 @@ const CustomerWrapper = ({ businessId }) => {
 
   const handleConfirmPayment = async (confirmPayload) => {
     try {
-      // Pay at Counter — directly confirm without gateway call.
-      // Uses confirmPayload (passed fresh from CustomerPaymentPage, which
-      // itself came straight from the placeOrder API response) instead of
-      // the `orderData` state variable — reading from state here was the
-      // cause of the blank Order Number / Order ID / Amount on the success
-      // screen, since this closure could still see the pre-update value.
       if (confirmPayload.gatewayName === "pay_at_counter") {
-        const fakeConfirmed = {
+        const res = await customerOrderService.confirmPayment({
+          paymentId:       confirmPayload.paymentId,
           orderId:         confirmPayload.orderId,
-          orderNumber:     confirmPayload.orderNumber,
-          orderStatus:     "ACCEPTED",
-          paymentStatus:   "PAY_AT_COUNTER",
-          grandTotal:      confirmPayload.grandTotal,
           gatewayName:     "pay_at_counter",
-          businessName:    business?.businessName,
-          orderType:       confirmPayload.orderType,
-          customerName:    confirmPayload.customerName,
-          estimatedMinutes:20,
-          createdAt:       confirmPayload.createdAt,
-        };
-        setConfirmedData(fakeConfirmed);
+          gatewayResponse: JSON.stringify({ method: "pay_at_counter", ts: new Date().toISOString() }),
+        });
+
+        if (res.success) {
+          setConfirmedData(res.data);
+        } else {
+          setConfirmedData({
+            orderId:         confirmPayload.orderId,
+            orderNumber:     confirmPayload.orderNumber,
+            orderStatus:     "ACCEPTED",
+            paymentStatus:   "PAY_AT_COUNTER",
+            grandTotal:      confirmPayload.grandTotal,
+            gatewayName:     "pay_at_counter",
+            businessName:    business?.businessName,
+            orderType:       confirmPayload.orderType,
+            customerName:    confirmPayload.customerName,
+            estimatedMinutes:20,
+            createdAt:       confirmPayload.createdAt,
+          });
+        }
         setScreen(SCREENS.SUCCESS);
         return;
       }
@@ -243,7 +247,7 @@ const CustomerWrapper = ({ businessId }) => {
     setOrderData(null);
     setPaymentData(null);
     setConfirmedData(null);
-    loadMenu(); // refresh session
+    loadMenu();
   };
 
   if (loading) return (
@@ -317,9 +321,12 @@ const CustomerWrapper = ({ businessId }) => {
           />
         )}
 
+        {/* ── pass business + cart for invoice download ── */}
         {screen === SCREENS.SUCCESS && (
           <CustomerOrderSuccess
             confirmedData={confirmedData}
+            business={business}
+            cart={cart}
             onTrack={() => setScreen(SCREENS.TRACKING)}
             onHome={handleStartOver}
           />
