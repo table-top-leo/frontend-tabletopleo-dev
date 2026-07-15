@@ -27,3 +27,22 @@ export const deleteProductImage = async (filename) => {
   const response = await api.delete(`/api/images/product/${filename}`);
   return response.data;
 };
+
+// Suggestion images reuse the same category/product upload endpoints
+export const uploadSuggestionCategoryImage = async (file) => {
+  const formData = new FormData();
+  formData.append("file", file);
+  const response = await api.post("/api/images/category", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return response.data;
+};
+
+export const uploadSuggestionItemImage = async (file) => {
+  const formData = new FormData();
+  formData.append("file", file);
+  const response = await api.post("/api/images/product", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return response.data;
+};

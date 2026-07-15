@@ -1,4 +1,7 @@
 "use client";
+
+import { getCurrencySymbol, formatCurrency } from "../utils/currencyHelper";
+
 import { useRef, useState } from "react";
 import { CheckCircle2, Download, FileImage, FileText, X } from "lucide-react";
 
@@ -7,6 +10,9 @@ const STATUS_LABEL = { PAID:"Paid", PAY_AT_COUNTER:"Pay at Counter (Pending)", P
 const STATUS_COLOR = { PAID:"#16a34a", PAY_AT_COUNTER:"#b45309", PENDING:"#f59e0b" };
 
 const CustomerOrderSuccess = ({ confirmedData, business, cart = [], onTrack, onHome }) => {
+  const _user = (typeof window !== "undefined") ? (() => { try { return JSON.parse(localStorage.getItem("ttl_user") || "{}"); } catch { return {}; } })() : {};
+  const _currCode = _user.currencyCode || "INR";
+
   const invoiceRef         = useRef(null);
   const [menu, setMenu]    = useState(false);
   const [loading, setLoad] = useState(false);
@@ -101,7 +107,7 @@ const CustomerOrderSuccess = ({ confirmedData, business, cart = [], onTrack, onH
           {[
             ["Order Number", confirmedData?.orderNumber || "—"],
             ["Order ID",     confirmedData?.orderId     || "—"],
-            ["Amount Paid",  `₹${confirmedData?.grandTotal || "—"}`],
+            ["Amount Paid",  `{getCurrencySymbol(_currCode)}${confirmedData?.grandTotal || "—"}`],
             ["Payment",      METHOD_LABEL[confirmedData?.gatewayName] || confirmedData?.gatewayName || "—"],
             ["Status",       STATUS_LABEL[confirmedData?.paymentStatus] || confirmedData?.paymentStatus || "PAID"],
             ["Date & Time",  dateStr],
@@ -197,8 +203,8 @@ const CustomerOrderSuccess = ({ confirmedData, business, cart = [], onTrack, onH
                       {item.catName && <div style={{ fontSize:10, color:"#888", marginTop:1 }}>{item.catName}</div>}
                     </td>
                     <td style={{ padding:"7px 0", textAlign:"center", fontSize:12, color:"#333" }}>{item.qty||1}</td>
-                    <td style={{ padding:"7px 0", textAlign:"right", fontSize:12, color:"#333" }}>₹{Number(item.price||0).toFixed(2)}</td>
-                    <td style={{ padding:"7px 0", textAlign:"right", fontSize:12, fontWeight:600, color:"#111" }}>₹{(Number(item.price||0)*Number(item.qty||1)).toFixed(2)}</td>
+                    <td style={{ padding:"7px 0", textAlign:"right", fontSize:12, color:"#333" }}>{formatCurrency(Number(item.price||0).toFixed(2), _currCode)}</td>
+                    <td style={{ padding:"7px 0", textAlign:"right", fontSize:12, fontWeight:600, color:"#111" }}>{formatCurrency((Number(item.price||0)*Number(item.qty||1)).toFixed(2), _currCode)}</td>
                   </tr>
                 )) : (
                   <tr><td colSpan={5} style={{ padding:"16px 0", textAlign:"center", color:"#aaa", fontSize:11 }}>No items</td></tr>
@@ -212,15 +218,15 @@ const CustomerOrderSuccess = ({ confirmedData, business, cart = [], onTrack, onH
             <div style={{ marginLeft:"auto", width:200 }}>
               <div style={{ display:"flex", justifyContent:"space-between", padding:"5px 0", borderBottom:"1px solid #eee" }}>
                 <span style={{ fontSize:11, color:"#555" }}>Subtotal</span>
-                <span style={{ fontSize:11, color:"#333" }}>₹{subtotal.toFixed(2)}</span>
+                <span style={{ fontSize:11, color:"#333" }}>{formatCurrency(subtotal.toFixed(2), _currCode)}</span>
               </div>
               <div style={{ display:"flex", justifyContent:"space-between", padding:"5px 0", borderBottom:"1px solid #eee" }}>
                 <span style={{ fontSize:11, color:"#555" }}>GST (5%)</span>
-                <span style={{ fontSize:11, color:"#333" }}>₹{gst.toFixed(2)}</span>
+                <span style={{ fontSize:11, color:"#333" }}>{formatCurrency(gst.toFixed(2), _currCode)}</span>
               </div>
               <div style={{ display:"flex", justifyContent:"space-between", padding:"8px 0", borderTop:"2px solid #111", marginTop:2 }}>
                 <span style={{ fontSize:13, fontWeight:800, color:"#111" }}>TOTAL</span>
-                <span style={{ fontSize:14, fontWeight:900, color:"#111" }}>₹{Number(confirmedData?.grandTotal||0).toFixed(2)}</span>
+                <span style={{ fontSize:14, fontWeight:900, color:"#111" }}>{formatCurrency(Number(confirmedData?.grandTotal||0).toFixed(2), _currCode)}</span>
               </div>
             </div>
           </div>

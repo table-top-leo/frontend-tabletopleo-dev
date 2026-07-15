@@ -5,6 +5,7 @@ import "react-phone-number-input/style.css";
 import "../designadminaccountsetup/businessinformation.css";
 import { setupBusiness } from "../services/businessService";
 import axios from "axios";
+import { COUNTRY_CURRENCY_MAP, CURRENCIES } from "../utils/currencyHelper";
 
 const BASE_URL = "http://localhost:6163";
 
@@ -79,6 +80,7 @@ export default function BusinessInformation({ onNext, onBack, initialData, busin
     city: initialData?.city || "",
     state: initialData?.state || "",
     country: initialData?.country || "",
+    currencyCode: initialData?.currencyCode || "INR",
     postalCode: initialData?.postalCode || "",
     openingTime: initialData?.openingTime || "09:00 AM",
     closingTime: initialData?.closingTime || "10:00 PM",
@@ -187,6 +189,7 @@ export default function BusinessInformation({ onNext, onBack, initialData, busin
         city: form.city,
         state: form.state,
         country: form.country,
+        currencyCode: form.currencyCode || "INR",
         postalCode: form.postalCode,
         openingTime: to24Hour(form.openingTime),
         closingTime: to24Hour(form.closingTime),
@@ -404,7 +407,8 @@ export default function BusinessInformation({ onNext, onBack, initialData, busin
           {errors.state && <div className="field-error">⚠ {errors.state}</div>}
         </div>
 
-        <div className="form-group">
+        <div style={{ display:"flex", gap:12 }}>
+        <div className="form-group" style={{ flex:1 }}>
           <label className="form-label">Country <span className="req-star">*</span></label>
           <div className={`input-wrap ${errors.country ? "error" : ""}`}>
             <span className="input-icon">
@@ -413,13 +417,44 @@ export default function BusinessInformation({ onNext, onBack, initialData, busin
                 <path d="M1 8h14" stroke="#a1a1aa" strokeWidth="1.4" strokeLinecap="round" />
               </svg>
             </span>
-            <select className="select-field" value={form.country}
-              onChange={(e) => { setForm((f) => ({ ...f, country: e.target.value })); setErrors((er) => ({ ...er, country: "" })); }}>
+            <select
+              className="select-field"
+              value={form.country}
+              style={{ appearance:"none", WebkitAppearance:"none", paddingRight:28, cursor:"pointer", borderRadius:8, transition:"border-color 0.2s,box-shadow 0.2s" }}
+              onChange={(e) => {
+                const c = e.target.value;
+                const auto = COUNTRY_CURRENCY_MAP[c] || form.currencyCode || "INR";
+                setForm((f) => ({ ...f, country: c, currencyCode: auto }));
+                setErrors((er) => ({ ...er, country: "" }));
+              }}
+            >
               <option value="">Select country</option>
               {COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
+            <span style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)", pointerEvents:"none", color:"#a1a1aa", fontSize:12 }}>▾</span>
           </div>
           {errors.country && <div className="field-error">⚠ {errors.country}</div>}
+        </div>
+
+        <div className="form-group" style={{ flex:1 }}>
+          <label className="form-label">Currency <span className="req-star">*</span></label>
+          <div className="input-wrap" style={{ position:"relative" }}>
+            <span className="input-icon" style={{ fontSize:12, fontWeight:700, color:"#6b7280", fontFamily:"monospace" }}>
+              {form.currencyCode || "INR"}
+            </span>
+            <select
+              className="select-field"
+              value={form.currencyCode || "INR"}
+              style={{ appearance:"none", WebkitAppearance:"none", paddingRight:28, cursor:"pointer", borderRadius:8, transition:"border-color 0.2s,box-shadow 0.2s" }}
+              onChange={(e) => setForm((f) => ({ ...f, currencyCode: e.target.value }))}
+            >
+              {CURRENCIES.map((cur) => (
+                <option key={cur.code} value={cur.code}>{cur.label}</option>
+              ))}
+            </select>
+            <span style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)", pointerEvents:"none", color:"#a1a1aa", fontSize:12 }}>▾</span>
+          </div>
+        </div>
         </div>
 
         <div className="form-group">

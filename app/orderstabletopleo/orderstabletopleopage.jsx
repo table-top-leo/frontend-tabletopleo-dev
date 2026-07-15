@@ -10,6 +10,8 @@ import {
 } from "lucide-react";
 import "../orderstabletopleo/designorderspage.css";
 import adminOrderService from "../services/adminOrderService";
+import { useCurrency } from "../context/CurrencyContext";
+import { formatCurrency } from "../utils/currencyHelper";
 
 const AVATAR_COLORS = [
   "#635bff","#0ea5e9","#16a34a","#f59e0b","#ef4444",
@@ -104,7 +106,7 @@ function CalendarPicker({ value, onChange, onClose }) {
   );
 }
 
-const HoverTooltip = ({ order, visible, dark }) => {
+const HoverTooltip = ({ order, visible, dark, currencyCode }) => {
   if (!visible || !order) return null;
   const cfg  = STATUS_CFG[order.orderStatus] || STATUS_CFG.PLACED;
   const PayI = PAYMENT_ICON[(order.paymentMethod||"").toLowerCase()] || PAYMENT_ICON.upi;
@@ -124,7 +126,7 @@ const HoverTooltip = ({ order, visible, dark }) => {
         {(order.items||[]).length>3&&<div style={{ fontSize:10, color:"#9ca3af", marginTop:2 }}>+{(order.items||[]).length-3} more</div>}
       </div>
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-        <span style={{ fontSize:13, fontWeight:800, color:dark?"#e2e8f0":"#1e293b" }}>₹{Number(order.grandTotal||0).toLocaleString("en-IN")}</span>
+        <span style={{ fontSize:13, fontWeight:800, color:dark?"#e2e8f0":"#1e293b" }}>{formatCurrency(Number(order.grandTotal||0), currencyCode)}</span>
         <span style={{ fontSize:10, color:PayI.color, fontWeight:600, display:"flex", alignItems:"center", gap:3 }}><PayI.icon size={10}/> {PayI.label}</span>
       </div>
       <style>{`@keyframes morTooltipIn{from{opacity:0;transform:scale(0.96)}to{opacity:1;transform:scale(1)}}`}</style>
@@ -133,6 +135,7 @@ const HoverTooltip = ({ order, visible, dark }) => {
 };
 
 const MyOrderTableTopleoPage = ({ highlightOrder = null, isDark: darkProp = false }) => {
+  const { currencyCode } = useCurrency();
   const [orders,       setOrders]       = useState([]);
   const [loading,      setLoading]      = useState(true);
   const [spinning,     setSpinning]     = useState(false);
@@ -329,7 +332,7 @@ const MyOrderTableTopleoPage = ({ highlightOrder = null, isDark: darkProp = fals
 
       {tooltipVisible&&hoveredOrder&&(
         <div style={{position:"fixed",left:tooltipPos.x,top:tooltipPos.y,zIndex:9999,pointerEvents:"none"}}>
-          <HoverTooltip order={hoveredOrder} visible={tooltipVisible} dark={isDark}/>
+          <HoverTooltip order={hoveredOrder} visible={tooltipVisible} dark={isDark} currencyCode={currencyCode}/>
         </div>
       )}
 
@@ -513,7 +516,7 @@ const MyOrderTableTopleoPage = ({ highlightOrder = null, isDark: darkProp = fals
                       <div className="mor-items-sub">{itemNms.join(", ")}{itemCnt>2?"...":""}</div>
                     </td>
                     <td className="mor-td">
-                      <div className="mor-amount">₹{Number(order.grandTotal||0).toLocaleString("en-IN")}</div>
+                      <div className="mor-amount">{formatCurrency(Number(order.grandTotal||0), currencyCode)}</div>
                       {order.payAtCounter?<div style={{fontSize:11,color:"#b45309",fontWeight:600}}>Pay at Counter</div>:order.paymentStatus==="PAID"?<div className="mor-paid">Paid</div>:<div style={{fontSize:11,color:"#f59e0b",fontWeight:600}}>{order.paymentStatus}</div>}
                     </td>
                     <td className="mor-td">
@@ -655,15 +658,15 @@ const MyOrderTableTopleoPage = ({ highlightOrder = null, isDark: darkProp = fals
                         {item.specialRequest&&<span style={{fontSize:11,color:"#9ca3af",fontStyle:"italic",display:"block"}}>↳ {item.specialRequest}</span>}
                       </span>
                     </div>
-                    <span className="mor-item-price">₹{Number(item.lineTotal||0).toFixed(2)}</span>
+                    <span className="mor-item-price">{formatCurrency(Number(item.lineTotal||0), currencyCode)}</span>
                   </div>
                 ))}
               </div>
               <div className="mor-totals">
-                <div className="mor-total-row"><span>Subtotal</span><span className="mor-total-val">₹{Number(selected.subtotal||0).toFixed(2)}</span></div>
-                <div className="mor-total-row"><span>Tax</span><span className="mor-total-val">₹{Number(selected.taxAmount||0).toFixed(2)}</span></div>
-                <div className="mor-total-row"><span>Discount</span><span className="mor-total-val" style={{color:"#dc2626"}}>- ₹{Number(selected.discountAmount||0).toFixed(2)}</span></div>
-                <div className="mor-total-row main"><span>Total Amount</span><span>₹{Number(selected.grandTotal||0).toFixed(2)}</span></div>
+                <div className="mor-total-row"><span>Subtotal</span><span className="mor-total-val">{formatCurrency(Number(selected.subtotal||0), currencyCode)}</span></div>
+                <div className="mor-total-row"><span>Tax</span><span className="mor-total-val">{formatCurrency(Number(selected.taxAmount||0), currencyCode)}</span></div>
+                <div className="mor-total-row"><span>Discount</span><span className="mor-total-val" style={{color:"#dc2626"}}>- {formatCurrency(Number(selected.discountAmount||0), currencyCode)}</span></div>
+                <div className="mor-total-row main"><span>Total Amount</span><span>{formatCurrency(Number(selected.grandTotal||0), currencyCode)}</span></div>
               </div>
               <div className="mor-pay-row">
                 {selected.payAtCounter

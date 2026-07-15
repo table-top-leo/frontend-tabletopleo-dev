@@ -1,7 +1,13 @@
 "use client";
+
+import { getCurrencySymbol, formatCurrency } from "../utils/currencyHelper";
+
 import { ArrowLeft, Trash2, Plus, Minus, ShoppingBag } from "lucide-react";
 
 const CustomerCartPage = ({ cart, subtotal, gst, total, onUpdateQty, onRemove, onBack, onProceed }) => {
+  const _user = (typeof window !== "undefined") ? (() => { try { return JSON.parse(localStorage.getItem("ttl_user") || "{}"); } catch { return {}; } })() : {};
+  const _currCode = _user.currencyCode || "INR";
+
   if (cart.length === 0) {
     return (
       <div className="cw-screen">
@@ -35,7 +41,7 @@ const CustomerCartPage = ({ cart, subtotal, gst, total, onUpdateQty, onRemove, o
               <img className="cart-item-img" src={item.img} alt={item.name} onError={e => { e.target.src = "https://images.unsplash.com/photo-1572442388796-11668a67e53d?w=200"; }} />
               <div className="cart-item-body">
                 <div className="cart-item-name">{item.name}</div>
-                <div className="cart-item-price">₹{item.price} each</div>
+                <div className="cart-item-price">{formatCurrency(item.price, _currCode)} each</div>
                 <div className="qty-row" style={{ marginTop: 8 }}>
                   <button className="qty-btn" onClick={() => onUpdateQty(item.id, -1)}>
                     <Minus size={13} />
@@ -47,7 +53,7 @@ const CustomerCartPage = ({ cart, subtotal, gst, total, onUpdateQty, onRemove, o
                 </div>
               </div>
               <div className="cart-item-right">
-                <div className="cart-item-total">₹{item.price * item.qty}</div>
+                <div className="cart-item-total">{formatCurrency(item.price * item.qty, _currCode)}</div>
                 <button className="cart-delete-btn" onClick={() => onRemove(item.id)}><Trash2 size={15} /></button>
               </div>
             </div>
@@ -61,15 +67,15 @@ const CustomerCartPage = ({ cart, subtotal, gst, total, onUpdateQty, onRemove, o
           <div className="totals-box">
             <div className="totals-row">
               <span className="totals-label">Subtotal</span>
-              <span className="totals-value">₹{subtotal}</span>
+              <span className="totals-value">{formatCurrency(subtotal, _currCode)}</span>
             </div>
             <div className="totals-row">
               <span className="totals-label">GST (5%)</span>
-              <span className="totals-value">₹{gst}</span>
+              <span className="totals-value">{formatCurrency(gst, _currCode)}</span>
             </div>
             <div className="totals-row total">
               <span>Total</span>
-              <span style={{ color: "var(--brand)" }}>₹{subtotal + gst}</span>
+              <span style={{ color: "var(--brand)" }}>{formatCurrency(subtotal + gst, _currCode)}</span>
             </div>
           </div>
         </div>
@@ -78,7 +84,7 @@ const CustomerCartPage = ({ cart, subtotal, gst, total, onUpdateQty, onRemove, o
 
       <div className="cx-sticky-bottom">
         <button className="cta-btn" onClick={onProceed}>
-          Proceed to Payment — ₹{subtotal + gst}
+          Proceed to Payment — {formatCurrency(subtotal + gst, _currCode)}
         </button>
       </div>
     </div>

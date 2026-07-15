@@ -21,6 +21,8 @@ import HelpDeskPage             from '../ApplicationMainLayout/helpdesk';
 import PaymentSetup             from '../tabletopleopaymentsconfiguration/upisetups';
 import MyOrderTableTopleoPage   from '../orderstabletopleo/orderstabletopleopage';
 import useWebSocket             from '../hooks/useWebSocket';
+import { useCurrency }          from '../context/CurrencyContext';
+import { formatCurrency }       from '../utils/currencyHelper';
 
 const PAY_LABEL = { upi:'UPI', razorpay:'Razorpay', stripe:'Stripe', paypal:'PayPal', pay_at_counter:'At Counter', cash:'Cash' };
 const PAY_COLOR = { upi:'#7c3aed', razorpay:'#3395ff', stripe:'#635bff', paypal:'#003087', pay_at_counter:'#b45309', cash:'#16a34a' };
@@ -49,6 +51,7 @@ const PRODUCT_ITEMS = [
 
 const AdminDashboardNew = () => {
   const router = useRouter();
+  const { currencyCode } = useCurrency();
 
   const [collapsed,      setCollapsed]      = useState(false);
   const [dark,           setDark]           = useState(false);
@@ -340,7 +343,7 @@ const AdminDashboardNew = () => {
                               </div>
                             </div>
                             <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:4,flexShrink:0}}>
-                              <span style={{fontSize:14,fontWeight:800,color:'#635bff'}}>₹{amount}</span>
+                              <span style={{fontSize:14,fontWeight:800,color:'#635bff'}}>{formatCurrency(amount, currencyCode)}</span>
                               <span style={{fontSize:10,fontWeight:600,color:isPac?'#b45309':isPaid?'#16a34a':'#f59e0b'}}>{isPac?'🏪 At Counter':isPaid?'✓ Paid':'Pending'}</span>
                             </div>
                           </div>

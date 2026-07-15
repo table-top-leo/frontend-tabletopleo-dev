@@ -48,6 +48,8 @@ export default function AccountSetup({ onNext, initialData }) {
     if (!form.confirmPassword) e.confirmPassword = "Please confirm your password.";
     else if (form.password !== form.confirmPassword)
       e.confirmPassword = "Passwords do not match.";
+    if (!form.phone) e.phone = "Mobile number is required.";
+    else if (!isValidPhoneNumber(form.phone)) e.phone = "Enter a valid mobile number.";
     return e;
   };
 
@@ -60,9 +62,13 @@ export default function AccountSetup({ onNext, initialData }) {
       setErrors((e) => ({ ...e, fullName: "Full name is required before sending OTP." }));
       return;
     }
+    if (!form.phone || !isValidPhoneNumber(form.phone)) {
+      setErrors((e) => ({ ...e, phone: "Enter a valid mobile number before sending OTP." }));
+      return;
+    }
     setVerifyLoading(true);
     try {
-      const mobileNumber = form.phone || "0000000000";
+      const mobileNumber = form.phone;
       await registerUser(form.fullName, form.email, mobileNumber);
       setShowOtp(true);
       setOtp(["", "", "", "", "", ""]);
@@ -123,9 +129,13 @@ export default function AccountSetup({ onNext, initialData }) {
   const handleResend = async () => {
     setOtp(["", "", "", "", "", ""]);
     setOtpError("");
+    if (!form.phone || !isValidPhoneNumber(form.phone)) {
+      setErrors((e) => ({ ...e, phone: "Enter a valid mobile number before sending OTP." }));
+      return;
+    }
     setVerifyLoading(true);
     try {
-      const mobileNumber = form.phone || "0000000000";
+      const mobileNumber = form.phone;
       await registerUser(form.fullName, form.email, mobileNumber);
       setTimeout(() => otpRefs.current[0]?.focus(), 50);
     } catch {

@@ -1,4 +1,5 @@
 "use client";
+import { useLanguage } from "../context/LanguageContext";
 import { useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -13,15 +14,29 @@ import "../designdashboardcomponent/settings.css";
 import { changePassword, deleteAccount } from "../services/authService";
 
 const NAV_SECTIONS = [
-  { id:"profile",       label:"Profile",            icon:User },
-  { id:"account",       label:"Account & Security", icon:Shield },
-  { id:"notifications", label:"Notifications",      icon:Bell },
-  { id:"appearance",    label:"Appearance",         icon:Palette },
-  { id:"qr",            label:"QR Code",            icon:QrCode },
-  { id:"plan",          label:"Upgrade Plan",       icon:Crown },
-  { id:"support",       label:"Support & Help",     icon:HeadphonesIcon },
-  { id:"danger",        label:"Danger Zone",        icon:AlertCircle },
+  { id:"profile",       icon:User },
+  { id:"account",       icon:Shield },
+  { id:"notifications", icon:Bell },
+  { id:"appearance",    icon:Palette },
+  { id:"qr",            icon:QrCode },
+  { id:"language",      icon:Globe },
+  { id:"plan",          icon:Crown },
+  { id:"support",       icon:HeadphonesIcon },
+  { id:"danger",        icon:AlertCircle },
 ];
+
+// Nav labels resolved via t() at render time
+const NAV_LABEL_KEYS = {
+  profile:       "profile",
+  account:       "account",
+  notifications: "notifications",
+  appearance:    "appearance",
+  qr:            "qr",
+  language:      "language",
+  plan:          "plan",
+  support:       "support",
+  danger:        "danger",
+};
 
 const PLANS = [
   { id:"starter", name:"Starter", price:"Free",     colorClass:"plan-card-starter", features:["1 branch","Up to 50 orders/day","Basic analytics","Email support"], current:true },
@@ -110,7 +125,7 @@ function DeleteModal({ fullName, onConfirm, onCancel, loading }) {
             <Trash2 size={17} color="#dc2626" />
           </div>
           <div>
-            <div style={{ fontSize:15, fontWeight:800, color:"#18181b" }}>Delete Account</div>
+            <div style={{ fontSize:15, fontWeight:800, color:"#18181b" }}>{t("delete_account")}</div>
             <div style={{ fontSize:12, color:"#71717a", marginTop:1 }}>This action cannot be undone</div>
           </div>
           <button onClick={onCancel} style={{ marginLeft:"auto", background:"none", border:"none", cursor:"pointer", color:"#a1a1aa", padding:4, borderRadius:6, display:"flex" }} type="button">
@@ -134,7 +149,7 @@ function DeleteModal({ fullName, onConfirm, onCancel, loading }) {
           </label>
           <input
             type="text"
-            placeholder="delete my account"
+            placeholder={t("type_to_confirm")}
             value={typed}
             onChange={e => setTyped(e.target.value)}
             style={{
@@ -179,8 +194,147 @@ const SendIcon = ({ size }) => (
   </svg>
 );
 
+
+// ── ALL WORLD LANGUAGES ─────────────────────────────────────
+const ALL_LANGUAGES = [
+  { code:"en",    name:"English",                     flag:"🇺🇸", region:"Global" },
+  { code:"hi",    name:"Hindi (हिन्दी)",               flag:"🇮🇳", region:"South Asia" },
+  { code:"bn",    name:"Bengali (বাংলা)",              flag:"🇧🇩", region:"South Asia" },
+  { code:"te",    name:"Telugu (తెలుగు)",               flag:"🇮🇳", region:"South Asia" },
+  { code:"mr",    name:"Marathi (मराठी)",              flag:"🇮🇳", region:"South Asia" },
+  { code:"ta",    name:"Tamil (தமிழ்)",               flag:"🇮🇳", region:"South Asia" },
+  { code:"gu",    name:"Gujarati (ગુજરાતી)",           flag:"🇮🇳", region:"South Asia" },
+  { code:"kn",    name:"Kannada (ಕನ್ನಡ)",              flag:"🇮🇳", region:"South Asia" },
+  { code:"ml",    name:"Malayalam (മലയാളം)",           flag:"🇮🇳", region:"South Asia" },
+  { code:"pa",    name:"Punjabi (ਪੰਜਾਬੀ)",             flag:"🇮🇳", region:"South Asia" },
+  { code:"ur",    name:"Urdu (اردو)",                 flag:"🇵🇰", region:"South Asia" },
+  { code:"ar",    name:"Arabic (العربية)",             flag:"🇸🇦", region:"Middle East" },
+  { code:"fa",    name:"Persian (فارسی)",              flag:"🇮🇷", region:"Middle East" },
+  { code:"he",    name:"Hebrew (עברית)",               flag:"🇮🇱", region:"Middle East" },
+  { code:"tr",    name:"Turkish (Türkçe)",             flag:"🇹🇷", region:"Europe / Asia" },
+  { code:"da",    name:"Danish (Dansk)",               flag:"🇩🇰", region:"Europe" },
+  { code:"de",    name:"German (Deutsch)",             flag:"🇩🇪", region:"Europe" },
+  { code:"fr",    name:"French (Français)",            flag:"🇫🇷", region:"Europe" },
+  { code:"es",    name:"Spanish (Español)",            flag:"🇪🇸", region:"Europe" },
+  { code:"pt",    name:"Portuguese (Português)",       flag:"🇵🇹", region:"Europe" },
+  { code:"it",    name:"Italian (Italiano)",           flag:"🇮🇹", region:"Europe" },
+  { code:"nl",    name:"Dutch (Nederlands)",           flag:"🇳🇱", region:"Europe" },
+  { code:"pl",    name:"Polish (Polski)",              flag:"🇵🇱", region:"Europe" },
+  { code:"sv",    name:"Swedish (Svenska)",            flag:"🇸🇪", region:"Europe" },
+  { code:"no",    name:"Norwegian (Norsk)",            flag:"🇳🇴", region:"Europe" },
+  { code:"fi",    name:"Finnish (Suomi)",              flag:"🇫🇮", region:"Europe" },
+  { code:"ru",    name:"Russian (Русский)",            flag:"🇷🇺", region:"Europe" },
+  { code:"uk",    name:"Ukrainian (Українська)",       flag:"🇺🇦", region:"Europe" },
+  { code:"el",    name:"Greek (Ελληνικά)",             flag:"🇬🇷", region:"Europe" },
+  { code:"ro",    name:"Romanian (Română)",            flag:"🇷🇴", region:"Europe" },
+  { code:"cs",    name:"Czech (Čeština)",              flag:"🇨🇿", region:"Europe" },
+  { code:"hu",    name:"Hungarian (Magyar)",           flag:"🇭🇺", region:"Europe" },
+  { code:"zh",    name:"Chinese Simplified (中文)",    flag:"🇨🇳", region:"East Asia" },
+  { code:"zh-TW", name:"Chinese Traditional (繁體中文)",flag:"🇹🇼", region:"East Asia" },
+  { code:"ja",    name:"Japanese (日本語)",             flag:"🇯🇵", region:"East Asia" },
+  { code:"ko",    name:"Korean (한국어)",               flag:"🇰🇷", region:"East Asia" },
+  { code:"th",    name:"Thai (ภาษาไทย)",              flag:"🇹🇭", region:"Southeast Asia" },
+  { code:"vi",    name:"Vietnamese (Tiếng Việt)",      flag:"🇻🇳", region:"Southeast Asia" },
+  { code:"id",    name:"Indonesian (Bahasa Indonesia)",flag:"🇮🇩", region:"Southeast Asia" },
+  { code:"ms",    name:"Malay (Bahasa Melayu)",        flag:"🇲🇾", region:"Southeast Asia" },
+  { code:"tl",    name:"Filipino (Tagalog)",           flag:"🇵🇭", region:"Southeast Asia" },
+  { code:"sw",    name:"Swahili (Kiswahili)",          flag:"🇰🇪", region:"Africa" },
+  { code:"am",    name:"Amharic (አማርኛ)",              flag:"🇪🇹", region:"Africa" },
+  { code:"yo",    name:"Yoruba (Yorùbá)",              flag:"🇳🇬", region:"Africa" },
+  { code:"ha",    name:"Hausa",                       flag:"🇳🇬", region:"Africa" },
+  { code:"pt-BR", name:"Brazilian Portuguese",         flag:"🇧🇷", region:"Americas" },
+  { code:"es-MX", name:"Mexican Spanish",              flag:"🇲🇽", region:"Americas" },
+];
+
+const REGIONS_LIST = ["All", ...new Set(ALL_LANGUAGES.map(l=>l.region))];
+
+const LanguageSection = ({ languageCode, languageName, setLanguage, t }) => {
+  const [search,   setSearch]   = useState("");
+  const [region,   setRegion]   = useState("All");
+  const [saving,   setSaving]   = useState(false);
+  const [saved,    setSaved]    = useState(false);
+  const [selected, setSelected] = useState(languageCode || "en");
+
+  const filtered = ALL_LANGUAGES.filter(l => {
+    const mS = l.name.toLowerCase().includes(search.toLowerCase()) || l.code.toLowerCase().includes(search.toLowerCase());
+    const mR = region==="All" || l.region===region;
+    return mS && mR;
+  });
+
+  const handleSave = async () => {
+    const lang = ALL_LANGUAGES.find(l=>l.code===selected);
+    if (!lang || selected===languageCode) return;
+    setSaving(true);
+    try { await setLanguage(lang.code, lang.name); setSaved(true); setTimeout(()=>setSaved(false),2500); }
+    finally { setSaving(false); }
+  };
+
+  const current = ALL_LANGUAGES.find(l=>l.code===languageCode) || ALL_LANGUAGES[0];
+
+  return (
+    <div>
+      <div style={{ marginBottom:24 }}>
+        <h2 style={{ fontSize:18, fontWeight:800, color:"#111", margin:"0 0 4px", letterSpacing:"-0.4px" }}>Language</h2>
+        <p style={{ fontSize:13, color:"#6b7280", margin:0 }}>Choose the language for your admin dashboard</p>
+      </div>
+      <div style={{ background:"#f0fdf4", border:"1.5px solid #bbf7d0", borderRadius:12, padding:"12px 16px", marginBottom:20, display:"flex", alignItems:"center", gap:12 }}>
+        <span style={{ fontSize:28 }}>{current.flag}</span>
+        <div>
+          <div style={{ fontSize:10, fontWeight:700, color:"#16a34a", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:2 }}>Current Language</div>
+          <div style={{ fontSize:14, fontWeight:700, color:"#111" }}>{current.name}</div>
+        </div>
+        {languageCode!=="en" && (
+          <button onClick={async ()=>{ setSelected("en"); await setLanguage("en","English"); }}
+            style={{ marginLeft:"auto", fontSize:12, fontWeight:600, color:"#6b7280", background:"none", border:"1px solid #e4e4e7", borderRadius:8, padding:"5px 10px", cursor:"pointer" }}>
+            {t("reset_english")}
+          </button>
+        )}
+      </div>
+      <div style={{ display:"flex", gap:10, marginBottom:14 }}>
+        <div style={{ flex:1, position:"relative" }}>
+          <span style={{ position:"absolute", left:10, top:"50%", transform:"translateY(-50%)", fontSize:14 }}>🔍</span>
+          <input type="text" placeholder={t("search_language")}
+            value={search} onChange={e=>setSearch(e.target.value)}
+            style={{ width:"100%", padding:"9px 12px 9px 32px", borderRadius:9, border:"1.5px solid #e4e4e7", fontSize:13.5, outline:"none", boxSizing:"border-box" }}/>
+        </div>
+        <select value={region} onChange={e=>setRegion(e.target.value)}
+          style={{ padding:"9px 12px", borderRadius:9, border:"1.5px solid #e4e4e7", fontSize:13, color:"#374151", background:"#fff", cursor:"pointer" }}>
+          {REGIONS_LIST.map(r=><option key={r} value={r}>{r}</option>)}
+        </select>
+      </div>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))", gap:8, maxHeight:420, overflowY:"auto", paddingRight:4, marginBottom:20 }}>
+        {filtered.map(lang=>{
+          const isSel=selected===lang.code;
+          const isCur=languageCode===lang.code;
+          return (
+            <button key={lang.code} onClick={()=>setSelected(lang.code)}
+              style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 12px", border:`1.5px solid ${isSel?"#635bff":isCur?"#16a34a":"#e4e4e7"}`, borderRadius:10, background:isSel?"#ede9fe":isCur?"#f0fdf4":"#fff", cursor:"pointer", textAlign:"left", transition:"all 0.15s" }}>
+              <span style={{ fontSize:22, flexShrink:0 }}>{lang.flag}</span>
+              <div style={{ minWidth:0 }}>
+                <div style={{ fontSize:12.5, fontWeight:700, color:isSel?"#635bff":isCur?"#16a34a":"#111", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{lang.name}</div>
+                <div style={{ fontSize:10.5, color:"#9ca3af" }}>{lang.code.toUpperCase()} · {lang.region}</div>
+              </div>
+              {(isSel||isCur) && (
+                <div style={{ marginLeft:"auto", flexShrink:0, width:18, height:18, borderRadius:"50%", background:isSel?"#635bff":"#16a34a", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                  <span style={{ color:"#fff", fontSize:10, fontWeight:900 }}>✓</span>
+                </div>
+              )}
+            </button>
+          );
+        })}
+        {filtered.length===0 && <div style={{ gridColumn:"1/-1", textAlign:"center", padding:"32px 0", color:"#9ca3af", fontSize:13 }}>No languages found</div>}
+      </div>
+      <button onClick={handleSave} disabled={saving||selected===languageCode}
+        style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:7, padding:"11px 28px", background:saving||selected===languageCode?"#d1d5db":"#111", color:"#fff", border:"none", borderRadius:10, fontSize:14, fontWeight:700, cursor:saving||selected===languageCode?"not-allowed":"pointer" }}>
+        {saving?t("updating"):saved?t("language_saved"):t("save_language")}
+      </button>
+    </div>
+  );
+};
+
 export default function SettingsPage() {
   const router = useRouter();
+  const { languageCode, languageName, setLanguage, t } = useLanguage();
   const [active,        setActive]      = useState("profile");
   const [darkMode,      setDarkMode]    = useState(false);
   const [accent,        setAccent]      = useState("violet");
@@ -208,6 +362,7 @@ export default function SettingsPage() {
   const businessId = user?.businessId || "";
   const initials   = fullName.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2);
   const activeNav  = NAV_SECTIONS.find(n => n.id === active);
+  const activeNavLabel = t(NAV_LABEL_KEYS[active] || active);
 
   const QR_DATA = businessId
     ? `https://tabletop.in/order/${businessId}`
@@ -290,7 +445,7 @@ export default function SettingsPage() {
       case "profile":
         return (
           <>
-            <Section title="Profile Picture" desc="Your account photo shown across the dashboard">
+            <Section title={t("profile_picture")} desc={t("profile_picture_desc")}>
               <div className="sp-avatar-row">
                 <div className="sp-avatar-wrap">
                   <div className="sp-avatar">
@@ -314,17 +469,17 @@ export default function SettingsPage() {
               </div>
             </Section>
 
-            <Section title="Account Details" desc="Your registered account information">
+            <Section title={t("account_details")} desc={t("account_details_desc")}>
               <div className="sp-field-row sp-field-border">
-                <label className="sp-field-label">Full Name</label>
+                <label className="sp-field-label">{t("full_name")}</label>
                 <div className="sp-info-val">{fullName}</div>
               </div>
               <div className="sp-field-row sp-field-border">
-                <label className="sp-field-label">Email Address</label>
+                <label className="sp-field-label">{t("email_address")}</label>
                 <div className="sp-info-val">{email}</div>
               </div>
               <div className="sp-field-row sp-field-border">
-                <label className="sp-field-label">Admin ID</label>
+                <label className="sp-field-label">{t("admin_id")}</label>
                 <div className="sp-info-val sp-mono">{adminId}</div>
               </div>
               <div className="sp-field-row sp-field-border">
@@ -345,11 +500,11 @@ export default function SettingsPage() {
       case "account":
         return (
           <>
-            <Section title="Change Password" desc="Use a strong password to keep your account safe">
+            <Section title={t("change_password")} desc={t("change_password_desc")}>
               {[
-                { label:"Current Password",    key:"current", ph:"Enter your current password" },
-                { label:"New Password",         key:"new",     ph:"Min 8 chars with special char" },
-                { label:"Confirm New Password", key:"confirm", ph:"Re-enter new password" },
+                { label:t("current_password"), key:"current", ph:t("enter_current_password") },
+                { label:t("new_password"),      key:"new",     ph:t("min_8_chars") },
+                { label:t("confirm_new_password"), key:"confirm", ph:t("re_enter_password") },
               ].map(({ label, key, ph }, i, arr) => (
                 <div key={key} className={`sp-field-row ${i < arr.length - 1 ? "sp-field-border" : ""}`}>
                   <label className="sp-field-label">{label}</label>
@@ -382,35 +537,35 @@ export default function SettingsPage() {
                 <button type="button" className="sp-btn-primary" onClick={handleChangePassword} disabled={pwLoading}>
                   {pwLoading
                     ? <><Loader2 size={13} style={{ animation:"spin .7s linear infinite" }}/> Updating...</>
-                    : <><Key size={13}/> Update Password</>}
+                    : <><Key size={13}/>{t("update_password")}</>}
                 </button>
               </div>
             </Section>
 
-            <Section title="Account Information" desc="Your current login details">
+            <Section title={t("account_information")} desc={t("account_info_desc")}>
               <div className="sp-field-row sp-field-border">
                 <label className="sp-field-label">Logged in as</label>
                 <div className="sp-info-val">{fullName}</div>
               </div>
               <div className="sp-field-row sp-field-border">
-                <label className="sp-field-label">Email</label>
+                <label className="sp-field-label">{t("email_address")}</label>
                 <div className="sp-info-val">{email}</div>
               </div>
               <div className="sp-field-row">
-                <label className="sp-field-label">Admin ID</label>
+                <label className="sp-field-label">{t("admin_id")}</label>
                 <div className="sp-info-val sp-mono">{adminId}</div>
               </div>
             </Section>
 
-            <Section title="Security" desc="Extra layers of protection for your account">
-              <Row icon={Shield} label="Two-Factor Authentication"
-                desc={twoFA ? "2FA is enabled" : "Add an extra layer of security"}
+            <Section title={t("security")} desc={t("security_desc")}>
+              <Row icon={Shield} label={t("two_factor")}
+                desc={twoFA ? t("two_factor_on") : t("two_factor_off")}
                 action={<Toggle checked={twoFA} onChange={setTwoFA}/>} iconCls="sp-icon-violet"/>
-              <Row icon={Smartphone} label="Trusted Devices" desc="Manage devices with access to your account" noBorder
+              <Row icon={Smartphone} label={t("trusted_devices")} desc={t("trusted_devices_desc")} noBorder
                 action={<button type="button" className="sp-link-btn">Manage</button>} iconCls="sp-icon-default"/>
             </Section>
 
-            <Section title="Active Sessions">
+            <Section title={t("active_sessions")}>
               {[
                 { device:"Chrome · Desktop", location:"Hyderabad, IN", time:"Now",    current:true },
                 { device:"Mobile Browser",   location:"Hyderabad, IN", time:"2h ago", current:false },
@@ -434,16 +589,16 @@ export default function SettingsPage() {
 
       case "notifications":
         return (
-          <Section title="Notification Preferences" desc="Choose what you want to be notified about">
+          <Section title={t("notif_preferences")} desc={t("notif_desc")}>
             {[
               { key:"newOrder",       label:"New Orders",           desc:"Get notified when a new order arrives" },
-              { key:"orderStatus",    label:"Order Status Updates",  desc:"When orders are confirmed, prepared or delivered" },
+              { key:"orderStatus",    label:t("order_status"),       desc:t("order_status_desc") },
               { key:"lowStock",       label:"Low Stock Alerts",      desc:"When inventory items are running low" },
               { key:"paymentAlert",   label:"Payment Alerts",        desc:"Successful and failed payment notifications" },
               { key:"dailyReport",    label:"Daily Summary Report",  desc:"End-of-day sales and order report" },
               { key:"customerReview", label:"Customer Reviews",      desc:"When a customer leaves a review" },
               { key:"promotions",     label:"Promotions & Offers",   desc:"Special deals and platform offers" },
-              { key:"systemUpdates",  label:"System Updates",        desc:"New features and maintenance notices" },
+              { key:"systemUpdates",  label:t("system_updates"),     desc:t("system_updates_desc") },
             ].map(({ key, label, desc }, i, arr) => (
               <div key={key} className={`sp-row ${i < arr.length - 1 ? "sp-row-border" : ""}`}>
                 <div className="sp-row-text">
@@ -461,7 +616,7 @@ export default function SettingsPage() {
       case "appearance":
         return (
           <>
-            <Section title="Theme" desc="Switch between light and dark mode">
+            <Section title={t("theme")} desc={t("theme_desc")}>
               <div className="sp-theme-row">
                 {[{ label:"Light", icon:Sun, val:false }, { label:"Dark", icon:Moon, val:true }].map(({ label, icon:Icon, val }) => (
                   <button key={label} type="button" onClick={() => setDarkMode(val)}
@@ -471,7 +626,7 @@ export default function SettingsPage() {
                 ))}
               </div>
             </Section>
-            <Section title="Accent Color" desc="Pick your preferred interface color">
+            <Section title={t("accent_color")} desc={t("accent_color_desc")}>
               <div className="sp-accent-row">
                 {ACCENTS.map(a => (
                   <button key={a.name} type="button" onClick={() => setAccent(a.name)}
@@ -481,14 +636,14 @@ export default function SettingsPage() {
                 ))}
               </div>
             </Section>
-            <Section title="Display Density" desc="Adjust how compact the UI looks">
+            <Section title={t("display_density")} desc={t("display_density_desc")}>
               <div className="sp-density-row">
                 {["Compact","Default","Comfortable"].map((d, i) => (
                   <button key={d} type="button" className={`sp-density-btn ${i === 1 ? "sp-density-active" : ""}`}>{d}</button>
                 ))}
               </div>
             </Section>
-            <Section title="Language & Region">
+            <Section title={t("language_region")}>
               {[
                 { label:"Language",    val:"English (US)" },
                 { label:"Date Format", val:"DD/MM/YYYY" },
@@ -506,7 +661,7 @@ export default function SettingsPage() {
       case "qr":
         return (
           <>
-            <Section title="Your Order QR Code" desc="Share this QR so customers can scan and place orders directly">
+            <Section title={t("qr_title")} desc={t("qr_desc")}>
               <div className="sp-qr-center">
                 <div className="sp-qr-box">
                   <QRCode value={QR_DATA} size={160} fgColor="#18181b"/>
@@ -524,7 +679,7 @@ export default function SettingsPage() {
                 </div>
               </div>
             </Section>
-            <Section title="QR Code Settings">
+            <Section title={t("qr_settings")}>
               {[
                 { label:"Custom Redirect URL", desc:"Link customers land on after scanning",  action:<ChevronRight size={14} className="sp-icon-default"/> },
                 { label:"Track QR Scans",      desc:"Analytics for scan count and location", action:<Toggle checked={true} onChange={() => {}}/> },
@@ -542,6 +697,9 @@ export default function SettingsPage() {
             </Section>
           </>
         );
+
+      case "language":
+        return <LanguageSection languageCode={languageCode} languageName={languageName} setLanguage={setLanguage} t={t}/>;
 
       case "plan":
         return (
@@ -681,7 +839,7 @@ export default function SettingsPage() {
               <div className="sp-row">
                 <div className="sp-row-icon sp-row-icon-red"><Trash2 size={14} className="sp-icon-red"/></div>
                 <div className="sp-row-text">
-                  <div className="sp-row-label">Delete Account</div>
+                  <div className="sp-row-label">{t("delete_account")}</div>
                   <div className="sp-row-desc">
                     Remove your login credentials from the users table only.
                     Business data is not affected.
@@ -736,29 +894,29 @@ export default function SettingsPage() {
 
         <div className="sp-layout">
           <aside className="sp-sidebar">
-            {NAV_SECTIONS.map(({ id, label, icon:Icon }) => (
+            {NAV_SECTIONS.map(({ id, icon:Icon }) => { const label = t(NAV_LABEL_KEYS[id]||id); return (
               <button key={id} type="button" onClick={() => setActive(id)}
                 className={`sp-nav-btn ${active === id ? "sp-nav-active" : ""}`}>
                 <Icon size={15} className={active === id ? "sp-nav-icon-active" : "sp-nav-icon"}/>
                 <span className="sp-nav-label">{label}</span>
                 {id === "plan" && <span className="sp-nav-badge">!</span>}
               </button>
-            ))}
+            ); })}
           </aside>
 
           <div className="sp-mobile-tabs">
-            {NAV_SECTIONS.map(({ id, label, icon:Icon }) => (
+            {NAV_SECTIONS.map(({ id, icon:Icon }) => { const label = t(NAV_LABEL_KEYS[id]||id); return (
               <button key={id} type="button" onClick={() => setActive(id)}
                 className={`sp-tab-btn ${active === id ? "sp-tab-active" : ""}`}>
                 <Icon size={12}/> {label}
               </button>
-            ))}
+            ); })}
           </div>
 
           <div className="sp-content">
             <div className="sp-content-head">
               {activeNav && <activeNav.icon size={16} className="sp-content-icon"/>}
-              <h2 className="sp-content-title">{activeNav?.label}</h2>
+              <h2 className="sp-content-title">{activeNavLabel}</h2>
             </div>
             {renderSection()}
           </div>

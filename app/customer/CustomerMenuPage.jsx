@@ -1,4 +1,7 @@
 "use client";
+
+import { getCurrencySymbol, formatCurrency } from "../utils/currencyHelper";
+
 import { useState } from "react";
 import { ArrowLeft, Search, ShoppingCart } from "lucide-react";
 
@@ -11,6 +14,9 @@ const CustomerMenuPage = ({
   onViewCart, 
   onBack 
 }) => {
+  const _user = (typeof window !== "undefined") ? (() => { try { return JSON.parse(localStorage.getItem("ttl_user") || "{}"); } catch { return {}; } })() : {};
+  const _currCode = _user.currencyCode || "INR";
+
   const [activecat, setActivecat] = useState(0);
   const [search, setSearch] = useState("");
 
@@ -97,7 +103,7 @@ const CustomerMenuPage = ({
                 <div className="item-card-name">{item.name}</div>
                 <div className="item-card-desc">{item.desc}</div>
                 <div className="item-card-bottom">
-                  <div className="item-card-price">₹{item.price}</div>
+                  <div className="item-card-price">{formatCurrency(item.price, _currCode)}</div>
                   {qty > 0 && <span style={{fontSize:11,fontWeight:700,background:"var(--brand)",color:"#fff",borderRadius:"9999px",padding:"2px 8px"}}>{qty} in cart</span>}
                 </div>
               </div>

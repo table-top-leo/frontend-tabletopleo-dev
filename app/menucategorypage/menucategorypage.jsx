@@ -13,6 +13,8 @@ import {
 } from "../services/menuService";
 import { uploadCategoryImage, uploadProductImage } from "../services/imageservice";
 import api from "../services/axiosInterceptor";
+import { useCurrency } from "../context/CurrencyContext";
+import { getCurrencySymbol, formatCurrency } from "../utils/currencyHelper";
 
 const ITEMS_PER_PAGE = 5;
 
@@ -81,6 +83,7 @@ function ImageUploadBox({ imageUrl, onUpload, onRemove, uploading, compact }) {
 
 // ── MAIN COMPONENT ──────────────────────────────────────────
 const MenuCategory = () => {
+  const { currencyCode } = useCurrency();
   const user       = getUser();
   const adminId    = user?.adminId    || "";
   const businessId = user?.businessId || "";
@@ -181,18 +184,20 @@ const MenuCategory = () => {
 
   const handleSelectCategory = (catId) => {
     setSelectedCatId(catId); setCurrentPage(1); setSearchQuery(""); setStatusFilter("All Status"); resetForm();
+    // Auto-set form category so admin can directly add items without selecting from dropdown
+    setForm(prev => ({ ...prev, categoryId: String(catId), newCategoryName: "" }));
   };
 
   const handleCatImageUpload = async (file) => {
     setNewCatImgUploading(true);
-    try { const res = await uploadCategoryImage(file); setNewCatImageUrl(res.data?.imageUrl || null); }
+    try { const res = await uploadCategoryImage(file); setNewCatImageUrl(res.data?.data?.imageUrl || res.data?.imageUrl || null); }
     catch { showToast("Failed to upload image.", "error"); }
     finally { setNewCatImgUploading(false); }
   };
 
   const handleProdImageUpload = async (file) => {
     setProdImgUploading(true);
-    try { const res = await uploadProductImage(file); setForm(prev => ({ ...prev, imageUrl: res.data?.imageUrl || null })); }
+    try { const res = await uploadProductImage(file); setForm(prev => ({ ...prev, imageUrl: res.data?.data?.imageUrl || res.data?.imageUrl || null })); }
     catch { showToast("Failed to upload image.", "error"); }
     finally { setProdImgUploading(false); }
   };
@@ -205,6 +210,12 @@ const MenuCategory = () => {
       const created = res.data;
       setCategories(prev => [created, ...prev]);
       setSelectedCatId(created.categoryId);
+      // Auto-select in form dropdown so admin does not need to re-pick
+      setForm(prev => ({ ...prev, categoryId: String(created.categoryId), newCategoryName: "" }));
+      // Auto-populate image if category has one from suggestions
+      if (created.categoryImageUrl) {
+        setForm(prev => ({ ...prev, imageUrl: created.categoryImageUrl }));
+      }
       setNewCatName(""); setNewCatImageUrl(null); setShowAddCatInline(false);
       showToast("Category created! ✓");
     } catch (err) {
@@ -391,9 +402,9 @@ const MenuCategory = () => {
             <h1 className="mc-page-title">Menu &amp; Category</h1>
             <p className="mc-page-sub">Manage your restaurant menu categories and items</p>
           </div>
-          <button className="mc-btn-dark mc-add-btn" onClick={() => setShowAddCatInline(true)} type="button">
+          {/* <button className="mc-btn-dark mc-add-btn" onClick={() => setShowAddCatInline(true)} type="button">
             <Plus size={16} /> Add New Category
-          </button>
+          </button> */}
         </div>
       </div>
 
@@ -665,7 +676,7 @@ const MenuCategory = () => {
                   <div className="mc-form-group mc-fg-half">
                     <label className="mc-label">Item Price <span className="mc-req">*</span></label>
                     <div className={`mc-input-icon-wrap ${formErrors.price ? "mc-err" : ""}`}>
-                      <span className="mc-input-icon mc-rupee">₹</span>
+                      <span className="mc-input-icon mc-rupee">{getCurrencySymbol(currencyCode)}</span>
                       <input className="mc-input-inner" type="number" min="0" step="0.01" placeholder="0.00"
                         value={form.price} onChange={e => handleFieldChange("price", e.target.value)} />
                     </div>
@@ -744,7 +755,7 @@ const MenuCategory = () => {
                           </div>
                         </td>
                         <td className="mc-td mc-td-desc">{item.itemDescription || "—"}</td>
-                        <td className="mc-td mc-td-price">₹{Number(item.itemPrice).toFixed(2)}</td>
+                        <td className="mc-td mc-td-price">{formatCurrency(Number(item.itemPrice), currencyCode)}</td>
                         <td className="mc-td">
                           <span className={`mc-status-badge ${item.productStatus === "ACTIVE" ? "mc-status-active" : "mc-status-inactive"}`}>
                             <span className="mc-status-dot" />{item.productStatus === "ACTIVE" ? "Active" : "Inactive"}

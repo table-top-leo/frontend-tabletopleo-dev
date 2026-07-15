@@ -59,11 +59,14 @@ const TableTopLeoLoginPage = () => {
       localStorage.setItem(
         "ttl_user",
         JSON.stringify({
-          adminId: data.adminId,
-          fullName: data.fullName,
-          email: data.email,
-          businessId: data.businessId,
-          logoUrl: data.logoUrl || null,
+          adminId:      data.adminId,
+          fullName:     data.fullName,
+          email:        data.email,
+          businessId:   data.businessId,
+          logoUrl:      data.logoUrl || null,
+          currencyCode: data.currencyCode || "INR",
+          languageCode: data.languageCode || "en",
+          languageName: data.languageName || "English",
         })
       );
       const sessionToken = generateSessionToken();

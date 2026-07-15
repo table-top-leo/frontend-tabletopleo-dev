@@ -1,4 +1,12 @@
 "use client";
+
+import { getCurrencySymbol, formatCurrency } from "../utils/currencyHelper";
+
+// Read currency at module level so sub-components can access it
+function getStoredCurrCode() {
+  try { return JSON.parse(localStorage.getItem("ttl_user") || "{}")?.currencyCode || "INR"; }
+  catch { return "INR"; }
+}
 import { useState } from "react";
 import { ArrowLeft, CreditCard } from "lucide-react";
 import QRCode from "react-qr-code";
@@ -15,6 +23,8 @@ const ICON_URLS = {
 };
 
 const PaymentIcon = ({ name, size = 36 }) => {
+  const _currCode = getStoredCurrCode();
+
   const [broken, setBroken] = useState(false);
   const r = Math.round(size * 0.28);
   const url = ICON_URLS[name];
@@ -177,6 +187,8 @@ const METHODS = [
 ];
 
 const CustomerPaymentPage = ({ total, business, diningInfo, onBack, onInitiatePayment, onConfirmPayment, payAtCounterAvailable }) => {
+  const _currCode = getStoredCurrCode();
+
   const [selectedMethod, setSelectedMethod] = useState(null);
   const [paymentData,    setPaymentData]    = useState(null);
   const [loading,        setLoading]        = useState(false);
@@ -330,7 +342,7 @@ const CustomerPaymentPage = ({ total, business, diningInfo, onBack, onInitiatePa
             <div className="osb-row"><span className="osb-label">Order Type</span><span className="osb-value">{diningInfo.type === "dine-in" ? "🍽️ Dine In" : "🥡 Take Away"}{diningInfo.table ? ` — ${diningInfo.table}` : ""}</span></div>
             {diningInfo.name && <div className="osb-row"><span className="osb-label">Name</span><span className="osb-value">{diningInfo.name}</span></div>}
             {diningInfo.note && <div className="osb-row"><span className="osb-label">Note</span><span className="osb-value" style={{ fontStyle:"italic", color:"var(--text-muted)", fontSize:12 }}>{diningInfo.note}</span></div>}
-            <div className="osb-row"><span className="osb-label">Amount</span><span className="osb-amount">₹{total}</span></div>
+            <div className="osb-row"><span className="osb-label">Amount</span><span className="osb-amount">{formatCurrency(total, _currCode)}</span></div>
           </div>
         </div>
 
@@ -376,7 +388,7 @@ const CustomerPaymentPage = ({ total, business, diningInfo, onBack, onInitiatePa
           <div style={{ margin:"0 16px", animation:"fadeIn 0.22s ease" }}>
             <div style={{ background:"var(--surface-2)", border:"1.5px solid var(--border)", borderRadius:"var(--radius-lg)", padding:20, display:"flex", flexDirection:"column", alignItems:"center", gap:12 }}>
               <div style={{ fontSize:13, color:"var(--text-muted)", fontWeight:600 }}>Scan to pay <strong style={{ color:"var(--text-primary)" }}>{business?.businessName}</strong></div>
-              <div style={{ fontSize:28, fontWeight:900, color:"var(--brand)" }}>₹{total}</div>
+              <div style={{ fontSize:28, fontWeight:900, color:"var(--brand)" }}>{formatCurrency(total, _currCode)}</div>
               <div style={{ background:"#fff", padding:12, borderRadius:12, border:"1.5px solid var(--border)" }}>
                 <QRCode value={paymentData.upiString} size={150} fgColor="#7B3F00"/>
               </div>
@@ -416,7 +428,7 @@ const CustomerPaymentPage = ({ total, business, diningInfo, onBack, onInitiatePa
           <div style={{ margin:"0 16px", animation:"fadeIn 0.22s ease" }}>
             <div style={{ background:"var(--surface-2)", border:"1.5px solid var(--border)", borderRadius:"var(--radius-lg)", padding:20, textAlign:"center" }}>
               <div style={{ fontSize:13, color:"var(--text-muted)", marginBottom:6 }}>Pay using PhonePe, GPay, Paytm, Cards, or Net Banking</div>
-              <div style={{ fontSize:26, fontWeight:900, color:"var(--brand)", marginBottom:12 }}>₹{total}</div>
+              <div style={{ fontSize:26, fontWeight:900, color:"var(--brand)", marginBottom:12 }}>{formatCurrency(total, _currCode)}</div>
               <div style={{ display:"flex", gap:8, justifyContent:"center", marginBottom:16, flexWrap:"wrap" }}>
                 {METHODS[1].apps.map(a => (
                   <PaymentIcon key={a.name} name={a.name} size={36} />
@@ -425,7 +437,7 @@ const CustomerPaymentPage = ({ total, business, diningInfo, onBack, onInitiatePa
             </div>
             <div style={{ marginTop:12 }}>
               <button style={s.payBtn(confirming)} disabled={confirming} onClick={handleRazorpayPay}>
-                {confirming ? "Processing..." : `Pay ₹${total} via Razorpay →`}
+                {confirming ? "Processing..." : `Pay ${formatCurrency(total, _currCode)} via Razorpay →`}
               </button>
             </div>
             <script src="https://checkout.razorpay.com/v1/checkout.js" async/>
@@ -437,14 +449,14 @@ const CustomerPaymentPage = ({ total, business, diningInfo, onBack, onInitiatePa
           <div style={{ margin:"0 16px", animation:"fadeIn 0.22s ease" }}>
             <div style={{ background:"var(--surface-2)", border:"1.5px solid var(--border)", borderRadius:"var(--radius-lg)", padding:20, textAlign:"center" }}>
               <div style={{ fontSize:13, color:"var(--text-muted)", marginBottom:6 }}>Apple Pay · Mobile Pay · Google Pay · Cards · Net Banking</div>
-              <div style={{ fontSize:26, fontWeight:900, color:"var(--brand)", marginBottom:12 }}>₹{total}</div>
+              <div style={{ fontSize:26, fontWeight:900, color:"var(--brand)", marginBottom:12 }}>{formatCurrency(total, _currCode)}</div>
               <div style={{ display:"flex", gap:8, justifyContent:"center", marginBottom:16, flexWrap:"wrap" }}>
                 {METHODS[2].apps.map(a => renderAppIcon(a, 36))}
               </div>
             </div>
             <div style={{ marginTop:12 }}>
               <button style={s.payBtn(confirming)} disabled={confirming} onClick={handleStripePay}>
-                {confirming ? "Processing..." : `Pay ₹${total} via Stripe →`}
+                {confirming ? "Processing..." : `Pay ${formatCurrency(total, _currCode)} via Stripe →`}
               </button>
             </div>
           </div>
@@ -455,7 +467,7 @@ const CustomerPaymentPage = ({ total, business, diningInfo, onBack, onInitiatePa
           <div style={{ margin:"0 16px", animation:"fadeIn 0.22s ease" }}>
             <div style={{ background:"#e8f4fd", border:"1.5px solid #b3d7f5", borderRadius:"var(--radius-lg)", padding:20, textAlign:"center" }}>
               <div style={{ fontSize:13, color:"#555", marginBottom:6 }}>Fast · Secure · Available worldwide</div>
-              <div style={{ fontSize:26, fontWeight:900, color:"#003087", marginBottom:12 }}>₹{total}</div>
+              <div style={{ fontSize:26, fontWeight:900, color:"#003087", marginBottom:12 }}>{formatCurrency(total, _currCode)}</div>
             </div>
             <div style={{ marginTop:12 }}>
               <button style={{ ...s.payBtn(confirming), background:"#0070ba" }} disabled={confirming} onClick={handlePaypalPay}>
@@ -540,7 +552,7 @@ const CustomerPaymentPage = ({ total, business, diningInfo, onBack, onInitiatePa
             style={s.payBtn(!selectedMethod || loading)}
             disabled={!selectedMethod || loading}
           >
-            {!selectedMethod ? "Select a Payment Method" : `Pay ₹${total}`}
+            {!selectedMethod ? "Select a Payment Method" : `Pay ${formatCurrency(total, _currCode)}`}
           </button>
         )}
       </div>

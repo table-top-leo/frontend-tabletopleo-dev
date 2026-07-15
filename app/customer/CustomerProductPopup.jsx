@@ -1,8 +1,14 @@
 "use client";
+
+import { getCurrencySymbol, formatCurrency } from "../utils/currencyHelper";
+
 import { useState } from "react";
 import { X, Star, Plus, Minus, ShoppingCart } from "lucide-react";
 
 const CustomerProductPopup = ({ item, onClose, onAddToCart }) => {
+  const _user = (typeof window !== "undefined") ? (() => { try { return JSON.parse(localStorage.getItem("ttl_user") || "{}"); } catch { return {}; } })() : {};
+  const _currCode = _user.currencyCode || "INR";
+
   const [qty, setQty] = useState(1);
 
   const handleAdd = () => onAddToCart(item, qty);
@@ -21,7 +27,7 @@ const CustomerProductPopup = ({ item, onClose, onAddToCart }) => {
             <span>{item.rating}</span>
             <span style={{ color: "var(--text-muted)", fontWeight: 400 }}>({item.reviews}+ Reviews)</span>
           </div>
-          <div className="popup-price">₹{item.price}</div>
+          <div className="popup-price">{formatCurrency(item.price, _currCode)}</div>
           <div className="popup-desc-label">Description</div>
           <div className="popup-desc">{item.desc}. Made with the finest ingredients for an unforgettable experience.</div>
           <div className="popup-qty-label">Quantity</div>
@@ -36,7 +42,7 @@ const CustomerProductPopup = ({ item, onClose, onAddToCart }) => {
           </div>
           <button className="cta-btn" onClick={handleAdd}>
             <ShoppingCart size={18} />
-            Add to Cart — ₹{item.price * qty}
+            Add to Cart — {formatCurrency(item.price * qty, _currCode)}
           </button>
         </div>
       </div>
