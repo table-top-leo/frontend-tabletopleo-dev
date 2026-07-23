@@ -38,7 +38,7 @@ const CustomerCartPage = ({ cart, subtotal, gst, total, onUpdateQty, onRemove, o
         <div style={{ padding: "8px 16px" }}>
           {cart.map(item => (
             <div key={item.id} className="cart-item-row">
-              <img className="cart-item-img" src={item.img} alt={item.name} onError={e => { e.target.src = "https://images.unsplash.com/photo-1572442388796-11668a67e53d?w=200"; }} />
+              <img className="cart-item-img" src={item.img} alt={item.name} onError={e => { e.target.src = "https:// .unsplash.com/photo-1572442388796-11668a67e53d?w=200"; }} />
               <div className="cart-item-body">
                 <div className="cart-item-name">{item.name}</div>
                 <div className="cart-item-price">{formatCurrency(item.price, _currCode)} each</div>

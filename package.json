@@ -23,6 +23,7 @@
     "react-phone-number-input": "^3.4.17",
     "react-qr-code": "^2.2.0",
     "react-router-dom": "^7.17.0",
+    "recharts": "^3.9.2",
     "sockjs-client": "^1.6.1"
   },
   "devDependencies": {

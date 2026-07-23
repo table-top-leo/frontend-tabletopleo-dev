@@ -221,8 +221,10 @@ const CustomerWrapper = ({ businessId }) => {
             grandTotal:      confirmPayload.grandTotal,
             gatewayName:     "pay_at_counter",
             businessName:    business?.businessName,
+            businessId:      businessId,
             orderType:       confirmPayload.orderType,
             customerName:    confirmPayload.customerName,
+            customerPhone:   confirmPayload.customerPhone,
             estimatedMinutes:20,
             createdAt:       confirmPayload.createdAt,
           });
@@ -327,6 +329,8 @@ const CustomerWrapper = ({ businessId }) => {
             confirmedData={confirmedData}
             business={business}
             cart={cart}
+            businessId={businessId}
+            diningPhone={diningInfo?.phone || ""}
             onTrack={() => setScreen(SCREENS.TRACKING)}
             onHome={handleStartOver}
           />

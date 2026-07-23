@@ -282,7 +282,12 @@ export function LanguageProvider({ children }) {
 
   const t = useCallback((key) => {
     const dict = TRANSLATIONS[languageCode] || TRANSLATIONS.en;
-    return dict[key] || TRANSLATIONS.en[key] || key;
+    // Support dot-notation: "nav.profile" → dict["profile"] or dict["nav.profile"]
+    if (dict[key] !== undefined) return dict[key];
+    if (TRANSLATIONS.en[key] !== undefined) return TRANSLATIONS.en[key];
+    // Try the last segment: "nav.profile" → "profile"
+    const lastKey = key.includes(".") ? key.split(".").pop() : key;
+    return dict[lastKey] || TRANSLATIONS.en[lastKey] || key;
   }, [languageCode]);
 
   return (

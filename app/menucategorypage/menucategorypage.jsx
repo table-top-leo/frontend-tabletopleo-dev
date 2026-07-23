@@ -83,11 +83,16 @@ function ImageUploadBox({ imageUrl, onUpload, onRemove, uploading, compact }) {
 
 // ── MAIN COMPONENT ──────────────────────────────────────────
 const MenuCategory = () => {
-  const { currencyCode } = useCurrency();
   const user       = getUser();
   const adminId    = user?.adminId    || "";
   const businessId = user?.businessId || "";
+  const { currencyCode } = useCurrency();
 
+  const [businessType,       setBusinessType]       = useState("");
+  const [editingCatId,       setEditingCatId]       = useState(null);
+  const [editCatName,        setEditCatName]        = useState("");
+  const [editCatImageUrl,    setEditCatImageUrl]    = useState(null);
+  const [editCatImgUploading,setEditCatImgUploading]= useState(false);
   const [categories,         setCategories]         = useState([]);
   const [products,           setProducts]           = useState([]);
   const [selectedCatId,      setSelectedCatId]      = useState(null);
@@ -130,12 +135,20 @@ const MenuCategory = () => {
     setToast({ msg, type }); setTimeout(() => setToast(null), 3000);
   }, []);
 
-  // Load category suggestions on mount
+  // Load category suggestions — backend auto-resolves businessType from JWT
   useEffect(() => {
+    if (!adminId) return;
     api.get("/api/suggestions/categories")
-      .then(res => setCatSuggestions(res.data?.data || []))
-      .catch(() => setCatSuggestions([]));
-  }, []);
+      .then(res => {
+        const data = res.data?.data || [];
+        setCatSuggestions(data);
+        console.log("Cat suggestions loaded:", data.length);
+      })
+      .catch(err => {
+        console.error("Cat suggestions error:", err?.response?.status, err?.response?.data);
+        setCatSuggestions([]);
+      });
+  }, [adminId]);
 
   // Load item suggestions when category changes
   const loadItemSuggestions = useCallback(async (categoryName) => {
@@ -143,8 +156,11 @@ const MenuCategory = () => {
     setLoadingItemSugg(true);
     try {
       const res = await api.get(`/api/suggestions/items?categoryName=${encodeURIComponent(categoryName)}`);
-      setItemSuggestions(res.data?.data || []);
-    } catch {
+      const data = res.data?.data || [];
+      setItemSuggestions(data);
+      console.log("Item suggestions for", categoryName, ":", data.length);
+    } catch (err) {
+      console.error("Item suggestions error:", err?.response?.status, err?.response?.data);
       setItemSuggestions([]);
     } finally {
       setLoadingItemSugg(false);
@@ -182,10 +198,41 @@ const MenuCategory = () => {
   useEffect(() => { fetchCategories(); }, [fetchCategories]);
   useEffect(() => { if (selectedCatId) fetchProducts(selectedCatId); else setProducts([]); }, [selectedCatId, fetchProducts]);
 
+  const handleEditCategory = (cat, e) => {
+    e.stopPropagation();
+    setEditingCatId(cat.categoryId);
+    setEditCatName(cat.categoryName);
+    setEditCatImageUrl(cat.categoryImageUrl || null);
+  };
+
+  const handleUpdateCategory = async (cat, e) => {
+    e.stopPropagation();
+    if (!editCatName.trim()) return;
+    try {
+      await updateCategory(cat.categoryId, adminId, {
+        adminId,
+        businessId,
+        categoryName:     editCatName.trim(),
+        categoryImageUrl: editCatImageUrl || null,
+        categoryStatus:   "ACTIVE",
+      });
+      setEditingCatId(null);
+      loadCategories();
+      showToast("Category updated! ✓");
+    } catch { showToast("Failed to update category", "error"); }
+  };
+
+  const handleEditCatImageUpload = async (file) => {
+    setEditCatImgUploading(true);
+    try {
+      const res = await uploadCategoryImage(file);
+      setEditCatImageUrl(res.data?.data?.imageUrl || res.data?.imageUrl || null);
+    } catch { showToast("Failed to upload image", "error"); }
+    finally { setEditCatImgUploading(false); }
+  };
+
   const handleSelectCategory = (catId) => {
     setSelectedCatId(catId); setCurrentPage(1); setSearchQuery(""); setStatusFilter("All Status"); resetForm();
-    // Auto-set form category so admin can directly add items without selecting from dropdown
-    setForm(prev => ({ ...prev, categoryId: String(catId), newCategoryName: "" }));
   };
 
   const handleCatImageUpload = async (file) => {
@@ -210,12 +257,6 @@ const MenuCategory = () => {
       const created = res.data;
       setCategories(prev => [created, ...prev]);
       setSelectedCatId(created.categoryId);
-      // Auto-select in form dropdown so admin does not need to re-pick
-      setForm(prev => ({ ...prev, categoryId: String(created.categoryId), newCategoryName: "" }));
-      // Auto-populate image if category has one from suggestions
-      if (created.categoryImageUrl) {
-        setForm(prev => ({ ...prev, imageUrl: created.categoryImageUrl }));
-      }
       setNewCatName(""); setNewCatImageUrl(null); setShowAddCatInline(false);
       showToast("Category created! ✓");
     } catch (err) {
@@ -402,9 +443,9 @@ const MenuCategory = () => {
             <h1 className="mc-page-title">Menu &amp; Category</h1>
             <p className="mc-page-sub">Manage your restaurant menu categories and items</p>
           </div>
-          {/* <button className="mc-btn-dark mc-add-btn" onClick={() => setShowAddCatInline(true)} type="button">
+          <button className="mc-btn-dark mc-add-btn" onClick={() => setShowAddCatInline(true)} type="button">
             <Plus size={16} /> Add New Category
-          </button> */}
+          </button>
         </div>
       </div>
 
@@ -444,7 +485,7 @@ const MenuCategory = () => {
                             style={suggItemStyle(false)}
                             onMouseEnter={e => e.currentTarget.style.background = "#fffbeb"}
                             onMouseLeave={e => e.currentTarget.style.background = "transparent"}
-                            onClick={() => { setNewCatName(s.categoryName); setShowCatSuggDrop(false); }}
+                            onClick={() => { setNewCatName(s.categoryName); if(s.categoryImage) setNewCatImageUrl(s.categoryImage); setShowCatSuggDrop(false); }}
                           >
                             {s.categoryEmoji && <span style={{ fontSize: 16 }}>{s.categoryEmoji}</span>}
                             <span>{s.categoryName}</span>
@@ -488,20 +529,95 @@ const MenuCategory = () => {
               </div>
             ) : (
               categories.map(cat => (
-                <div key={cat.categoryId} className={`mc-cat-item ${selectedCatId === cat.categoryId ? "mc-cat-active" : ""}`}
-                  onClick={() => handleSelectCategory(cat.categoryId)} role="button" tabIndex={0}
+                <div key={cat.categoryId}
+                  className={`mc-cat-item ${selectedCatId === cat.categoryId ? "mc-cat-active" : ""}`}
+                  onClick={() => editingCatId !== cat.categoryId && handleSelectCategory(cat.categoryId)}
+                  role="button" tabIndex={0}
+                  style={{ position:"relative" }}
                   onKeyDown={e => e.key === "Enter" && handleSelectCategory(cat.categoryId)}>
-                  <div className="mc-cat-img">
-                    {cat.categoryImageUrl ? <img src={cat.categoryImageUrl} alt={cat.categoryName} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 8 }} /> : "🍽️"}
-                  </div>
-                  <div className="mc-cat-info">
-                    <div className="mc-cat-name">{cat.categoryName}</div>
-                    <div className="mc-cat-count">{cat.productCount} Items</div>
-                  </div>
-                  <div className="mc-cat-row-actions" onClick={e => e.stopPropagation()}>
-                    <button className="mc-cat-icon-btn" onClick={() => openDeleteModal({ type: "category", id: cat.categoryId })} type="button"><Trash2 size={13} /></button>
-                    <ChevronRight size={15} style={{ color: "#d4d4d8", pointerEvents: "none" }} />
-                  </div>
+
+                  {editingCatId === cat.categoryId ? (
+                    /* ── Inline edit mode ── */
+                    <div style={{ flex:1, display:"flex", flexDirection:"column", gap:6, padding:"4px 0" }} onClick={e=>e.stopPropagation()}>
+                      {/* Image edit */}
+                      <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                        <div style={{ position:"relative", flexShrink:0 }}>
+                          <div style={{ width:36, height:36, borderRadius:8, overflow:"hidden", background:"#f4f4f5", border:"1.5px dashed #d4d4d8", cursor:"pointer" }}
+                            onClick={()=>document.getElementById(`edit-cat-img-${cat.categoryId}`)?.click()}>
+                            {editCatImageUrl
+                              ? <img src={editCatImageUrl} alt="" style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }}/>
+                              : <div style={{ width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                                  {editCatImgUploading ? <Loader2 size={12} style={{ animation:"spin .7s linear infinite" }}/> : <Upload size={12} color="#a1a1aa"/>}
+                                </div>}
+                          </div>
+                          <input id={`edit-cat-img-${cat.categoryId}`} type="file" accept="image/*" style={{ display:"none" }}
+                            onChange={e=>{ const f=e.target.files[0]; if(f) handleEditCatImageUpload(f); e.target.value=""; }}/>
+                        </div>
+                        <input
+                          autoFocus
+                          value={editCatName}
+                          onChange={e=>setEditCatName(e.target.value)}
+                          onKeyDown={e=>{ if(e.key==="Enter") handleUpdateCategory(cat,e); if(e.key==="Escape"){ setEditingCatId(null); } }}
+                          style={{ flex:1, padding:"5px 8px", borderRadius:7, border:"1.5px solid #7c3aed", fontSize:13, fontWeight:600, outline:"none", minWidth:0 }}
+                        />
+                      </div>
+                      {/* Save/Cancel */}
+                      <div style={{ display:"flex", gap:5 }}>
+                        <button type="button" onClick={e=>handleUpdateCategory(cat,e)}
+                          style={{ flex:1, padding:"4px 0", borderRadius:6, border:"none", background:"#7c3aed", color:"#fff", fontSize:11.5, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:4 }}>
+                          <Check size={11}/> Save
+                        </button>
+                        <button type="button" onClick={e=>{ e.stopPropagation(); setEditingCatId(null); }}
+                          style={{ flex:1, padding:"4px 0", borderRadius:6, border:"1.5px solid #e4e4e7", background:"#fff", color:"#6b7280", fontSize:11.5, fontWeight:600, cursor:"pointer" }}>
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    /* ── Normal view mode ── */
+                    <>
+                      <div className="mc-cat-img">
+                        {cat.categoryImageUrl ? <img src={cat.categoryImageUrl} alt={cat.categoryName} style={{ width:"100%", height:"100%", objectFit:"cover", borderRadius:8 }}/> : "🍽️"}
+                      </div>
+                      <div className="mc-cat-info">
+                        <div className="mc-cat-name">{cat.categoryName}</div>
+                        <div className="mc-cat-count">{cat.productCount} Items</div>
+                      </div>
+                      <div className="mc-cat-row-actions" onClick={e => e.stopPropagation()}
+                        style={{ display:"flex", alignItems:"center", gap:3, opacity:0, transition:"opacity 0.15s" }}
+                        onMouseEnter={e=>e.currentTarget.style.opacity="1"}
+                        onMouseLeave={e=>e.currentTarget.style.opacity="0"}>
+                        <button className="mc-cat-icon-btn" title="Edit" type="button"
+                          onClick={e=>handleEditCategory(cat,e)}
+                          style={{ background:"#ede9fe", color:"#7c3aed", border:"none", borderRadius:6, width:26, height:26, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer" }}>
+                          <Pencil size={12}/>
+                        </button>
+                        <button className="mc-cat-icon-btn" title="Delete" type="button"
+                          onClick={e=>{ e.stopPropagation(); openDeleteModal({ type:"category", id:cat.categoryId }); }}
+                          style={{ background:"#fee2e2", color:"#ef4444", border:"none", borderRadius:6, width:26, height:26, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer" }}>
+                          <Trash2 size={12}/>
+                        </button>
+                        <ChevronRight size={13} style={{ color:"#d4d4d8" }}/>
+                      </div>
+                      {/* Always-visible icons for selected */}
+                      {selectedCatId === cat.categoryId && (
+                        <div className="mc-cat-row-actions" onClick={e=>e.stopPropagation()}
+                          style={{ display:"flex", alignItems:"center", gap:3 }}>
+                          <button className="mc-cat-icon-btn" title="Edit" type="button"
+                            onClick={e=>handleEditCategory(cat,e)}
+                            style={{ background:"#ede9fe", color:"#7c3aed", border:"none", borderRadius:6, width:26, height:26, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer" }}>
+                            <Pencil size={12}/>
+                          </button>
+                          <button className="mc-cat-icon-btn" title="Delete" type="button"
+                            onClick={e=>{ e.stopPropagation(); openDeleteModal({ type:"category", id:cat.categoryId }); }}
+                            style={{ background:"#fee2e2", color:"#ef4444", border:"none", borderRadius:6, width:26, height:26, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer" }}>
+                            <Trash2 size={12}/>
+                          </button>
+                          <ChevronRight size={13} style={{ color:"#d4d4d8" }}/>
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
               ))
             )}
@@ -632,7 +748,7 @@ const MenuCategory = () => {
                                       setShowFormItemDrop(false);
                                     }}
                                   >
-                                    <span style={{ fontSize: 16 }}>🍽️</span>
+                                    {s.itemImage ? <img src={s.itemImage} alt="" style={{ width:22, height:22, borderRadius:5, objectFit:"cover", flexShrink:0 }}/> : <span style={{ fontSize: 16 }}>🍽️</span>}
                                     <span>{s.itemName}</span>
                                   </button>
                                 ))}

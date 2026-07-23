@@ -1,0 +1,211 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+/* ============================================================
+   TABLETOP LEO — SELF-SERVICE KIOSK DESIGN SYSTEM
+   Fresh, standalone design language for large touchscreens.
+   Inspired by Apple / Stripe / Square / McDonald's kiosk UX.
+   Namespaced with "k-" so it never collides with the mobile
+   customer flow (customer-*.css) that already ships in prod.
+   ============================================================ */
+
+:root {
+  /* Neutral surface scale — lots of white space, few colors */
+  --k-bg:        #f4f4f6;
+  --k-surface:   #ffffff;
+  --k-surface-2: #fafafa;
+  --k-surface-3: #f0f0f2;
+
+  /* Ink scale */
+  --k-ink:       #0b0b0c;
+  --k-ink-soft:  #55565c;
+  --k-ink-mute:  #98999e;
+
+  /* Borders / dividers */
+  --k-border:       #e9e9ec;
+  --k-border-soft:  #f0f0f2;
+
+  /* Brand — used sparingly (selected states, totals, CTAs) */
+  --k-brand:       #7B3F00;
+  --k-brand-dark:  #5C2E00;
+  --k-brand-tint:  #FBF3EC;
+
+  /* Primary action — near-black, Apple/Square style */
+  --k-primary:      #111114;
+  --k-primary-hover:#000000;
+
+  /* Status colors */
+  --k-success:     #1a9e56;
+  --k-success-bg:  #e8f8ee;
+  --k-warning:     #c98400;
+  --k-warning-bg:  #fff4e0;
+  --k-danger:      #d92d20;
+  --k-danger-bg:   #fdeceb;
+  --k-info:        #1266f1;
+  --k-info-bg:     #eaf1fe;
+
+  /* Radii */
+  --k-r-sm:  14px;
+  --k-r-md:  20px;
+  --k-r-lg:  28px;
+  --k-r-xl:  36px;
+  --k-r-full: 999px;
+
+  /* Shadows — soft, premium */
+  --k-shadow-xs: 0 1px 2px rgba(10,10,12,0.04);
+  --k-shadow-sm: 0 4px 14px rgba(10,10,12,0.06);
+  --k-shadow-md: 0 10px 30px rgba(10,10,12,0.08);
+  --k-shadow-lg: 0 24px 60px rgba(10,10,12,0.14);
+
+  /* Touch sizing baseline */
+  --k-touch-min: 64px;
+}
+
+.k-root, .k-root * , .k-root *::before, .k-root *::after {
+  box-sizing: border-box;
+}
+
+.k-root {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--k-ink);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.k-root button, .k-root input, .k-root textarea {
+  font-family: inherit;
+}
+
+.k-root button {
+  cursor: pointer;
+  border: none;
+  outline: none;
+  background: none;
+  touch-action: manipulation;
+}
+
+.k-root img { display: block; max-width: 100%; }
+
+.k-scroll-hide { scrollbar-width: none; -ms-overflow-style: none; }
+.k-scroll-hide::-webkit-scrollbar { display: none; }
+
+/* ── Primitives ─────────────────────────────────────────── */
+
+.k-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: var(--k-touch-min);
+  padding: 0 28px;
+  border-radius: var(--k-r-full);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  transition: transform 0.12s ease, background 0.15s ease, box-shadow 0.15s ease, opacity .15s ease;
+  white-space: nowrap;
+}
+.k-btn:active { transform: scale(0.97); }
+.k-btn[disabled] { opacity: 0.45; cursor: not-allowed; pointer-events: none; }
+
+.k-btn-primary {
+  background: var(--k-primary);
+  color: #fff;
+  box-shadow: var(--k-shadow-sm);
+}
+.k-btn-primary:hover { background: var(--k-primary-hover); }
+
+.k-btn-brand {
+  background: var(--k-brand);
+  color: #fff;
+  box-shadow: 0 10px 24px rgba(123,63,0,0.28);
+}
+.k-btn-brand:hover { background: var(--k-brand-dark); }
+
+.k-btn-outline {
+  background: var(--k-surface);
+  color: var(--k-ink);
+  border: 2px solid var(--k-border);
+}
+.k-btn-outline:hover { border-color: var(--k-ink); }
+
+.k-btn-ghost {
+  background: var(--k-surface-3);
+  color: var(--k-ink-soft);
+}
+
+.k-btn-lg { min-height: 72px; padding: 0 36px; font-size: 20px; border-radius: var(--k-r-lg); }
+.k-btn-xl { min-height: 84px; padding: 0 44px; font-size: 22px; border-radius: var(--k-r-lg); }
+.k-btn-block { width: 100%; }
+
+.k-card {
+  background: var(--k-surface);
+  border-radius: var(--k-r-lg);
+  border: 1px solid var(--k-border-soft);
+  box-shadow: var(--k-shadow-sm);
+}
+
+.k-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 16px;
+  border-radius: var(--k-r-full);
+  font-size: 14px;
+  font-weight: 700;
+}
+.k-pill-brand   { background: var(--k-brand-tint); color: var(--k-brand); }
+.k-pill-success { background: var(--k-success-bg); color: var(--k-success); }
+.k-pill-warning { background: var(--k-warning-bg); color: var(--k-warning); }
+.k-pill-danger  { background: var(--k-danger-bg);  color: var(--k-danger); }
+.k-pill-mute    { background: var(--k-surface-3);  color: var(--k-ink-soft); }
+
+.k-icon-circle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--k-surface-3);
+  flex-shrink: 0;
+}
+
+.k-spinner {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  border: 4px solid var(--k-border);
+  border-top-color: var(--k-ink);
+  animation: k-spin 0.8s linear infinite;
+}
+
+.k-qty-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px solid var(--k-border);
+  background: var(--k-surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  transition: all 0.15s ease;
+}
+.k-qty-btn:hover { border-color: var(--k-ink); background: var(--k-surface-3); }
+.k-qty-btn[disabled] { opacity: 0.35; pointer-events: none; }
+
+@keyframes k-spin       { to { transform: rotate(360deg); } }
+@keyframes k-fade-in    { from { opacity: 0; } to { opacity: 1; } }
+@keyframes k-rise-in    { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes k-pop-in     { 0% { opacity: 0; transform: scale(0.9); } 100% { opacity: 1; transform: scale(1); } }
+@keyframes k-pulse      { 0%,100% { opacity: 1; } 50% { opacity: 0.45; } }
+@keyframes k-pulse-ring { 0% { box-shadow: 0 0 0 0 rgba(17,17,20,0.18); } 100% { box-shadow: 0 0 0 14px rgba(17,17,20,0); } }
+@keyframes k-shimmer    { 0% { background-position: -200px 0; } 100% { background-position: calc(200px + 100%) 0; } }
+@keyframes k-float      { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+@keyframes k-bg-drift   { 0% { transform: scale(1) translate(0,0); } 50% { transform: scale(1.06) translate(-1%, 1%); } 100% { transform: scale(1) translate(0,0); } }
+
+.k-skeleton {
+  background: linear-gradient(90deg, var(--k-surface-3) 25%, #ffffff 37%, var(--k-surface-3) 63%);
+  background-size: 400px 100%;
+  animation: k-shimmer 1.4s ease-in-out infinite;
+  border-radius: var(--k-r-md);
+}

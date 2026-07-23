@@ -2,35 +2,47 @@
 
 import { getCurrencySymbol, formatCurrency } from "../utils/currencyHelper";
 
-import { useRef, useState } from "react";
-import { CheckCircle2, Download, FileImage, FileText, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { CheckCircle2, Download, FileImage, FileText, X, Star, Mail } from "lucide-react";
+import CustomerRatingPopup from "../customer/customerratingpopup";
+import CustomerEmailInvoicePopup from "../customer/emailcustomerbillpopup";
 
 const METHOD_LABEL = { upi:"UPI", razorpay:"Cards / Net Banking", stripe:"International Card", paypal:"PayPal", pay_at_counter:"Pay at Counter" };
 const STATUS_LABEL = { PAID:"Paid", PAY_AT_COUNTER:"Pay at Counter (Pending)", PENDING:"Pending" };
 const STATUS_COLOR = { PAID:"#16a34a", PAY_AT_COUNTER:"#b45309", PENDING:"#f59e0b" };
-
-const CustomerOrderSuccess = ({ confirmedData, business, cart = [], onTrack, onHome }) => {
+ 
+const CustomerOrderSuccess = ({ confirmedData, business, cart = [], onTrack, onHome, diningPhone = "", businessId = "" }) => {
   const _user = (typeof window !== "undefined") ? (() => { try { return JSON.parse(localStorage.getItem("ttl_user") || "{}"); } catch { return {}; } })() : {};
   const _currCode = _user.currencyCode || "INR";
-
+ 
   const invoiceRef         = useRef(null);
   const [menu, setMenu]    = useState(false);
   const [loading, setLoad] = useState(false);
+  const [showRating, setShowRating] = useState(false);
+  const [hasRated, setHasRated] = useState(false);
+  const [showEmailInvoice, setShowEmailInvoice] = useState(false);
+ 
+  // auto-open the email invoice popup ~1s after the success page loads
+  useEffect(() => {
+    const t = setTimeout(() => setShowEmailInvoice(true), 1000);
+    return () => clearTimeout(t);
+  }, []);
+ 
   const now                = new Date();
   const dateStr            = `${now.toLocaleDateString("en-IN")} ${now.toLocaleTimeString("en-IN", { hour:"2-digit", minute:"2-digit" })}`;
-
+ 
   const subtotal = cart.reduce((s, c) => s + (Number(c.price)||0) * (Number(c.qty)||1), 0);
   const gst      = Math.max(0, Number(confirmedData?.grandTotal||0) - subtotal);
   const bName    = business?.businessName || confirmedData?.businessName || "TableTop Leo";
   const bPhone   = business?.businessPhone || "";
   const bAddr    = business?.businessAddress || "";
   const bLogo    = business?.logoUrl || null;
-
+ 
   const capture = async () => {
     const html2canvas = (await import("html2canvas")).default;
     return html2canvas(invoiceRef.current, { scale:3, useCORS:true, backgroundColor:"#ffffff", logging:false });
   };
-
+ 
   const downloadJPG = async () => {
     setLoad(true); setMenu(false);
     try {
@@ -41,7 +53,7 @@ const CustomerOrderSuccess = ({ confirmedData, business, cart = [], onTrack, onH
       link.click();
     } catch(e){ console.error(e); } finally { setLoad(false); }
   };
-
+ 
   const downloadPDF = async () => {
     setLoad(true); setMenu(false);
     try {
@@ -53,13 +65,21 @@ const CustomerOrderSuccess = ({ confirmedData, business, cart = [], onTrack, onH
       pdf.save(`Invoice-${confirmedData?.orderNumber||"order"}.pdf`);
     } catch(e){ console.error(e); } finally { setLoad(false); }
   };
-
+ 
   return (
     <div className="cw-screen">
       <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", padding:"36px 16px 20px", gap:18, overflowY:"auto", position:"relative" }}>
-
-        {/* ── Download button — top-right corner, compressed ── */}
-        <div style={{ position:"absolute", top:12, right:12, zIndex:10 }}>
+ 
+        {/* ── Download + Email Invoice buttons — top-right corner, compressed ── */}
+        <div style={{ position:"absolute", top:12, right:12, zIndex:10, display:"flex", gap:6 }}>
+          <button
+            onClick={() => setShowEmailInvoice(true)}
+            style={{ display:"flex", alignItems:"center", gap:5, padding:"5px 10px", background:"#fff", border:"1px solid #d1d5db", borderRadius:7, cursor:"pointer", fontSize:11, fontWeight:600, color:"#374151", boxShadow:"0 1px 4px rgba(0,0,0,0.08)" }}
+          >
+            <Mail size={12} strokeWidth={2}/> Email Invoice
+          </button>
+ 
+          <div style={{ position:"relative" }}>
           <button
             onClick={() => setMenu(o => !o)}
             disabled={loading}
@@ -67,7 +87,7 @@ const CustomerOrderSuccess = ({ confirmedData, business, cart = [], onTrack, onH
           >
             <Download size={12} strokeWidth={2}/> {loading ? "..." : "Invoice"}
           </button>
-
+ 
           {menu && (
             <div style={{ position:"absolute", top:"calc(100% + 4px)", right:0, background:"#fff", border:"1px solid #e5e7eb", borderRadius:9, boxShadow:"0 6px 20px rgba(0,0,0,0.12)", overflow:"hidden", minWidth:140, zIndex:20, animation:"fadeUp 0.12s ease" }}>
               <button onClick={downloadJPG} style={{ display:"flex", alignItems:"center", gap:8, width:"100%", padding:"9px 12px", border:"none", background:"#fff", fontSize:12, fontWeight:600, color:"#374151", cursor:"pointer", textAlign:"left", borderBottom:"1px solid #f3f4f6" }}
@@ -80,34 +100,35 @@ const CustomerOrderSuccess = ({ confirmedData, business, cart = [], onTrack, onH
               </button>
             </div>
           )}
+          </div>
         </div>
-
+ 
         {/* ── dots — unchanged ── */}
         <div style={{ display:"flex", gap:8 }}>
           {["#f59e0b","#22c55e","#f59e0b"].map((c,i) => (
             <div key={i} style={{ width:8, height:8, borderRadius:"50%", background:c, animation:`pulse 1.2s infinite ${i*0.2}s` }}/>
           ))}
         </div>
-
+ 
         {/* ── check icon — unchanged ── */}
         <div style={{ width:90, height:90, borderRadius:"50%", background:"#dcfce7", display:"flex", alignItems:"center", justifyContent:"center", animation:"popIn 0.4s cubic-bezier(0.34,1.56,0.64,1)" }}>
           <CheckCircle2 size={50} color="#16a34a" strokeWidth={2}/>
         </div>
-
+ 
         {/* ── heading — unchanged ── */}
         <div style={{ textAlign:"center" }}>
           <div style={{ fontSize:24, fontWeight:900, color:"var(--text-primary)", marginBottom:8 }}>Order Confirmed! 🎉</div>
           <div style={{ fontSize:13.5, color:"var(--text-muted)", lineHeight:1.6, maxWidth:260 }}>
-            Your order has been placed and payment received. The kitchen has been notified!
+            Your order has been placed.
           </div>
         </div>
-
+ 
         {/* ── order detail card — unchanged ── */}
         <div style={{ background:"var(--surface-2)", border:"1px solid var(--border-light)", borderRadius:"var(--radius-lg)", padding:14, width:"100%", display:"flex", flexDirection:"column", gap:8 }}>
           {[
             ["Order Number", confirmedData?.orderNumber || "—"],
             ["Order ID",     confirmedData?.orderId     || "—"],
-            ["Amount Paid",  `{getCurrencySymbol(_currCode)}${confirmedData?.grandTotal || "—"}`],
+            ["Amount Paid",  `${getCurrencySymbol(_currCode)}${confirmedData?.grandTotal || "—"}`],
             ["Payment",      METHOD_LABEL[confirmedData?.gatewayName] || confirmedData?.gatewayName || "—"],
             ["Status",       STATUS_LABEL[confirmedData?.paymentStatus] || confirmedData?.paymentStatus || "PAID"],
             ["Date & Time",  dateStr],
@@ -125,22 +146,55 @@ const CustomerOrderSuccess = ({ confirmedData, business, cart = [], onTrack, onH
           )}
         </div>
       </div>
-
+ 
       {/* ── sticky bottom — unchanged ── */}
       <div className="cx-sticky-bottom" style={{ display:"flex", flexDirection:"column", gap:8 }}>
         <button className="cta-btn" onClick={onTrack}>Track Order Live</button>
+        {hasRated ? (
+          <button
+            disabled
+            style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:7, background:"#FFF3EB", border:"1.5px solid #F5D9C2", color:"#F2701D", fontSize:14, fontWeight:700, padding:"10px 0", borderRadius:12, cursor:"default" }}
+          >
+            <CheckCircle2 size={15} color="#F2701D" /> Thank You for Rating
+          </button>
+        ) : (
+          <button
+            onClick={() => setShowRating(true)}
+            style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:7, background:"#fff", border:"1.5px solid #F2701D", color:"#F2701D", fontSize:14, fontWeight:700, padding:"10px 0", borderRadius:12, cursor:"pointer" }}
+          >
+            <Star size={15} fill="#F2701D" color="#F2701D" /> Rate Us
+          </button>
+        )}
         <button onClick={onHome} style={{ background:"none", border:"none", color:"var(--brand)", fontSize:14, fontWeight:700, padding:"8px 0", cursor:"pointer" }}>
           Back to Home
         </button>
       </div>
-
+ 
+      {showRating && (
+        <CustomerRatingPopup
+          onClose={() => setShowRating(false)}
+          onRated={() => setHasRated(true)}
+          businessId={businessId || business?.businessId || confirmedData?.businessId}
+          customerName={confirmedData?.customerName || "Guest"}
+          customerPhone={confirmedData?.customerPhone || diningPhone}
+        />
+      )}
+ 
+      {showEmailInvoice && (
+        <CustomerEmailInvoicePopup
+          onClose={() => setShowEmailInvoice(false)}
+          orderNumber={confirmedData?.orderNumber}
+          orderId={confirmedData?.orderId}
+        />
+      )}
+ 
       {/* ── HIDDEN INVOICE — professional black & white, captured off-screen ── */}
       <div style={{ position:"absolute", left:"-9999px", top:0, width:420 }}>
         <div ref={invoiceRef} style={{ width:420, background:"#fff", fontFamily:"'Segoe UI',Arial,sans-serif", fontSize:12, color:"#111" }}>
-
+ 
           {/* Top bar */}
           <div style={{ background:"#111", height:4 }}/>
-
+ 
           {/* Business header */}
           <div style={{ padding:"20px 28px 16px", borderBottom:"2px solid #111", display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
             <div style={{ display:"flex", alignItems:"center", gap:12 }}>
@@ -163,7 +217,7 @@ const CustomerOrderSuccess = ({ confirmedData, business, cart = [], onTrack, onH
               <div style={{ fontSize:10, color:"#555", marginTop:4 }}>{dateStr}</div>
             </div>
           </div>
-
+ 
           {/* Bill to + order info row */}
           <div style={{ display:"flex", borderBottom:"1px solid #ddd" }}>
             <div style={{ flex:1, padding:"12px 28px", borderRight:"1px solid #ddd" }}>
@@ -181,7 +235,7 @@ const CustomerOrderSuccess = ({ confirmedData, business, cart = [], onTrack, onH
               </div>
             </div>
           </div>
-
+ 
           {/* Items table */}
           <div style={{ padding:"0 28px" }}>
             <table style={{ width:"100%", borderCollapse:"collapse", marginTop:0 }}>
@@ -212,7 +266,7 @@ const CustomerOrderSuccess = ({ confirmedData, business, cart = [], onTrack, onH
               </tbody>
             </table>
           </div>
-
+ 
           {/* Totals block */}
           <div style={{ padding:"0 28px 20px", marginTop:4 }}>
             <div style={{ marginLeft:"auto", width:200 }}>
@@ -230,7 +284,7 @@ const CustomerOrderSuccess = ({ confirmedData, business, cart = [], onTrack, onH
               </div>
             </div>
           </div>
-
+ 
           {/* Status bar */}
           <div style={{ margin:"0 28px 20px", border:"1px solid #e5e7eb", borderRadius:6, padding:"10px 14px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
             <div>
@@ -246,7 +300,7 @@ const CustomerOrderSuccess = ({ confirmedData, business, cart = [], onTrack, onH
               </div>
             </div>
           </div>
-
+ 
           {/* Footer */}
           <div style={{ borderTop:"2px solid #111", padding:"12px 28px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
             <div style={{ fontSize:10.5, fontWeight:600, color:"#111" }}>Thank you for your visit!</div>
@@ -255,7 +309,7 @@ const CustomerOrderSuccess = ({ confirmedData, business, cart = [], onTrack, onH
           <div style={{ background:"#111", height:4 }}/>
         </div>
       </div>
-
+ 
       <style>{`
         @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
         @keyframes popIn{0%{opacity:0;transform:scale(0.9)}100%{opacity:1;transform:scale(1)}}
@@ -264,5 +318,5 @@ const CustomerOrderSuccess = ({ confirmedData, business, cart = [], onTrack, onH
     </div>
   );
 };
-
+ 
 export default CustomerOrderSuccess;

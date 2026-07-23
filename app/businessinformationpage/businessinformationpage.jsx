@@ -3,10 +3,11 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import {
   Pencil, Check, Plus, X, Upload, Lock, Mail, Phone, Globe,
   MapPin, Building2, FileText, Clock, Calendar, Percent, Package,
-  ChevronDown, RefreshCw,
+  ChevronDown, RefreshCw, Coins,
 } from "lucide-react";
 import "../businessinformationpage/designbusinessinfo.css";
 import { getBusinessInformation, updateBusinessInformation } from "../services/businessService";
+import { COUNTRY_CURRENCY_MAP, CURRENCIES, getCurrencySymbol } from "../utils/currencyHelper";
 
 const COUNTRIES = [
   "Afghanistan","Albania","Algeria","Andorra","Angola","Argentina","Armenia","Australia",
@@ -105,22 +106,22 @@ const EMPTY = {
   phoneCode: "+91", businessPhone: "", logoPreview: null,
   licenseNumber: "", gstNumber: "", website: "",
   addressLine1: "", addressLine2: "", city: "", state: "",
-  country: "", postalCode: "",
+  country: "", currencyCode: "", postalCode: "",
   openingTime: "09:00 AM", closingTime: "10:00 PM",
   workingDays: [], timezone: "(GMT+05:30) Asia/Kolkata", description: "",
 };
 
 const BusinessInformation = () => {
-  const [data,          setData]         = useState(EMPTY);
-  const [draft,         setDraft]        = useState(EMPTY);
-  const [editing,       setEditing]      = useState(false);
-  const [errors,        setErrors]       = useState({});
-  const [loading,       setLoading]      = useState(true);
-  const [saving,        setSaving]       = useState(false);
-  const [fetchErr,      setFetchErr]     = useState("");
-  const [toast,         setToast]        = useState({ show: false, msg: "", type: "success" });
-  const [extraFields,   setExtraFields]  = useState([]);
-  const [showAddField,  setShowAddField] = useState(false);
+  const [data,         setData]        = useState(EMPTY);
+  const [draft,        setDraft]       = useState(EMPTY);
+  const [editing,      setEditing]     = useState(false);
+  const [errors,       setErrors]      = useState({});
+  const [loading,      setLoading]     = useState(true);
+  const [saving,       setSaving]      = useState(false);
+  const [fetchErr,     setFetchErr]    = useState("");
+  const [toast,        setToast]       = useState({ show: false, msg: "", type: "success" });
+  const [extraFields,  setExtraFields] = useState([]);
+  const [showAddField, setShowAddField]= useState(false);
   const logoRef = useRef();
 
   const showToast = (msg, type = "success") => {
@@ -155,6 +156,7 @@ const BusinessInformation = () => {
         city:          b.city          || "",
         state:         b.state         || "",
         country:       b.country       || "",
+        currencyCode:  b.currencyCode  || "",
         postalCode:    b.postalCode    || "",
         openingTime:   formatTimeTo12(b.openingTime),
         closingTime:   formatTimeTo12(b.closingTime),
@@ -171,10 +173,16 @@ const BusinessInformation = () => {
     }
   };
 
-  /* ── KEY FIX: stable handlers using useCallback so inputs never lose focus ── */
   const handleFieldChange = useCallback((field, value) => {
     setDraft(prev => ({ ...prev, [field]: value }));
     setErrors(prev => ({ ...prev, [field]: "" }));
+  }, []);
+
+  // When country changes → auto-set currency
+  const handleCountryChange = useCallback((country) => {
+    const auto = COUNTRY_CURRENCY_MAP[country] || "";
+    setDraft(prev => ({ ...prev, country, currencyCode: auto || prev.currencyCode }));
+    setErrors(prev => ({ ...prev, country: "" }));
   }, []);
 
   const handleLogoUpload = useCallback((e) => {
@@ -205,24 +213,15 @@ const BusinessInformation = () => {
     return e;
   };
 
-  const handleEdit = () => {
-    setDraft({ ...data });
-    setEditing(true);
-    setErrors({});
-  };
-
-  const handleCancel = () => {
-    setDraft({ ...data });
-    setEditing(false);
-    setErrors({});
-  };
+  const handleEdit   = () => { setDraft({ ...data }); setEditing(true);  setErrors({}); };
+  const handleCancel = () => { setDraft({ ...data }); setEditing(false); setErrors({}); };
 
   const handleUpdate = async () => {
     const e = validate();
     if (Object.keys(e).length) { setErrors(e); return; }
     setSaving(true);
     try {
-      const stored  = localStorage.getItem("ttl_user");
+      const stored      = localStorage.getItem("ttl_user");
       const { adminId } = JSON.parse(stored);
       const payload = {
         businessName:        draft.businessName,
@@ -237,6 +236,7 @@ const BusinessInformation = () => {
         city:                draft.city,
         state:               draft.state,
         country:             draft.country,
+        currencyCode:        draft.currencyCode  || null,
         postalCode:          draft.postalCode,
         openingTime:         to24Hour(draft.openingTime),
         closingTime:         to24Hour(draft.closingTime),
@@ -246,6 +246,15 @@ const BusinessInformation = () => {
       };
       await updateBusinessInformation(adminId, payload);
       setData({ ...draft });
+      // Update currency in localStorage
+      try {
+        const stored2 = localStorage.getItem("ttl_user");
+        if (stored2) {
+          const u = JSON.parse(stored2);
+          u.currencyCode = draft.currencyCode || u.currencyCode;
+          localStorage.setItem("ttl_user", JSON.stringify(u));
+        }
+      } catch {}
       setEditing(false);
       setErrors({});
       showToast("Business information updated successfully! ✓");
@@ -261,47 +270,45 @@ const BusinessInformation = () => {
   const updateExtraField = useCallback((id, value) => setExtraFields(p => p.map(f => f.id === id ? { ...f, value } : f)), []);
 
   const d = editing ? draft : data;
-
-  /* ── stable sub-components defined outside render to prevent remount ── */
   const spinnerStyle = { width:14, height:14, border:"2px solid rgba(255,255,255,0.4)", borderTopColor:"#fff", borderRadius:"50%", animation:"biSpin 0.7s linear infinite" };
 
-  if (loading) {
-    return (
-      <div className="bi-root">
-        <div className="bi-card" style={{ display:"flex", alignItems:"center", justifyContent:"center", minHeight:320 }}>
-          <div style={{ textAlign:"center", color:"#71717a" }}>
-            <div style={{ width:36, height:36, border:"3px solid #e4e4e7", borderTopColor:"#7c3aed", borderRadius:"50%", animation:"biSpin 0.8s linear infinite", margin:"0 auto 14px" }} />
-            <style>{`@keyframes biSpin{to{transform:rotate(360deg)}}`}</style>
-            <div style={{ fontSize:14, fontWeight:600 }}>Loading business information...</div>
-          </div>
+  if (loading) return (
+    <div className="bi-root">
+      <div className="bi-card" style={{ display:"flex", alignItems:"center", justifyContent:"center", minHeight:320 }}>
+        <div style={{ textAlign:"center", color:"#71717a" }}>
+          <div style={{ width:36, height:36, border:"3px solid #e4e4e7", borderTopColor:"#7c3aed", borderRadius:"50%", animation:"biSpin 0.8s linear infinite", margin:"0 auto 14px" }}/>
+          <style>{`@keyframes biSpin{to{transform:rotate(360deg)}}`}</style>
+          <div style={{ fontSize:14, fontWeight:600 }}>Loading business information...</div>
         </div>
       </div>
-    );
-  }
+    </div>
+  );
 
-  if (fetchErr) {
-    return (
-      <div className="bi-root">
-        <div className="bi-card">
-          <div style={{ padding:"48px 20px", textAlign:"center" }}>
-            <div style={{ fontSize:44, marginBottom:14 }}>⚠️</div>
-            <div style={{ fontSize:16, fontWeight:700, color:"#18181b", marginBottom:8 }}>Could not load business information</div>
-            <div style={{ fontSize:13, color:"#71717a", marginBottom:20 }}>{fetchErr}</div>
-            <button onClick={fetchBusiness} style={{ display:"inline-flex", alignItems:"center", gap:7, background:"#7c3aed", color:"#fff", border:"none", borderRadius:10, padding:"10px 22px", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }} type="button">
-              <RefreshCw size={15} /> Retry
-            </button>
-          </div>
+  if (fetchErr) return (
+    <div className="bi-root">
+      <div className="bi-card">
+        <div style={{ padding:"48px 20px", textAlign:"center" }}>
+          <div style={{ fontSize:44, marginBottom:14 }}>⚠️</div>
+          <div style={{ fontSize:16, fontWeight:700, color:"#18181b", marginBottom:8 }}>Could not load business information</div>
+          <div style={{ fontSize:13, color:"#71717a", marginBottom:20 }}>{fetchErr}</div>
+          <button onClick={fetchBusiness} style={{ display:"inline-flex", alignItems:"center", gap:7, background:"#7c3aed", color:"#fff", border:"none", borderRadius:10, padding:"10px 22px", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }} type="button">
+            <RefreshCw size={15}/> Retry
+          </button>
         </div>
       </div>
-    );
-  }
+    </div>
+  );
 
   return (
     <div className="bi-root">
-      <style>{`@keyframes biSpin{to{transform:rotate(360deg)}} @keyframes biToastIn{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}`}</style>
+      <style>{`
+        @keyframes biSpin    { to{transform:rotate(360deg)} }
+        @keyframes biToastIn { from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)} }
+        .bi-logo-circle:hover .bi-logo-overlay { opacity: 1 !important; }
+      `}</style>
 
       {toast.show && (
-        <div style={{ position:"fixed", bottom:28, left:"50%", transform:"translateX(-50%)", background: toast.type === "success" ? "#18181b" : "#dc2626", color:"#fff", padding:"11px 24px", borderRadius:30, fontSize:13.5, fontWeight:600, zIndex:9999, animation:"biToastIn 0.25s ease", boxShadow:"0 4px 20px rgba(0,0,0,0.18)" }}>
+        <div style={{ position:"fixed", bottom:28, left:"50%", transform:"translateX(-50%)", background: toast.type==="success"?"#18181b":"#dc2626", color:"#fff", padding:"11px 24px", borderRadius:30, fontSize:13.5, fontWeight:600, zIndex:9999, animation:"biToastIn 0.25s ease", boxShadow:"0 4px 20px rgba(0,0,0,0.18)" }}>
           {toast.msg}
         </div>
       )}
@@ -315,15 +322,15 @@ const BusinessInformation = () => {
           <div className="bi-header-actions">
             {!editing ? (
               <button className="bi-btn-edit" onClick={handleEdit} type="button">
-                <Pencil size={15} /> Edit Information
+                <Pencil size={15}/> Edit Information
               </button>
             ) : (
               <div className="bi-edit-actions">
                 <button className="bi-btn-cancel" onClick={handleCancel} type="button" disabled={saving}>
-                  <X size={15} /> Cancel
+                  <X size={15}/> Cancel
                 </button>
-                <button className="bi-btn-done" onClick={handleUpdate} type="button" disabled={saving} style={{ background: saving ? "#a78bfa" : undefined }}>
-                  {saving ? <><div style={spinnerStyle} /> Updating...</> : <><Check size={15} /> Update</>}
+                <button className="bi-btn-done" onClick={handleUpdate} type="button" disabled={saving} style={{ background: saving?"#a78bfa":undefined }}>
+                  {saving ? <><div style={spinnerStyle}/> Updating...</> : <><Check size={15}/> Update</>}
                 </button>
               </div>
             )}
@@ -332,238 +339,303 @@ const BusinessInformation = () => {
 
         {!editing && (
           <div className="bi-mode-banner">
-            <Lock size={14} />
+            <Lock size={14}/>
             <span>View mode — click <strong>Edit Information</strong> to make changes</span>
           </div>
         )}
         {editing && (
           <div className="bi-mode-banner" style={{ background:"#fef3c7", borderColor:"#fde68a", color:"#92400e" }}>
-            <Pencil size={14} />
+            <Pencil size={14}/>
             <span>Edit mode — update your details and click <strong>Update</strong> to save</span>
           </div>
         )}
 
         <div className="bi-grid">
 
-          {/* Business Name */}
+          {/* ── Business Name ── */}
           <div className="bi-field-group">
             <label className="bi-label">Business Name <span className="bi-req">*</span></label>
-            <div className={`bi-input-wrap ${errors.businessName ? "bi-err" : ""} ${!editing ? "bi-readonly" : ""}`}>
-              <Building2 size={15} className="bi-icon" />
+            <div className={`bi-input-wrap ${errors.businessName?"bi-err":""} ${!editing?"bi-readonly":""}`}>
+              <Building2 size={15} className="bi-icon"/>
               <input className="bi-input" type="text" placeholder="Enter business name"
                 value={d.businessName} disabled={!editing}
-                onChange={e => handleFieldChange("businessName", e.target.value)} />
+                onChange={e => handleFieldChange("businessName", e.target.value)}/>
             </div>
             {errors.businessName && <span className="bi-field-err">⚠ {errors.businessName}</span>}
           </div>
 
-          {/* Business Type — always read-only */}
+          {/* ── Business Type — read-only ── */}
           <div className="bi-field-group">
             <label className="bi-label">Business Type</label>
             <div className="bi-input-wrap bi-readonly">
-              <MapPin size={15} className="bi-icon" />
-              <input className="bi-input" type="text" value={d.businessType} disabled readOnly />
+              <MapPin size={15} className="bi-icon"/>
+              <input className="bi-input" type="text" value={d.businessType} disabled readOnly/>
               <span style={{ fontSize:11, color:"#a1a1aa", padding:"0 10px", whiteSpace:"nowrap" }}>Read-only</span>
             </div>
           </div>
 
-          {/* Business Email */}
+          {/* ── Business Email ── */}
           <div className="bi-field-group">
             <label className="bi-label">Business Email <span className="bi-req">*</span></label>
-            <div className={`bi-input-wrap ${errors.businessEmail ? "bi-err" : ""} ${!editing ? "bi-readonly" : ""}`}>
-              <Mail size={15} className="bi-icon" />
+            <div className={`bi-input-wrap ${errors.businessEmail?"bi-err":""} ${!editing?"bi-readonly":""}`}>
+              <Mail size={15} className="bi-icon"/>
               <input className="bi-input" type="email" placeholder="Enter business email"
                 value={d.businessEmail} disabled={!editing}
-                onChange={e => handleFieldChange("businessEmail", e.target.value)} />
+                onChange={e => handleFieldChange("businessEmail", e.target.value)}/>
             </div>
             {errors.businessEmail && <span className="bi-field-err">⚠ {errors.businessEmail}</span>}
           </div>
 
-          {/* Business Phone */}
+          {/* ── Business Phone ── */}
           <div className="bi-field-group">
             <label className="bi-label">Business Phone Number <span className="bi-req">*</span></label>
-            <div className={`bi-phone-wrap ${errors.businessPhone ? "bi-err" : ""} ${!editing ? "bi-readonly" : ""}`}>
-              <Phone size={15} className="bi-icon" />
+            <div className={`bi-phone-wrap ${errors.businessPhone?"bi-err":""} ${!editing?"bi-readonly":""}`}>
+              <Phone size={15} className="bi-icon"/>
               <select className="bi-phone-code" value={d.phoneCode} disabled={!editing}
                 onChange={e => handleFieldChange("phoneCode", e.target.value)}>
                 {PHONE_CODES.map(c => <option key={c.iso} value={c.code}>{c.flag} {c.code}</option>)}
               </select>
-              <ChevronDown size={13} className="bi-phone-chevron" />
+              <ChevronDown size={13} className="bi-phone-chevron"/>
               <input className="bi-input bi-phone-input" type="tel" placeholder="Enter phone number"
                 value={d.businessPhone} disabled={!editing}
-                onChange={e => handleFieldChange("businessPhone", e.target.value)} />
+                onChange={e => handleFieldChange("businessPhone", e.target.value)}/>
             </div>
             {errors.businessPhone && <span className="bi-field-err">⚠ {errors.businessPhone}</span>}
           </div>
 
-          {/* Logo */}
+          {/* ── Logo — CIRCLE shape ── */}
           <div className="bi-field-group">
             <label className="bi-label">Business Logo (Optional)</label>
-            <div className={`bi-logo-wrap ${!editing ? "bi-readonly" : ""}`}
-              onClick={() => editing && logoRef.current?.click()}
-              role={editing ? "button" : undefined}
-              tabIndex={editing ? 0 : undefined}
-              onKeyDown={e => editing && e.key === "Enter" && logoRef.current?.click()}>
-              <input ref={logoRef} type="file" accept="image/*" style={{ display:"none" }} onChange={handleLogoUpload} />
-              {d.logoPreview ? (
-                <img src={d.logoPreview} alt="Business logo" className="bi-logo-preview" />
-              ) : (
-                <>
-                  <Upload size={22} className="bi-upload-icon" />
-                  <span className="bi-upload-text">{editing ? "Click to upload logo" : "No logo uploaded"}</span>
-                  {editing && <span className="bi-upload-hint">PNG, JPG up to 2MB</span>}
-                </>
-              )}
+            <div style={{ display:"flex", alignItems:"center", gap:16 }}>
+              {/* Circle upload button */}
+              <div
+                className="bi-logo-circle"
+                onClick={() => editing && logoRef.current?.click()}
+                style={{
+                  width:88, height:88, borderRadius:"50%",
+                  border: editing ? "2.5px dashed #7c3aed" : "2.5px solid #e4e4e7",
+                  overflow:"hidden", position:"relative", flexShrink:0,
+                  cursor: editing ? "pointer" : "default",
+                  background:"#f4f4f5",
+                  display:"flex", alignItems:"center", justifyContent:"center",
+                  transition:"border-color 0.2s",
+                }}
+              >
+                <input ref={logoRef} type="file" accept="image/*" style={{ display:"none" }} onChange={handleLogoUpload}/>
+                {d.logoPreview ? (
+                  <>
+                    <img src={d.logoPreview} alt="logo" style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }}/>
+                    {/* Hover overlay */}
+                    {editing && (
+                      <div className="bi-logo-overlay" style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.45)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:4, opacity:0, transition:"opacity 0.2s" }}>
+                        <Upload size={18} color="#fff"/>
+                        <span style={{ fontSize:10, fontWeight:700, color:"#fff" }}>Change</span>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:5 }}>
+                    <Upload size={20} color={editing?"#7c3aed":"#a1a1aa"}/>
+                    {editing && <span style={{ fontSize:9.5, fontWeight:700, color:"#7c3aed", textAlign:"center", lineHeight:1.3 }}>Upload<br/>Logo</span>}
+                  </div>
+                )}
+              </div>
+              {/* Helper text */}
+              <div>
+                <div style={{ fontSize:13, fontWeight:600, color:"#18181b", marginBottom:4 }}>
+                  {d.logoPreview ? "Logo uploaded" : "No logo uploaded"}
+                </div>
+                {editing ? (
+                  <>
+                    <div style={{ fontSize:12, color:"#71717a", lineHeight:1.5 }}>Click the circle to upload your business logo.</div>
+                    <div style={{ fontSize:11.5, color:"#a1a1aa", marginTop:2 }}>PNG, JPG up to 2MB. Best size: 400×400px.</div>
+                    {d.logoPreview && (
+                      <button onClick={() => handleFieldChange("logoPreview", null)} type="button"
+                        style={{ marginTop:6, fontSize:11.5, color:"#ef4444", background:"none", border:"none", cursor:"pointer", padding:0, fontFamily:"inherit", fontWeight:600 }}>
+                        ✕ Remove logo
+                      </button>
+                    )}
+                  </>
+                ) : (
+                  <div style={{ fontSize:12, color:"#a1a1aa" }}>Click Edit to upload or change logo.</div>
+                )}
+              </div>
             </div>
           </div>
 
-          {/* License */}
+          {/* ── License ── */}
           <div className="bi-field-group">
             <label className="bi-label">Business License Number (Optional)</label>
-            <div className={`bi-input-wrap ${!editing ? "bi-readonly" : ""}`}>
-              <FileText size={15} className="bi-icon" />
+            <div className={`bi-input-wrap ${!editing?"bi-readonly":""}`}>
+              <FileText size={15} className="bi-icon"/>
               <input className="bi-input" type="text" placeholder="Enter license number"
                 value={d.licenseNumber} disabled={!editing}
-                onChange={e => handleFieldChange("licenseNumber", e.target.value)} />
+                onChange={e => handleFieldChange("licenseNumber", e.target.value)}/>
             </div>
           </div>
 
-          {/* GST */}
+          {/* ── GST ── */}
           <div className="bi-field-group">
             <label className="bi-label">GST Number (Optional)</label>
-            <div className={`bi-input-wrap ${!editing ? "bi-readonly" : ""}`}>
-              <Percent size={15} className="bi-icon" />
+            <div className={`bi-input-wrap ${!editing?"bi-readonly":""}`}>
+              <Percent size={15} className="bi-icon"/>
               <input className="bi-input" type="text" placeholder="Enter GST number"
                 value={d.gstNumber} disabled={!editing}
-                onChange={e => handleFieldChange("gstNumber", e.target.value)} />
+                onChange={e => handleFieldChange("gstNumber", e.target.value)}/>
             </div>
           </div>
 
-          {/* Website */}
+          {/* ── Website ── */}
           <div className="bi-field-group">
             <label className="bi-label">Website (Optional)</label>
-            <div className={`bi-input-wrap ${!editing ? "bi-readonly" : ""}`}>
-              <Globe size={15} className="bi-icon" />
+            <div className={`bi-input-wrap ${!editing?"bi-readonly":""}`}>
+              <Globe size={15} className="bi-icon"/>
               <input className="bi-input" type="url" placeholder="https://yourwebsite.com"
                 value={d.website} disabled={!editing}
-                onChange={e => handleFieldChange("website", e.target.value)} />
+                onChange={e => handleFieldChange("website", e.target.value)}/>
             </div>
           </div>
 
-          {/* Address Line 1 */}
+          {/* ── Address Line 1 ── */}
           <div className="bi-col-full">
             <div className="bi-field-group">
               <label className="bi-label">Address Line 1 <span className="bi-req">*</span></label>
-              <div className={`bi-input-wrap ${errors.addressLine1 ? "bi-err" : ""} ${!editing ? "bi-readonly" : ""}`}>
-                <MapPin size={15} className="bi-icon" />
+              <div className={`bi-input-wrap ${errors.addressLine1?"bi-err":""} ${!editing?"bi-readonly":""}`}>
+                <MapPin size={15} className="bi-icon"/>
                 <input className="bi-input" type="text" placeholder="Enter address line 1"
                   value={d.addressLine1} disabled={!editing}
-                  onChange={e => handleFieldChange("addressLine1", e.target.value)} />
+                  onChange={e => handleFieldChange("addressLine1", e.target.value)}/>
               </div>
               {errors.addressLine1 && <span className="bi-field-err">⚠ {errors.addressLine1}</span>}
             </div>
           </div>
 
-          {/* Address Line 2 */}
+          {/* ── Address Line 2 ── */}
           <div className="bi-col-full">
             <div className="bi-field-group">
               <label className="bi-label">Address Line 2 (Optional)</label>
-              <div className={`bi-input-wrap ${!editing ? "bi-readonly" : ""}`}>
-                <Building2 size={15} className="bi-icon" />
+              <div className={`bi-input-wrap ${!editing?"bi-readonly":""}`}>
+                <Building2 size={15} className="bi-icon"/>
                 <input className="bi-input" type="text" placeholder="Enter address line 2"
                   value={d.addressLine2} disabled={!editing}
-                  onChange={e => handleFieldChange("addressLine2", e.target.value)} />
+                  onChange={e => handleFieldChange("addressLine2", e.target.value)}/>
               </div>
             </div>
           </div>
 
-          {/* City */}
+          {/* ── City ── */}
           <div className="bi-field-group">
             <label className="bi-label">City <span className="bi-req">*</span></label>
-            <div className={`bi-input-wrap ${errors.city ? "bi-err" : ""} ${!editing ? "bi-readonly" : ""}`}>
-              <Building2 size={15} className="bi-icon" />
+            <div className={`bi-input-wrap ${errors.city?"bi-err":""} ${!editing?"bi-readonly":""}`}>
+              <Building2 size={15} className="bi-icon"/>
               <input className="bi-input" type="text" placeholder="Enter city"
                 value={d.city} disabled={!editing}
-                onChange={e => handleFieldChange("city", e.target.value)} />
+                onChange={e => handleFieldChange("city", e.target.value)}/>
             </div>
             {errors.city && <span className="bi-field-err">⚠ {errors.city}</span>}
           </div>
 
-          {/* State */}
+          {/* ── State ── */}
           <div className="bi-field-group">
             <label className="bi-label">State / Province <span className="bi-req">*</span></label>
-            <div className={`bi-input-wrap ${errors.state ? "bi-err" : ""} ${!editing ? "bi-readonly" : ""}`}>
-              <MapPin size={15} className="bi-icon" />
+            <div className={`bi-input-wrap ${errors.state?"bi-err":""} ${!editing?"bi-readonly":""}`}>
+              <MapPin size={15} className="bi-icon"/>
               <input className="bi-input" type="text" placeholder="Enter state"
                 value={d.state} disabled={!editing}
-                onChange={e => handleFieldChange("state", e.target.value)} />
+                onChange={e => handleFieldChange("state", e.target.value)}/>
             </div>
             {errors.state && <span className="bi-field-err">⚠ {errors.state}</span>}
           </div>
 
-          {/* Country */}
+          {/* ── Country + Currency side by side ── */}
           <div className="bi-field-group">
             <label className="bi-label">Country <span className="bi-req">*</span></label>
-            <div className={`bi-input-wrap bi-select-wrap ${errors.country ? "bi-err" : ""} ${!editing ? "bi-readonly" : ""}`}>
-              <Globe size={15} className="bi-icon" />
+            <div className={`bi-input-wrap bi-select-wrap ${errors.country?"bi-err":""} ${!editing?"bi-readonly":""}`}>
+              <Globe size={15} className="bi-icon"/>
               <select className="bi-select" value={d.country} disabled={!editing}
-                onChange={e => handleFieldChange("country", e.target.value)}>
+                onChange={e => handleCountryChange(e.target.value)}>
                 <option value="">Select country</option>
                 {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
-              <ChevronDown size={13} className="bi-select-chevron" />
+              <ChevronDown size={13} className="bi-select-chevron"/>
             </div>
             {errors.country && <span className="bi-field-err">⚠ {errors.country}</span>}
           </div>
 
-          {/* Postal Code */}
+          {/* ── Currency ── */}
+          <div className="bi-field-group">
+            <label className="bi-label">Currency</label>
+            <div className={`bi-input-wrap bi-select-wrap ${!editing?"bi-readonly":""}`}>
+              {/* Show symbol as icon */}
+              <span style={{ paddingLeft:12, paddingRight:6, fontSize:14, fontWeight:700, color:"#7c3aed", flexShrink:0, fontFamily:"monospace" }}>
+                {d.currencyCode ? getCurrencySymbol(d.currencyCode) : "—"}
+              </span>
+              <select className="bi-select" style={{ paddingLeft:0 }}
+                value={d.currencyCode || ""} disabled={!editing}
+                onChange={e => handleFieldChange("currencyCode", e.target.value)}>
+                <option value="">Not selected</option>
+                {CURRENCIES.map(cur => (
+                  <option key={cur.code} value={cur.code}>{cur.label}</option>
+                ))}
+              </select>
+              <ChevronDown size={13} className="bi-select-chevron"/>
+            </div>
+            {!editing && !d.currencyCode && (
+              <span style={{ fontSize:11.5, color:"#f59e0b", marginTop:4, display:"block" }}>⚠ No currency selected</span>
+            )}
+            {editing && (
+              <span style={{ fontSize:11, color:"#a1a1aa", marginTop:4, display:"block" }}>Auto-set when country is selected. You can change manually.</span>
+            )}
+          </div>
+
+          {/* ── Postal Code ── */}
           <div className="bi-field-group">
             <label className="bi-label">Postal / ZIP Code <span className="bi-req">*</span></label>
-            <div className={`bi-input-wrap ${errors.postalCode ? "bi-err" : ""} ${!editing ? "bi-readonly" : ""}`}>
-              <Package size={15} className="bi-icon" />
+            <div className={`bi-input-wrap ${errors.postalCode?"bi-err":""} ${!editing?"bi-readonly":""}`}>
+              <Package size={15} className="bi-icon"/>
               <input className="bi-input" type="text" placeholder="Enter postal code"
                 value={d.postalCode} disabled={!editing}
-                onChange={e => handleFieldChange("postalCode", e.target.value)} />
+                onChange={e => handleFieldChange("postalCode", e.target.value)}/>
             </div>
             {errors.postalCode && <span className="bi-field-err">⚠ {errors.postalCode}</span>}
           </div>
 
-          {/* Opening Time */}
+          {/* ── Opening Time ── */}
           <div className="bi-field-group">
             <label className="bi-label">Opening Time <span className="bi-req">*</span></label>
-            <div className={`bi-input-wrap bi-select-wrap ${!editing ? "bi-readonly" : ""}`}>
-              <Clock size={15} className="bi-icon" />
+            <div className={`bi-input-wrap bi-select-wrap ${!editing?"bi-readonly":""}`}>
+              <Clock size={15} className="bi-icon"/>
               <select className="bi-select" value={d.openingTime} disabled={!editing}
                 onChange={e => handleFieldChange("openingTime", e.target.value)}>
                 {TIMES.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
-              <ChevronDown size={13} className="bi-select-chevron" />
+              <ChevronDown size={13} className="bi-select-chevron"/>
             </div>
           </div>
 
-          {/* Closing Time */}
+          {/* ── Closing Time ── */}
           <div className="bi-field-group">
             <label className="bi-label">Closing Time <span className="bi-req">*</span></label>
-            <div className={`bi-input-wrap bi-select-wrap ${!editing ? "bi-readonly" : ""}`}>
-              <Clock size={15} className="bi-icon" />
+            <div className={`bi-input-wrap bi-select-wrap ${!editing?"bi-readonly":""}`}>
+              <Clock size={15} className="bi-icon"/>
               <select className="bi-select" value={d.closingTime} disabled={!editing}
                 onChange={e => handleFieldChange("closingTime", e.target.value)}>
                 {TIMES.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
-              <ChevronDown size={13} className="bi-select-chevron" />
+              <ChevronDown size={13} className="bi-select-chevron"/>
             </div>
           </div>
 
-          {/* Working Days */}
+          {/* ── Working Days ── */}
           <div className="bi-field-group">
             <label className="bi-label">Working Days (Optional)</label>
-            <div className={`bi-input-wrap bi-select-wrap ${!editing ? "bi-readonly" : ""}`}>
-              <Calendar size={15} className="bi-icon" />
+            <div className={`bi-input-wrap bi-select-wrap ${!editing?"bi-readonly":""}`}>
+              <Calendar size={15} className="bi-icon"/>
               <select className="bi-select" multiple value={d.workingDays}
                 onChange={handleDaysChange} disabled={!editing} size={1} style={{ minHeight:42 }}>
                 {DAYS.map(day => <option key={day} value={day}>{day}</option>)}
               </select>
-              <ChevronDown size={13} className="bi-select-chevron" />
+              <ChevronDown size={13} className="bi-select-chevron"/>
             </div>
             {editing && <span className="bi-hint">Hold Ctrl / Cmd to select multiple days</span>}
             {!editing && d.workingDays.length > 0 && (
@@ -573,33 +645,33 @@ const BusinessInformation = () => {
             )}
           </div>
 
-          {/* Timezone */}
+          {/* ── Timezone ── */}
           <div className="bi-field-group">
             <label className="bi-label">Time Zone <span className="bi-req">*</span></label>
-            <div className={`bi-input-wrap bi-select-wrap ${!editing ? "bi-readonly" : ""}`}>
-              <Globe size={15} className="bi-icon" />
+            <div className={`bi-input-wrap bi-select-wrap ${!editing?"bi-readonly":""}`}>
+              <Globe size={15} className="bi-icon"/>
               <select className="bi-select" value={d.timezone} disabled={!editing}
                 onChange={e => handleFieldChange("timezone", e.target.value)}>
                 {TIMEZONES.map(tz => <option key={tz} value={tz}>{tz}</option>)}
               </select>
-              <ChevronDown size={13} className="bi-select-chevron" />
+              <ChevronDown size={13} className="bi-select-chevron"/>
             </div>
           </div>
 
-          {/* Description */}
+          {/* ── Description ── */}
           <div className="bi-col-full">
             <div className="bi-field-group">
               <label className="bi-label">Business Description (Optional)</label>
-              <div className={`bi-textarea-wrap ${!editing ? "bi-readonly" : ""}`}>
+              <div className={`bi-textarea-wrap ${!editing?"bi-readonly":""}`}>
                 <textarea className="bi-textarea" placeholder="Tell us about your business..."
                   value={d.description} disabled={!editing}
-                  onChange={e => handleFieldChange("description", e.target.value)} />
-                {editing && <Pencil size={14} className="bi-textarea-icon" />}
+                  onChange={e => handleFieldChange("description", e.target.value)}/>
+                {editing && <Pencil size={14} className="bi-textarea-icon"/>}
               </div>
             </div>
           </div>
 
-          {/* Extra fields */}
+          {/* ── Extra fields ── */}
           {extraFields.map(field => {
             const Icon = field.icon;
             return (
@@ -607,15 +679,15 @@ const BusinessInformation = () => {
                 <div className="bi-field-group">
                   <label className="bi-label">{field.label}</label>
                   <div className="bi-extra-field-row">
-                    <div className={`bi-input-wrap ${!editing ? "bi-readonly" : ""}`}>
-                      <Icon size={15} className="bi-icon" />
+                    <div className={`bi-input-wrap ${!editing?"bi-readonly":""}`}>
+                      <Icon size={15} className="bi-icon"/>
                       <input className="bi-input" type="text" placeholder={field.placeholder}
                         value={field.value} disabled={!editing}
-                        onChange={e => updateExtraField(field.id, e.target.value)} />
+                        onChange={e => updateExtraField(field.id, e.target.value)}/>
                     </div>
                     {editing && (
-                      <button className="bi-remove-field-btn" onClick={() => removeExtraField(field.id)} type="button" aria-label="Remove field">
-                        <X size={15} />
+                      <button className="bi-remove-field-btn" onClick={() => removeExtraField(field.id)} type="button">
+                        <X size={15}/>
                       </button>
                     )}
                   </div>
@@ -624,12 +696,12 @@ const BusinessInformation = () => {
             );
           })}
 
-          {/* Add field button */}
+          {/* ── Add field ── */}
           {editing && (
             <div className="bi-col-full">
               <div className="bi-add-field-row">
                 <button className="bi-add-field-btn" onClick={() => setShowAddField(v => !v)} type="button">
-                  <Plus size={15} /> Add New Field
+                  <Plus size={15}/> Add New Field
                 </button>
                 {showAddField && (
                   <div className="bi-field-picker">
@@ -638,7 +710,7 @@ const BusinessInformation = () => {
                       const Icon = type.icon;
                       return (
                         <button key={type.label} className="bi-field-picker-item" onClick={() => addExtraField(type)} type="button">
-                          <Icon size={14} /> {type.label}
+                          <Icon size={14}/> {type.label}
                         </button>
                       );
                     })}
@@ -655,18 +727,18 @@ const BusinessInformation = () => {
             <div style={{ fontSize:12.5, color:"#71717a" }}>⚠ Business type cannot be changed after setup.</div>
             <div style={{ display:"flex", gap:10 }}>
               <button className="bi-btn-cancel" onClick={handleCancel} type="button" disabled={saving}>
-                <X size={15} /> Cancel
+                <X size={15}/> Cancel
               </button>
               <button className="bi-btn-done" onClick={handleUpdate} type="button" disabled={saving}
-                style={{ background: saving ? "#a78bfa" : undefined, minWidth:120 }}>
-                {saving ? <><div style={spinnerStyle} /> Updating...</> : <><Check size={15} /> Update</>}
+                style={{ background: saving?"#a78bfa":undefined, minWidth:120 }}>
+                {saving ? <><div style={spinnerStyle}/> Updating...</> : <><Check size={15}/> Update</>}
               </button>
             </div>
           </div>
         )}
 
         <div className="bi-secure-note">
-          <Lock size={13} />
+          <Lock size={13}/>
           Your information is secure and will never be shared with anyone.
         </div>
       </div>

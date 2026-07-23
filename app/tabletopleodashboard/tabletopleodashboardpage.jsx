@@ -23,6 +23,7 @@ import MyOrderTableTopleoPage   from '../orderstabletopleo/orderstabletopleopage
 import useWebSocket             from '../hooks/useWebSocket';
 import { useCurrency }          from '../context/CurrencyContext';
 import { formatCurrency }       from '../utils/currencyHelper';
+import DashboardMainSetup from '../ApplicationMainLayout/dashboardsetup'
 
 const PAY_LABEL = { upi:'UPI', razorpay:'Razorpay', stripe:'Stripe', paypal:'PayPal', pay_at_counter:'At Counter', cash:'Cash' };
 const PAY_COLOR = { upi:'#7c3aed', razorpay:'#3395ff', stripe:'#635bff', paypal:'#003087', pay_at_counter:'#b45309', cash:'#16a34a' };
@@ -158,7 +159,7 @@ const AdminDashboardNew = () => {
     if (activeMenu === 'notifications') {
       return <div data-afd-theme={dark?'dark':'light'}><NotificationTableTopLeo dark={dark}/></div>;
     }
-    const PAGE_MAP = { 'menu-category':MenuCategory, 'business-info':BusinessInformation, 'settings':SettingsPage, 'help-desk':HelpDeskPage, 'payment-setup':PaymentSetup };
+    const PAGE_MAP = { 'menu-category':MenuCategory, 'business-info':BusinessInformation, 'settings':SettingsPage, 'help-desk':HelpDeskPage, 'payment-setup':PaymentSetup,'home':DashboardMainSetup };
     const ActivePage = PAGE_MAP[activeMenu];
     if (ActivePage) return <div data-afd-theme={dark?'dark':'light'}><ActivePage/></div>;
     if (activeMenu === 'admin-setup') return null;
