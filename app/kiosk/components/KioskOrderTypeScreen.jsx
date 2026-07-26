@@ -1,13 +1,13 @@
 "use client";
 import { useState } from "react";
-import { CheckCircle2, ArrowRight, X } from "lucide-react";
+import { CheckCircle2, ArrowRight, ArrowLeft } from "lucide-react";
 
 const OPTIONS = [
   { id: "dine-in", emoji: "🍽️", title: "Dine In", desc: "Sit down and enjoy your meal inside." },
   { id: "takeaway", emoji: "🥡", title: "Take Away", desc: "Grab your order and go." },
 ];
 
-const KioskOrderTypeScreen = ({ diningInfo, onInfoChange, onCancel, onContinue }) => {
+const KioskOrderTypeScreen = ({ diningInfo, onInfoChange, onBack, onContinue }) => {
   const [errors, setErrors] = useState({});
 
   const set = (field) => (e) => {
@@ -31,7 +31,7 @@ const KioskOrderTypeScreen = ({ diningInfo, onInfoChange, onCancel, onContinue }
   return (
     <div className="k-step-shell">
       <div className="k-step-header">
-        <button className="k-step-back" onClick={onCancel} aria-label="Cancel order"><X size={24} /></button>
+        <button className="k-step-back" onClick={onBack}><ArrowLeft size={22} /></button>
         <div className="k-step-title">How would you like your order?</div>
       </div>
 
@@ -46,7 +46,7 @@ const KioskOrderTypeScreen = ({ diningInfo, onInfoChange, onCancel, onContinue }
                   className={`k-choice-card ${active ? "is-selected" : ""}`}
                   onClick={() => { onInfoChange((p) => ({ ...p, type: opt.id })); setErrors((p) => ({ ...p, type: "" })); }}
                 >
-                  {active && <div className="k-choice-check"><CheckCircle2 size={18} /></div>}
+                  {active && <div className="k-choice-check"><CheckCircle2 size={17} /></div>}
                   <div className="k-choice-emoji">{opt.emoji}</div>
                   <div className="k-choice-title">{opt.title}</div>
                   <div className="k-choice-desc">{opt.desc}</div>
@@ -57,7 +57,7 @@ const KioskOrderTypeScreen = ({ diningInfo, onInfoChange, onCancel, onContinue }
           {errors.type && <p style={{ color: "var(--k-danger)", fontSize: 14, fontWeight: 600, marginTop: 14, textAlign: "center" }}>{errors.type}</p>}
 
           {diningInfo.type && (
-            <div style={{ marginTop: 34, animation: "k-fade-in 0.2s ease" }}>
+            <div style={{ marginTop: 30, animation: "k-fade-in 0.2s ease" }}>
               <label className="k-field-label">
                 Your Name {diningInfo.type === "takeaway" && <span style={{ color: "var(--k-danger)" }}>*</span>}
               </label>
@@ -71,15 +71,15 @@ const KioskOrderTypeScreen = ({ diningInfo, onInfoChange, onCancel, onContinue }
 
               {diningInfo.type === "dine-in" && (
                 <>
-                  <label className="k-field-label" style={{ marginTop: 20 }}>Table Number (optional)</label>
+                  <label className="k-field-label" style={{ marginTop: 18 }}>Table Number (optional)</label>
                   <input className="k-field-input" placeholder="e.g. Table 5" value={diningInfo.table} onChange={set("table")} />
                 </>
               )}
 
-              <label className="k-field-label" style={{ marginTop: 20 }}>Phone Number (optional)</label>
+              <label className="k-field-label" style={{ marginTop: 18 }}>Phone Number (optional)</label>
               <input className="k-field-input" type="tel" placeholder="For order updates" value={diningInfo.phone} onChange={set("phone")} />
 
-              <label className="k-field-label" style={{ marginTop: 20 }}>Special Instructions (optional)</label>
+              <label className="k-field-label" style={{ marginTop: 18 }}>Special Instructions (optional)</label>
               <textarea
                 className="k-notes-input"
                 placeholder="e.g. Less spicy, no onion, extra sauce..."
@@ -98,7 +98,7 @@ const KioskOrderTypeScreen = ({ diningInfo, onInfoChange, onCancel, onContinue }
             disabled={!diningInfo.type}
             onClick={handleContinue}
           >
-            Continue to Menu <ArrowRight size={22} />
+            Continue to Payment <ArrowRight size={22} />
           </button>
         </div>
       </div>

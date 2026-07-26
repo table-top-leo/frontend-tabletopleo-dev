@@ -7,10 +7,10 @@ import useWebSocket from "../../hooks/useWebSocket";
 const STATUS_TIMELINE = ["PLACED", "ACCEPTED", "PREPARING", "READY", "COMPLETED"];
 
 const STATUS_CONFIG = {
-  PLACED:    { label: "Order Placed",     emoji: "📋", message: "Your order has been received.",                 color: "#5b5bff" },
-  ACCEPTED:  { label: "Order Accepted",   emoji: "✅", message: "Your order has been accepted by the kitchen.",  color: "#0ea5e9" },
-  PREPARING: { label: "Preparing",        emoji: "👨‍🍳", message: "Our chefs are preparing your order now.",       color: "#c98400" },
-  READY:     { label: "Ready for Pickup", emoji: "🍽️", message: "Your order is ready! Please collect it.",       color: "#f97316" },
+  PLACED:    { label: "Order Placed",     emoji: "📋", message: "Your order has been received.",                 color: "#6D5BFF" },
+  ACCEPTED:  { label: "Order Accepted",   emoji: "✅", message: "Your order has been accepted by the kitchen.",  color: "#2F8FE0" },
+  PREPARING: { label: "Preparing",        emoji: "👨‍🍳", message: "Our chefs are preparing your order now.",       color: "#E08A00" },
+  READY:     { label: "Ready for Pickup", emoji: "🍽️", message: "Your order is ready! Please collect it.",       color: "#F2701D" },
   COMPLETED: { label: "Completed",        emoji: "🎉", message: "Thank you for ordering with us. Enjoy!",        color: "var(--k-success)" },
   CANCELLED: { label: "Cancelled",        emoji: "❌", message: "This order has been cancelled.",                 color: "var(--k-danger)" },
 };
@@ -58,7 +58,7 @@ const KioskLiveTracking = ({ orderId, orderNumber, business, onBack, onCompleted
   return (
     <div className="k-step-shell">
       <div className="k-step-header">
-        <button className="k-step-back" onClick={onBack}><ArrowLeft size={24} /></button>
+        <button className="k-step-back" onClick={onBack}><ArrowLeft size={22} /></button>
         <div className="k-step-title">Track Order</div>
       </div>
 
@@ -66,22 +66,22 @@ const KioskLiveTracking = ({ orderId, orderNumber, business, onBack, onCompleted
         <div className="k-step-body-inner">
           <div
             className="k-card"
-            style={{ padding: 24, marginBottom: 30, background: `${cfg.color}14`, borderColor: `${cfg.color}33` }}
+            style={{ padding: 22, marginBottom: 26, background: `${cfg.color}14`, borderColor: `${cfg.color}33` }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
               <div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: "var(--k-ink-mute)" }}>Order</div>
-                <div style={{ fontSize: 24, fontWeight: 900 }}>{orderNumber || orderId}</div>
+                <div style={{ fontSize: 12.5, fontWeight: 800, color: "var(--k-ink-mute)" }}>Order</div>
+                <div style={{ fontSize: 22, fontWeight: 900 }}>{orderNumber || orderId}</div>
               </div>
-              <div className="k-pill" style={{ background: cfg.color, color: "#fff", fontSize: 14 }}>
+              <div className="k-pill" style={{ background: cfg.color, color: "#fff", fontSize: 13 }}>
                 {cfg.emoji} {cfg.label}
               </div>
             </div>
-            <div style={{ fontSize: 15, color: "var(--k-ink-soft)" }}>{cfg.message}</div>
+            <div style={{ fontSize: 14, color: "var(--k-ink-soft)" }}>{cfg.message}</div>
             {!isCancelled && currentStatus !== "COMPLETED" && (
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 12 }}>
-                <Clock size={16} color="var(--k-ink-mute)" />
-                <span style={{ fontSize: 14, color: "var(--k-ink-mute)" }}>
+                <Clock size={15} color="var(--k-ink-mute)" />
+                <span style={{ fontSize: 13.5, color: "var(--k-ink-mute)" }}>
                   Estimated <strong style={{ color: "var(--k-ink)" }}>{statusData?.estimatedMinutes || 20} mins</strong>
                 </span>
               </div>
@@ -89,10 +89,10 @@ const KioskLiveTracking = ({ orderId, orderNumber, business, onBack, onCompleted
           </div>
 
           {isCancelled ? (
-            <div className="k-card" style={{ padding: 26, textAlign: "center", background: "var(--k-danger-bg)" }}>
-              <div style={{ fontSize: 40, marginBottom: 8 }}>❌</div>
-              <div style={{ fontSize: 18, fontWeight: 800, color: "var(--k-danger)" }}>Order Cancelled</div>
-              <div style={{ fontSize: 14, color: "var(--k-ink-mute)", marginTop: 6 }}>
+            <div className="k-card" style={{ padding: 24, textAlign: "center", background: "var(--k-danger-bg)" }}>
+              <div style={{ fontSize: 38, marginBottom: 8 }}>❌</div>
+              <div style={{ fontSize: 17, fontWeight: 800, color: "var(--k-danger)" }}>Order Cancelled</div>
+              <div style={{ fontSize: 13.5, color: "var(--k-ink-mute)", marginTop: 6 }}>
                 Please speak with a staff member for assistance.
               </div>
             </div>

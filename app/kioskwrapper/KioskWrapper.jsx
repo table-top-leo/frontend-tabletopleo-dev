@@ -4,26 +4,27 @@ import "../designkioskflow/kiosk-common.css";
 import "../designkioskflow/kiosk-layout.css";
 import "../designkioskflow/kiosk-components.css";
 
-import KioskAttractScreen    from "../kiosk/components/KioskAttractScreen";
-import KioskOrderTypeScreen  from "../kiosk/components/KioskOrderTypeScreen";
-import KioskMenuScreen       from "../kiosk/components/KioskMenuScreen";
-import KioskProductModal     from "../kiosk/components/KioskProductModal";
-import KioskCartScreen       from "../kiosk/components/KioskCartScreen";
-import KioskPaymentScreen    from "../kiosk/components/KioskPaymentScreen";
-import KioskOrderSuccess     from "../kiosk/components/KioskOrderSuccess";
+import KioskAttractScreen     from "../kiosk/components/KioskAttractScreen";
+import KioskMenuScreen        from "../kiosk/components/KioskMenuScreen";
+import KioskProductModal      from "../kiosk/components/KioskProductModal";
+import KioskCartScreen        from "../kiosk/components/KioskCartScreen";
+import KioskOrderTypeScreen   from "../kiosk/components/KioskOrderTypeScreen";
+import KioskPaymentScreen     from "../kiosk/components/KioskPaymentScreen";
+import KioskOrderSuccess      from "../kiosk/components/KioskOrderSuccess";
 import KioskEmailInvoicePopup from "../kiosk/components/KioskEmailInvoicePopup";
-import KioskRatingPopup      from "../kiosk/components/KioskRatingPopup";
-import KioskLiveTracking     from "../kiosk/components/KioskLiveTracking";
-import useIdleTimer          from "../kiosk/hooks/useIdleTimer";
+import KioskRatingPopup       from "../kiosk/components/KioskRatingPopup";
+import KioskLiveTracking      from "../kiosk/components/KioskLiveTracking";
+import useIdleTimer           from "../kiosk/hooks/useIdleTimer";
 
 import qrService            from "../services/qrService";
 import customerOrderService from "../services/customerOrderService";
 
+
 const SCREENS = {
   ATTRACT:   "ATTRACT",
-  ORDERTYPE: "ORDERTYPE",
   MENU:      "MENU",
   CART:      "CART",
+  ORDERTYPE: "ORDERTYPE",
   PAYMENT:   "PAYMENT",
   SUCCESS:   "SUCCESS",
   TRACKING:  "TRACKING",
@@ -130,14 +131,14 @@ const KioskWrapper = ({ businessId }) => {
   const removeFromCart = (id)        => setCart((prev) => prev.filter((c) => c.id !== id));
 
   // ── Flow handlers ─────────────────────────────────────────
-  const handleTapToStart = () => setScreen(SCREENS.ORDERTYPE);
+  const handleTapToStart   = () => setScreen(SCREENS.MENU);
+  const handleGoToCheckout = () => setScreen(SCREENS.CART);
+  const handleCancelToAttract = () => resetKiosk();
 
   const handleOrderTypeContinue = (info) => {
     setDiningInfo(info);
-    setScreen(SCREENS.MENU);
+    setScreen(SCREENS.PAYMENT);
   };
-
-  const handleCancelToAttract = () => resetKiosk();
 
   const buildOrderPayload = (payAtCounter) => ({
     sessionId,
@@ -279,8 +280,8 @@ const KioskWrapper = ({ businessId }) => {
   if (error && !business) {
     return (
       <div className="k-root k-shell" style={{ alignItems: "center", justifyContent: "center", gap: 16 }}>
-        <div style={{ fontSize: 52 }}>😕</div>
-        <div style={{ fontSize: 20, fontWeight: 800 }}>Menu Unavailable</div>
+        <div style={{ fontSize: 48 }}>😕</div>
+        <div style={{ fontSize: 19, fontWeight: 800 }}>Menu Unavailable</div>
         <div style={{ color: "var(--k-ink-mute)" }}>{error}</div>
         <button className="k-btn k-btn-primary k-btn-lg" onClick={loadMenu}>Try Again</button>
       </div>
@@ -293,15 +294,6 @@ const KioskWrapper = ({ businessId }) => {
         <KioskAttractScreen business={business} onStart={handleTapToStart} />
       )}
 
-      {screen === SCREENS.ORDERTYPE && (
-        <KioskOrderTypeScreen
-          diningInfo={diningInfo}
-          onInfoChange={setDiningInfo}
-          onCancel={handleCancelToAttract}
-          onContinue={handleOrderTypeContinue}
-        />
-      )}
-
       {screen === SCREENS.MENU && (
         <KioskMenuScreen
           business={business}
@@ -312,7 +304,7 @@ const KioskWrapper = ({ businessId }) => {
           cartTotal={total}
           currencyCode={currencyCode}
           onItemClick={setPopupItem}
-          onViewCart={() => setScreen(SCREENS.CART)}
+          onViewCart={handleGoToCheckout}
           onExit={handleCancelToAttract}
         />
       )}
@@ -327,7 +319,16 @@ const KioskWrapper = ({ businessId }) => {
           onUpdateQty={updateQty}
           onRemove={removeFromCart}
           onBack={() => setScreen(SCREENS.MENU)}
-          onProceed={() => setScreen(SCREENS.PAYMENT)}
+          onProceed={() => setScreen(SCREENS.ORDERTYPE)}
+        />
+      )}
+
+      {screen === SCREENS.ORDERTYPE && (
+        <KioskOrderTypeScreen
+          diningInfo={diningInfo}
+          onInfoChange={setDiningInfo}
+          onBack={() => setScreen(SCREENS.CART)}
+          onContinue={handleOrderTypeContinue}
         />
       )}
 
@@ -337,7 +338,7 @@ const KioskWrapper = ({ businessId }) => {
           business={business}
           diningInfo={diningInfo}
           currencyCode={currencyCode}
-          onBack={() => setScreen(SCREENS.CART)}
+          onBack={() => setScreen(SCREENS.ORDERTYPE)}
           onInitiatePayment={handleInitiatePayment}
           onConfirmPayment={handleConfirmPayment}
           payAtCounterAvailable={payAtCounterAvailable}
@@ -397,8 +398,8 @@ const KioskWrapper = ({ businessId }) => {
         <div className="k-idle-overlay">
           <div className="k-idle-card">
             <div className="k-idle-ring">{secondsLeft}</div>
-            <div style={{ fontSize: 22, fontWeight: 800 }}>Still there?</div>
-            <div style={{ fontSize: 14.5, color: "var(--k-ink-mute)", marginTop: 8, marginBottom: 24 }}>
+            <div style={{ fontSize: 21, fontWeight: 800 }}>Still there?</div>
+            <div style={{ fontSize: 14, color: "var(--k-ink-mute)", marginTop: 8, marginBottom: 22 }}>
               This kiosk will reset for the next guest in {secondsLeft}s.
             </div>
             <button className="k-btn k-btn-primary k-btn-lg k-btn-block" onClick={stayHere}>

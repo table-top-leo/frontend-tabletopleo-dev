@@ -41,28 +41,28 @@ const KioskEmailInvoicePopup = ({ onClose, orderId, orderNumber }) => {
   return (
     <div className="k-popup-overlay" onClick={onClose}>
       <div className="k-popup" onClick={(e) => e.stopPropagation()}>
-        <button className="k-popup-close" onClick={onClose}><X size={20} /></button>
+        <button className="k-popup-close" onClick={onClose}><X size={18} /></button>
 
         {sent ? (
           <div style={{ textAlign: "center" }}>
             <div className="k-popup-icon" style={{ background: "var(--k-success-bg)" }}>
-              <CheckCircle2 size={48} color="var(--k-success)" />
+              <CheckCircle2 size={44} color="var(--k-success)" />
             </div>
             <div className="k-popup-title">Receipt Sent!</div>
             <div className="k-popup-sub">We've emailed your invoice to <strong>{email}</strong>.</div>
-            <button className="k-btn k-btn-primary k-btn-lg k-btn-block" style={{ marginTop: 26 }} onClick={onClose}>Done</button>
+            <button className="k-btn k-btn-primary k-btn-lg k-btn-block" style={{ marginTop: 24 }} onClick={onClose}>Done</button>
           </div>
         ) : (
           <>
             <div className="k-popup-icon" style={{ background: "var(--k-brand-tint)" }}>
-              <Mail size={40} color="var(--k-brand)" />
+              <Mail size={36} color="var(--k-brand)" />
             </div>
             <div className="k-popup-title">Email My Receipt</div>
             <div className="k-popup-sub">
               {orderNumber ? `Order #${orderNumber} confirmed. ` : ""}Enter your email and we'll send the invoice instantly.
             </div>
 
-            <div style={{ marginTop: 24 }}>
+            <div style={{ marginTop: 22 }}>
               <input
                 type="email"
                 className="k-field-input"
@@ -77,14 +77,14 @@ const KioskEmailInvoicePopup = ({ onClose, orderId, orderNumber }) => {
               {error && <p style={{ color: "var(--k-danger)", fontSize: 13, marginTop: 6 }}>{error}</p>}
             </div>
 
-            <button className="k-btn k-btn-primary k-btn-lg k-btn-block" style={{ marginTop: 20 }} disabled={sending} onClick={handleSend}>
-              {sending ? <><Loader2 size={18} style={{ animation: "k-spin .7s linear infinite" }} /> Sending...</> : <><Send size={18} /> Send Receipt</>}
+            <button className="k-btn k-btn-primary k-btn-lg k-btn-block" style={{ marginTop: 18 }} disabled={sending} onClick={handleSend}>
+              {sending ? <><Loader2 size={17} style={{ animation: "k-spin .7s linear infinite" }} /> Sending...</> : <><Send size={17} /> Send Receipt</>}
             </button>
 
             <button className="k-btn k-btn-ghost k-btn-block" style={{ marginTop: 10 }} onClick={onClose}>Skip for now</button>
 
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 12.5, color: "var(--k-ink-mute)", marginTop: 14 }}>
-              <ShieldCheck size={14} color="var(--k-success)" /> Your email is safe with us.
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 12, color: "var(--k-ink-mute)", marginTop: 12 }}>
+              <ShieldCheck size={13} color="var(--k-success)" /> Your email is safe with us.
             </div>
           </>
         )}

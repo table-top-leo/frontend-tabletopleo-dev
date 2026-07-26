@@ -3,7 +3,7 @@
 import { getCurrencySymbol, formatCurrency } from "../utils/currencyHelper";
 
 import { useEffect, useRef, useState } from "react";
-import { CheckCircle2, Download, FileImage, FileText, X, Star, Mail } from "lucide-react";
+import { CheckCircle2, Download, FileImage, FileText, Star } from "lucide-react";
 import CustomerRatingPopup from "../customer/customerratingpopup";
 import CustomerEmailInvoicePopup from "../customer/emailcustomerbillpopup";
 
@@ -70,15 +70,8 @@ const CustomerOrderSuccess = ({ confirmedData, business, cart = [], onTrack, onH
     <div className="cw-screen">
       <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", padding:"36px 16px 20px", gap:18, overflowY:"auto", position:"relative" }}>
  
-        {/* ── Download + Email Invoice buttons — top-right corner, compressed ── */}
+        {/* ── Download Invoice — top-right corner, compressed ── */}
         <div style={{ position:"absolute", top:12, right:12, zIndex:10, display:"flex", gap:6 }}>
-          <button
-            onClick={() => setShowEmailInvoice(true)}
-            style={{ display:"flex", alignItems:"center", gap:5, padding:"5px 10px", background:"#fff", border:"1px solid #d1d5db", borderRadius:7, cursor:"pointer", fontSize:11, fontWeight:600, color:"#374151", boxShadow:"0 1px 4px rgba(0,0,0,0.08)" }}
-          >
-            <Mail size={12} strokeWidth={2}/> Email Invoice
-          </button>
- 
           <div style={{ position:"relative" }}>
           <button
             onClick={() => setMenu(o => !o)}
@@ -147,25 +140,28 @@ const CustomerOrderSuccess = ({ confirmedData, business, cart = [], onTrack, onH
         </div>
       </div>
  
-      {/* ── sticky bottom — unchanged ── */}
-      <div className="cx-sticky-bottom" style={{ display:"flex", flexDirection:"column", gap:8 }}>
+      {/* ── sticky bottom ── */}
+      <div className="cx-sticky-bottom" style={{ display:"flex", flexDirection:"column", gap:4 }}>
         <button className="cta-btn" onClick={onTrack}>Track Order Live</button>
+
         {hasRated ? (
-          <button
-            disabled
-            style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:7, background:"#FFF3EB", border:"1.5px solid #F5D9C2", color:"#F2701D", fontSize:14, fontWeight:700, padding:"10px 0", borderRadius:12, cursor:"default" }}
-          >
-            <CheckCircle2 size={15} color="#F2701D" /> Thank You for Rating
-          </button>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:6, padding:"10px 0 2px" }}>
+            <CheckCircle2 size={14} color="#16a34a" />
+            <span style={{ fontSize:13, fontWeight:700, color:"#16a34a" }}>Thanks for rating us!</span>
+          </div>
         ) : (
           <button
             onClick={() => setShowRating(true)}
-            style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:7, background:"#fff", border:"1.5px solid #F2701D", color:"#F2701D", fontSize:14, fontWeight:700, padding:"10px 0", borderRadius:12, cursor:"pointer" }}
+            style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:6, background:"none", border:"none", padding:"10px 0 2px", cursor:"pointer" }}
           >
-            <Star size={15} fill="#F2701D" color="#F2701D" /> Rate Us
+            <Star size={13} fill="#F2701D" color="#F2701D" />
+            <span style={{ fontSize:13.5, fontWeight:700, color:"var(--brand)", textDecoration:"underline", textUnderlineOffset:3 }}>
+              Rate us here
+            </span>
           </button>
         )}
-        <button onClick={onHome} style={{ background:"none", border:"none", color:"var(--brand)", fontSize:14, fontWeight:700, padding:"8px 0", cursor:"pointer" }}>
+
+        <button onClick={onHome} style={{ background:"none", border:"none", color:"var(--text-muted)", fontSize:13, fontWeight:600, padding:"6px 0", cursor:"pointer" }}>
           Back to Home
         </button>
       </div>

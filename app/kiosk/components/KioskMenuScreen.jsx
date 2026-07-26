@@ -1,6 +1,6 @@
 "use client";
 import { useMemo, useState } from "react";
-import { Search, X, ShoppingBag, ImageOff, ArrowRight, LogOut } from "lucide-react";
+import { Search, X, ShoppingBag, ImageOff, ArrowRight, Home } from "lucide-react";
 import { formatCurrency } from "../../utils/currencyHelper";
 
 const KioskMenuScreen = ({
@@ -44,37 +44,29 @@ const KioskMenuScreen = ({
           </div>
           <div style={{ minWidth: 0 }}>
             <div className="k-topbar-name">{business?.businessName || "TableTop Leo"}</div>
-            <div className="k-topbar-sub">Self-Service Kiosk</div>
+            <div className="k-topbar-sub">Explore our menu</div>
           </div>
         </div>
 
-        <div style={{ flex: 1, maxWidth: 420 }} className="k-search-wrap">
-          <Search size={20} color="var(--k-ink-mute)" />
-          <input placeholder="Search the menu..." value={search} onChange={(e) => setSearch(e.target.value)} />
-          {search && (
-            <button onClick={() => setSearch("")}><X size={18} color="var(--k-ink-mute)" /></button>
-          )}
+        <div style={{ flex: 1, maxWidth: 380 }} className="k-search-wrap">
+          <Search size={18} color="var(--k-ink-mute)" />
+          <input placeholder="Search dishes..." value={search} onChange={(e) => setSearch(e.target.value)} />
+          {search && <button onClick={() => setSearch("")}><X size={16} color="var(--k-ink-mute)" /></button>}
         </div>
 
         <div className="k-topbar-actions">
           <button className="k-icon-btn" onClick={onViewCart} aria-label="View cart">
-            <ShoppingBag size={24} />
+            <ShoppingBag size={21} />
             {cartCount > 0 && <span className="k-icon-btn-badge">{cartCount}</span>}
           </button>
-          {onExit && (
-            <button className="k-icon-btn" onClick={onExit} aria-label="Cancel order">
-              <LogOut size={22} />
-            </button>
-          )}
         </div>
       </div>
 
       <div className="k-body" style={{ position: "relative" }}>
-        {/* Sidebar categories */}
+        {/* Circular category rail */}
         <div className="k-sidebar k-scroll-hide">
           {categories.map((cat) => {
             const active = !search.trim() && activeCategory === cat.categoryId;
-            const count = items.filter((it) => it.catId === cat.categoryId).length;
             return (
               <button
                 key={cat.categoryId}
@@ -85,16 +77,19 @@ const KioskMenuScreen = ({
                   {cat.categoryImageUrl ? (
                     <img src={cat.categoryImageUrl} alt={cat.categoryName} />
                   ) : (
-                    <ImageOff size={20} color="var(--k-ink-mute)" />
+                    <ImageOff size={18} color="var(--k-ink-mute)" />
                   )}
                 </div>
-                <div>
-                  <div className="k-cat-btn-label">{cat.categoryName}</div>
-                  <div className="k-cat-btn-count">{count} items</div>
-                </div>
+                <div className="k-cat-btn-label">{cat.categoryName}</div>
               </button>
             );
           })}
+
+          {onExit && (
+            <button className="k-sidebar-home" onClick={onExit} aria-label="Cancel and go home">
+              <Home size={22} />
+            </button>
+          )}
         </div>
 
         {/* Product grid */}
@@ -116,7 +111,7 @@ const KioskMenuScreen = ({
                   <div
                     key={item.id}
                     className="k-product-card"
-                    style={{ animationDelay: `${Math.min(idx, 12) * 0.03}s` }}
+                    style={{ animationDelay: `${Math.min(idx, 14) * 0.025}s` }}
                     onClick={() => onItemClick(item)}
                   >
                     <div className="k-product-img-wrap">
@@ -124,13 +119,11 @@ const KioskMenuScreen = ({
                         <img src={item.img} alt={item.name} onError={(e) => { e.target.style.display = "none"; }} />
                       ) : (
                         <div className="k-product-noimg">
-                          <ImageOff size={26} />
-                          <span style={{ fontSize: 11, fontWeight: 700 }}>No Image</span>
+                          <ImageOff size={22} />
+                          <span style={{ fontSize: 10, fontWeight: 700 }}>No Image</span>
                         </div>
                       )}
-                      <div className="k-product-add" style={{ transform: "translateY(0)" }}>
-                        {inCart ? inCart.qty : "+"}
-                      </div>
+                      <div className="k-product-add">{inCart ? inCart.qty : "+"}</div>
                     </div>
                     <div className="k-product-body">
                       <div className="k-product-name">{item.name}</div>
@@ -153,7 +146,7 @@ const KioskMenuScreen = ({
                 <div className="k-cartbar-total">{formatCurrency(cartTotal, currencyCode)}</div>
               </div>
               <button className="k-cartbar-btn" onClick={onViewCart}>
-                View Cart <ArrowRight size={20} />
+                View Cart <ArrowRight size={19} />
               </button>
             </div>
           </div>

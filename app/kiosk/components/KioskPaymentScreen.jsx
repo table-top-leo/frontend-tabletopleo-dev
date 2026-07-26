@@ -5,35 +5,14 @@ import QRCode from "react-qr-code";
 import { formatCurrency } from "../../utils/currencyHelper";
 
 const METHODS = [
-  {
-    id: "upi",
-    label: "UPI / QR Pay",
-    sub: "Scan with any UPI app — PhonePe, GPay, Paytm, BHIM",
-    icon: Smartphone,
-  },
-  {
-    id: "razorpay",
-    label: "Cards & Net Banking",
-    sub: "Tap or insert card · Powered by Razorpay",
-    icon: CreditCard,
-  },
-  {
-    id: "stripe",
-    label: "International Card",
-    sub: "Visa, Mastercard, Apple Pay, Google Pay",
-    icon: Landmark,
-  },
+  { id: "upi",      label: "UPI / QR Pay",         sub: "Scan with any UPI app — PhonePe, GPay, Paytm, BHIM", icon: Smartphone },
+  { id: "razorpay", label: "Cards & Net Banking",   sub: "Tap or insert card · Powered by Razorpay",           icon: CreditCard },
+  { id: "stripe",   label: "International Card",   sub: "Visa, Mastercard, Apple Pay, Google Pay",            icon: Landmark },
 ];
 
 const KioskPaymentScreen = ({
-  total,
-  business,
-  diningInfo,
-  currencyCode,
-  onBack,
-  onInitiatePayment,
-  onConfirmPayment,
-  payAtCounterAvailable,
+  total, business, diningInfo, currencyCode,
+  onBack, onInitiatePayment, onConfirmPayment, payAtCounterAvailable,
 }) => {
   const [selectedMethod, setSelectedMethod] = useState(null);
   const [paymentData, setPaymentData] = useState(null);
@@ -98,7 +77,7 @@ const KioskPaymentScreen = ({
         } catch (e) { setError(e.message); } finally { setConfirming(false); }
       },
       prefill: { contact: diningInfo?.phone || "", email: diningInfo?.email || "" },
-      theme: { color: "#111114" },
+      theme: { color: "#F2701D" },
     };
     if (window.Razorpay) {
       new window.Razorpay(options).open();
@@ -154,19 +133,19 @@ const KioskPaymentScreen = ({
   return (
     <div className="k-step-shell">
       <div className="k-step-header">
-        <button className="k-step-back" onClick={onBack}><ArrowLeft size={24} /></button>
+        <button className="k-step-back" onClick={onBack}><ArrowLeft size={22} /></button>
         <div className="k-step-title">Payment</div>
       </div>
 
       <div className="k-step-body">
         <div className="k-step-body-inner">
-          <div className="k-totals-box" style={{ marginBottom: 26 }}>
+          <div className="k-totals-box" style={{ marginBottom: 22 }}>
             <div className="k-totals-row"><span>Order Type</span><span>{diningInfo.type === "dine-in" ? "🍽️ Dine In" : "🥡 Take Away"}{diningInfo.table ? ` — ${diningInfo.table}` : ""}</span></div>
             {diningInfo.name && <div className="k-totals-row"><span>Name</span><span>{diningInfo.name}</span></div>}
             <div className="k-totals-row k-totals-final"><span>Amount Due</span><span>{formatCurrency(total, currencyCode)}</span></div>
           </div>
 
-          <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 14 }}>Select Payment Method</div>
+          <div style={{ fontSize: 15, fontWeight: 800, marginBottom: 12 }}>Select Payment Method</div>
 
           {METHODS.map((m) => {
             const Icon = m.icon;
@@ -174,7 +153,7 @@ const KioskPaymentScreen = ({
             return (
               <div key={m.id} className={`k-pay-method ${active ? "is-selected" : ""}`} onClick={() => handleSelectMethod(m.id)}>
                 <div className="k-pay-radio">{active && <div className="k-pay-radio-dot" />}</div>
-                <div className="k-icon-circle" style={{ width: 52, height: 52 }}><Icon size={24} /></div>
+                <div className="k-icon-circle" style={{ width: 48, height: 48 }}><Icon size={22} color="var(--k-brand)" /></div>
                 <div style={{ flex: 1 }}>
                   <div className="k-pay-title">{m.label}</div>
                   <div className="k-pay-sub">{m.sub}</div>
@@ -189,7 +168,7 @@ const KioskPaymentScreen = ({
               onClick={() => { setPayAtCounter((p) => !p); setSelectedMethod(null); setPaymentData(null); setError(""); }}
             >
               <div className="k-pay-radio">{payAtCounter && <div className="k-pay-radio-dot" />}</div>
-              <div className="k-icon-circle" style={{ width: 52, height: 52 }}><Store size={24} /></div>
+              <div className="k-icon-circle" style={{ width: 48, height: 48 }}><Store size={22} color="var(--k-brand)" /></div>
               <div style={{ flex: 1 }}>
                 <div className="k-pay-title">Pay at Counter</div>
                 <div className="k-pay-sub">Place your order now, pay cash or card at the counter</div>
@@ -198,27 +177,27 @@ const KioskPaymentScreen = ({
           )}
 
           {loading && (
-            <div style={{ textAlign: "center", padding: 30 }}>
+            <div style={{ textAlign: "center", padding: 26 }}>
               <div className="k-spinner" style={{ margin: "0 auto 12px" }} />
               <p style={{ color: "var(--k-ink-mute)" }}>Initializing payment...</p>
             </div>
           )}
 
           {error && (
-            <div className="k-pill k-pill-danger" style={{ display: "block", padding: "14px 18px", marginTop: 10, fontSize: 14 }}>⚠ {error}</div>
+            <div className="k-pill k-pill-danger" style={{ display: "block", padding: "13px 16px", marginTop: 10, fontSize: 14 }}>⚠ {error}</div>
           )}
 
           {selectedMethod === "upi" && paymentData && !loading && (
             <div className="k-qr-panel">
-              <div style={{ fontSize: 14, color: "var(--k-ink-mute)", fontWeight: 600 }}>Scan to pay <strong>{business?.businessName}</strong></div>
-              <div style={{ fontSize: 30, fontWeight: 900 }}>{formatCurrency(total, currencyCode)}</div>
-              <div className="k-qr-box"><QRCode value={paymentData.upiString} size={190} fgColor="#111114" /></div>
+              <div style={{ fontSize: 13.5, color: "var(--k-ink-mute)", fontWeight: 600 }}>Scan to pay <strong>{business?.businessName}</strong></div>
+              <div style={{ fontSize: 28, fontWeight: 900 }}>{formatCurrency(total, currencyCode)}</div>
+              <div className="k-qr-box"><QRCode value={paymentData.upiString} size={180} fgColor="#2B1B0E" /></div>
               <input
                 className="k-field-input"
                 placeholder="Enter UPI transaction ID after payment"
                 value={upiRef}
                 onChange={(e) => setUpiRef(e.target.value)}
-                style={{ maxWidth: 360, fontFamily: "monospace" }}
+                style={{ maxWidth: 340, fontFamily: "monospace" }}
               />
               <button className="k-btn k-btn-primary k-btn-lg" disabled={confirming || !upiRef.trim()} onClick={handleUpiConfirm}>
                 {confirming ? "Verifying..." : "I've Paid — Confirm Order"}
@@ -228,8 +207,8 @@ const KioskPaymentScreen = ({
 
           {selectedMethod === "razorpay" && paymentData && !loading && (
             <div className="k-qr-panel">
-              <div style={{ fontSize: 14, color: "var(--k-ink-mute)" }}>Tap your card or phone on the reader, or continue on screen</div>
-              <div style={{ fontSize: 30, fontWeight: 900 }}>{formatCurrency(total, currencyCode)}</div>
+              <div style={{ fontSize: 13.5, color: "var(--k-ink-mute)" }}>Tap your card or phone on the reader, or continue on screen</div>
+              <div style={{ fontSize: 28, fontWeight: 900 }}>{formatCurrency(total, currencyCode)}</div>
               <button className="k-btn k-btn-primary k-btn-lg" disabled={confirming} onClick={handleRazorpayPay}>
                 {confirming ? "Processing..." : `Pay ${formatCurrency(total, currencyCode)} Now`}
               </button>
@@ -239,8 +218,8 @@ const KioskPaymentScreen = ({
 
           {selectedMethod === "stripe" && paymentData && !loading && (
             <div className="k-qr-panel">
-              <div style={{ fontSize: 14, color: "var(--k-ink-mute)" }}>Apple Pay · Google Pay · Cards</div>
-              <div style={{ fontSize: 30, fontWeight: 900 }}>{formatCurrency(total, currencyCode)}</div>
+              <div style={{ fontSize: 13.5, color: "var(--k-ink-mute)" }}>Apple Pay · Google Pay · Cards</div>
+              <div style={{ fontSize: 28, fontWeight: 900 }}>{formatCurrency(total, currencyCode)}</div>
               <button className="k-btn k-btn-primary k-btn-lg" disabled={confirming} onClick={handleStripePay}>
                 {confirming ? "Processing..." : `Pay ${formatCurrency(total, currencyCode)} Now`}
               </button>

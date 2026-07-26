@@ -1,66 +1,71 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 
 /* ============================================================
-   TABLETOP LEO — SELF-SERVICE KIOSK DESIGN SYSTEM
-   Fresh, standalone design language for large touchscreens.
-   Inspired by Apple / Stripe / Square / McDonald's kiosk UX.
-   Namespaced with "k-" so it never collides with the mobile
-   customer flow (customer-*.css) that already ships in prod.
+   TABLETOP LEO — SELF-SERVICE KIOSK  ·  DESIGN SYSTEM v2
+   Fresh, light, "watery" theme for large touchscreens.
+   Inspired by the Burger King app (warm cream, illustrated,
+   rounded) and Tabesto's real kiosk (circular category rail,
+   compact grid, pink action pill). No dark backgrounds.
+   Namespaced with "k-" — isolated from the mobile customer CSS.
    ============================================================ */
 
 :root {
-  /* Neutral surface scale — lots of white space, few colors */
-  --k-bg:        #f4f4f6;
-  --k-surface:   #ffffff;
-  --k-surface-2: #fafafa;
-  --k-surface-3: #f0f0f2;
+  /* Warm, light surface scale — never dark */
+  --k-bg:         #FFF8F0;
+  --k-bg-2:       #FFF1E2;
+  --k-surface:    #FFFFFF;
+  --k-surface-2:  #FFF6EC;
+  --k-surface-3:  #FFEDDA;
 
-  /* Ink scale */
-  --k-ink:       #0b0b0c;
-  --k-ink-soft:  #55565c;
-  --k-ink-mute:  #98999e;
+  /* Ink — warm brown-black, never pure black */
+  --k-ink:        #2B1B0E;
+  --k-ink-soft:   #7A5D42;
+  --k-ink-mute:   #B79A7D;
 
-  /* Borders / dividers */
-  --k-border:       #e9e9ec;
-  --k-border-soft:  #f0f0f2;
+  /* Borders */
+  --k-border:      #F3E1CC;
+  --k-border-soft: #F8EBDB;
 
-  /* Brand — used sparingly (selected states, totals, CTAs) */
-  --k-brand:       #7B3F00;
-  --k-brand-dark:  #5C2E00;
-  --k-brand-tint:  #FBF3EC;
+  /* Brand gradient — matches the existing mobile app CTA gradient */
+  --k-brand:        #F2701D;
+  --k-brand-2:      #F0A500;
+  --k-brand-grad:   linear-gradient(135deg, #F2701D 0%, #F0A500 100%);
+  --k-brand-tint:   #FFF0DF;
+  --k-brand-tint-2: #FFE3C2;
 
-  /* Primary action — near-black, Apple/Square style */
-  --k-primary:      #111114;
-  --k-primary-hover:#000000;
+  /* Watery accent palette — used only for background blobs / small accents */
+  --k-teal:   #14C7B8;
+  --k-blue:   #4FB6E8;
+  --k-mint:   #7BE0B8;
+  --k-pink:   #FF6FA5;
 
   /* Status colors */
-  --k-success:     #1a9e56;
-  --k-success-bg:  #e8f8ee;
-  --k-warning:     #c98400;
-  --k-warning-bg:  #fff4e0;
-  --k-danger:      #d92d20;
-  --k-danger-bg:   #fdeceb;
-  --k-info:        #1266f1;
-  --k-info-bg:     #eaf1fe;
+  --k-success:     #1DA75B;
+  --k-success-bg:  #E7F9EE;
+  --k-warning:     #E08A00;
+  --k-warning-bg:  #FFF3DC;
+  --k-danger:      #E8493B;
+  --k-danger-bg:   #FDEBE9;
+  --k-info:        #2F8FE0;
+  --k-info-bg:     #EAF4FE;
 
   /* Radii */
   --k-r-sm:  14px;
   --k-r-md:  20px;
   --k-r-lg:  28px;
-  --k-r-xl:  36px;
+  --k-r-xl:  34px;
   --k-r-full: 999px;
 
-  /* Shadows — soft, premium */
-  --k-shadow-xs: 0 1px 2px rgba(10,10,12,0.04);
-  --k-shadow-sm: 0 4px 14px rgba(10,10,12,0.06);
-  --k-shadow-md: 0 10px 30px rgba(10,10,12,0.08);
-  --k-shadow-lg: 0 24px 60px rgba(10,10,12,0.14);
+  /* Shadows — soft & warm, never harsh black */
+  --k-shadow-xs: 0 2px 8px rgba(178,110,40,0.08);
+  --k-shadow-sm: 0 6px 18px rgba(178,110,40,0.10);
+  --k-shadow-md: 0 14px 34px rgba(178,110,40,0.14);
+  --k-shadow-lg: 0 28px 64px rgba(120,70,20,0.20);
 
-  /* Touch sizing baseline */
-  --k-touch-min: 64px;
+  --k-touch-min: 60px;
 }
 
-.k-root, .k-root * , .k-root *::before, .k-root *::after {
+.k-root, .k-root *, .k-root *::before, .k-root *::after {
   box-sizing: border-box;
 }
 
@@ -72,87 +77,81 @@
   user-select: none;
 }
 
-.k-root button, .k-root input, .k-root textarea {
-  font-family: inherit;
-}
-
-.k-root button {
-  cursor: pointer;
-  border: none;
-  outline: none;
-  background: none;
-  touch-action: manipulation;
-}
-
+.k-root button, .k-root input, .k-root textarea { font-family: inherit; }
+.k-root button { cursor: pointer; border: none; outline: none; background: none; touch-action: manipulation; }
 .k-root img { display: block; max-width: 100%; }
 
 .k-scroll-hide { scrollbar-width: none; -ms-overflow-style: none; }
 .k-scroll-hide::-webkit-scrollbar { display: none; }
 
-/* ── Primitives ─────────────────────────────────────────── */
+/* ── Animated watery background blobs ───────────────────── */
+.k-blobs {
+  position: absolute; inset: 0; overflow: hidden; z-index: 0; pointer-events: none;
+}
+.k-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  opacity: 0.35;
+  animation: k-blob-float 16s ease-in-out infinite;
+}
+.k-blob-1 { width: 420px; height: 420px; top: -120px; left: -100px; background: var(--k-teal); animation-delay: 0s; }
+.k-blob-2 { width: 380px; height: 380px; top: 30%; right: -140px; background: var(--k-blue); animation-delay: -4s; }
+.k-blob-3 { width: 340px; height: 340px; bottom: -140px; left: 18%; background: var(--k-pink); animation-delay: -8s; }
+.k-blob-4 { width: 300px; height: 300px; bottom: 10%; right: 10%; background: var(--k-mint); animation-delay: -12s; }
 
+@keyframes k-blob-float {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25%      { transform: translate(24px, -30px) scale(1.06); }
+  50%      { transform: translate(-16px, 18px) scale(0.96); }
+  75%      { transform: translate(18px, 26px) scale(1.03); }
+}
+
+/* ── Primitives ─────────────────────────────────────────── */
 .k-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
   min-height: var(--k-touch-min);
-  padding: 0 28px;
+  padding: 0 26px;
   border-radius: var(--k-r-full);
-  font-size: 18px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
+  font-size: 16px; font-weight: 800; letter-spacing: -0.01em;
   transition: transform 0.12s ease, background 0.15s ease, box-shadow 0.15s ease, opacity .15s ease;
   white-space: nowrap;
 }
 .k-btn:active { transform: scale(0.97); }
-.k-btn[disabled] { opacity: 0.45; cursor: not-allowed; pointer-events: none; }
+.k-btn[disabled] { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
 
 .k-btn-primary {
-  background: var(--k-primary);
+  background: var(--k-brand-grad);
   color: #fff;
-  box-shadow: var(--k-shadow-sm);
+  box-shadow: 0 10px 26px rgba(242,112,29,0.32);
 }
-.k-btn-primary:hover { background: var(--k-primary-hover); }
-
-.k-btn-brand {
-  background: var(--k-brand);
-  color: #fff;
-  box-shadow: 0 10px 24px rgba(123,63,0,0.28);
-}
-.k-btn-brand:hover { background: var(--k-brand-dark); }
+.k-btn-primary:hover { filter: brightness(1.04); }
 
 .k-btn-outline {
   background: var(--k-surface);
   color: var(--k-ink);
   border: 2px solid var(--k-border);
 }
-.k-btn-outline:hover { border-color: var(--k-ink); }
+.k-btn-outline:hover { border-color: var(--k-brand); color: var(--k-brand); }
 
-.k-btn-ghost {
-  background: var(--k-surface-3);
-  color: var(--k-ink-soft);
-}
+.k-btn-ghost { background: var(--k-surface-3); color: var(--k-ink-soft); }
+.k-btn-ghost:hover { background: var(--k-brand-tint); color: var(--k-brand); }
 
-.k-btn-lg { min-height: 72px; padding: 0 36px; font-size: 20px; border-radius: var(--k-r-lg); }
-.k-btn-xl { min-height: 84px; padding: 0 44px; font-size: 22px; border-radius: var(--k-r-lg); }
+.k-btn-lg { min-height: 68px; padding: 0 34px; font-size: 18px; border-radius: var(--k-r-lg); }
+.k-btn-xl { min-height: 76px; padding: 0 40px; font-size: 20px; border-radius: var(--k-r-lg); }
 .k-btn-block { width: 100%; }
 
 .k-card {
   background: var(--k-surface);
   border-radius: var(--k-r-lg);
   border: 1px solid var(--k-border-soft);
-  box-shadow: var(--k-shadow-sm);
+  box-shadow: var(--k-shadow-xs);
 }
 
 .k-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 16px;
-  border-radius: var(--k-r-full);
-  font-size: 14px;
-  font-weight: 700;
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 15px; border-radius: var(--k-r-full);
+  font-size: 13px; font-weight: 800;
 }
 .k-pill-brand   { background: var(--k-brand-tint); color: var(--k-brand); }
 .k-pill-success { background: var(--k-success-bg); color: var(--k-success); }
@@ -161,47 +160,37 @@
 .k-pill-mute    { background: var(--k-surface-3);  color: var(--k-ink-soft); }
 
 .k-icon-circle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: var(--k-surface-3);
-  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%; background: var(--k-surface-3); flex-shrink: 0;
 }
 
 .k-spinner {
-  width: 46px;
-  height: 46px;
-  border-radius: 50%;
-  border: 4px solid var(--k-border);
-  border-top-color: var(--k-ink);
+  width: 44px; height: 44px; border-radius: 50%;
+  border: 4px solid var(--k-brand-tint);
+  border-top-color: var(--k-brand);
   animation: k-spin 0.8s linear infinite;
 }
 
 .k-qty-btn {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
+  width: 42px; height: 42px; border-radius: 50%;
   border: 2px solid var(--k-border);
   background: var(--k-surface);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: flex; align-items: center; justify-content: center;
   font-weight: 800;
   transition: all 0.15s ease;
 }
-.k-qty-btn:hover { border-color: var(--k-ink); background: var(--k-surface-3); }
+.k-qty-btn:hover { border-color: var(--k-brand); color: var(--k-brand); background: var(--k-brand-tint); }
 .k-qty-btn[disabled] { opacity: 0.35; pointer-events: none; }
 
 @keyframes k-spin       { to { transform: rotate(360deg); } }
 @keyframes k-fade-in    { from { opacity: 0; } to { opacity: 1; } }
 @keyframes k-rise-in    { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes k-pop-in     { 0% { opacity: 0; transform: scale(0.9); } 100% { opacity: 1; transform: scale(1); } }
-@keyframes k-pulse      { 0%,100% { opacity: 1; } 50% { opacity: 0.45; } }
-@keyframes k-pulse-ring { 0% { box-shadow: 0 0 0 0 rgba(17,17,20,0.18); } 100% { box-shadow: 0 0 0 14px rgba(17,17,20,0); } }
+@keyframes k-pulse      { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+@keyframes k-pulse-ring { 0% { box-shadow: 0 0 0 0 rgba(242,112,29,0.35); } 100% { box-shadow: 0 0 0 16px rgba(242,112,29,0); } }
 @keyframes k-shimmer    { 0% { background-position: -200px 0; } 100% { background-position: calc(200px + 100%) 0; } }
-@keyframes k-float      { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-@keyframes k-bg-drift   { 0% { transform: scale(1) translate(0,0); } 50% { transform: scale(1.06) translate(-1%, 1%); } 100% { transform: scale(1) translate(0,0); } }
+@keyframes k-float      { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+@keyframes k-wiggle     { 0%,100% { transform: rotate(0deg); } 50% { transform: rotate(-4deg); } }
 
 .k-skeleton {
   background: linear-gradient(90deg, var(--k-surface-3) 25%, #ffffff 37%, var(--k-surface-3) 63%);

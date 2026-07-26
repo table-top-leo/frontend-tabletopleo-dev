@@ -19,11 +19,11 @@ const KioskProductModal = ({ item, currencyCode, onClose, onAddToCart }) => {
             <img src={item.img} alt={item.name} onError={(e) => { e.target.style.display = "none"; }} />
           ) : (
             <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 8, color: "var(--k-ink-mute)" }}>
-              <ImageOff size={40} />
+              <ImageOff size={38} />
               <span style={{ fontWeight: 700 }}>No Image</span>
             </div>
           )}
-          <button className="k-product-modal-close" onClick={onClose}><X size={22} /></button>
+          <button className="k-product-modal-close" onClick={onClose}><X size={20} /></button>
         </div>
 
         <div className="k-product-modal-body">
@@ -41,14 +41,14 @@ const KioskProductModal = ({ item, currencyCode, onClose, onAddToCart }) => {
 
           <div className="k-modal-label">Quantity</div>
           <div className="k-modal-qty-row">
-            <button className="k-qty-btn" onClick={() => setQty((q) => Math.max(1, q - 1))}><Minus size={18} /></button>
+            <button className="k-qty-btn" onClick={() => setQty((q) => Math.max(1, q - 1))}><Minus size={17} /></button>
             <span className="k-modal-qty-count">{qty}</span>
-            <button className="k-qty-btn" onClick={() => setQty((q) => q + 1)}><Plus size={18} /></button>
+            <button className="k-qty-btn" onClick={() => setQty((q) => q + 1)}><Plus size={17} /></button>
           </div>
 
           <div className="k-modal-footer">
             <button className="k-btn k-btn-primary k-btn-xl k-btn-block" onClick={handleAdd}>
-              <ShoppingCart size={22} />
+              <ShoppingCart size={21} />
               Add to Cart — {formatCurrency(item.price * qty, currencyCode)}
             </button>
           </div>

@@ -75,17 +75,17 @@ const KioskRatingPopup = ({ onClose, onRated, businessId, customerName, customer
   return (
     <div className="k-popup-overlay" onClick={onClose}>
       <div className="k-popup" onClick={(e) => e.stopPropagation()}>
-        <button className="k-popup-close" onClick={onClose}><X size={20} /></button>
+        <button className="k-popup-close" onClick={onClose}><X size={18} /></button>
 
         {submitted ? (
           <div style={{ textAlign: "center" }}>
             <div className="k-popup-icon" style={{ background: "var(--k-brand-tint)" }}>
-              <CheckCircle2 size={48} color="var(--k-brand)" />
+              <CheckCircle2 size={44} color="var(--k-brand)" />
             </div>
             <div className="k-popup-title">Thank You! 🎉</div>
             <div className="k-popup-sub">Your feedback helps us serve every guest better.</div>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 14, color: "var(--k-brand)", fontWeight: 700, fontSize: 13.5 }}>
-              <Heart size={15} fill="var(--k-brand)" /> With love, {customerName ? "the team" : "TableTop Leo"}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 12, color: "var(--k-brand)", fontWeight: 700, fontSize: 13 }}>
+              <Heart size={14} fill="var(--k-brand)" /> With love, {customerName ? "the team" : "TableTop Leo"}
             </div>
           </div>
         ) : (
@@ -107,7 +107,7 @@ const KioskRatingPopup = ({ onClose, onRated, businessId, customerName, customer
             </div>
             {rating > 0 && <div className="k-emoji-label">{EMOJIS.find((e) => e.value === rating)?.label}</div>}
 
-            <div style={{ marginTop: 26 }}>
+            <div style={{ marginTop: 24 }}>
               <div className="k-field-label">What stood out? (optional)</div>
               <div className="k-tag-grid">
                 {TAGS.map((t) => (
@@ -118,7 +118,7 @@ const KioskRatingPopup = ({ onClose, onRated, businessId, customerName, customer
               </div>
             </div>
 
-            <div style={{ marginTop: 20 }}>
+            <div style={{ marginTop: 18 }}>
               <div className="k-field-label">Comments (optional)</div>
               <textarea
                 className="k-notes-input"
@@ -130,8 +130,8 @@ const KioskRatingPopup = ({ onClose, onRated, businessId, customerName, customer
 
             {error && <p style={{ color: "var(--k-danger)", fontSize: 13, marginTop: 10, textAlign: "center" }}>{error}</p>}
 
-            <button className="k-btn k-btn-primary k-btn-lg k-btn-block" style={{ marginTop: 20 }} disabled={rating === 0 || submitting} onClick={handleSubmit}>
-              {submitting ? <><Loader2 size={18} style={{ animation: "k-spin .7s linear infinite" }} /> Submitting...</> : <><Send size={18} /> Submit Rating</>}
+            <button className="k-btn k-btn-primary k-btn-lg k-btn-block" style={{ marginTop: 18 }} disabled={rating === 0 || submitting} onClick={handleSubmit}>
+              {submitting ? <><Loader2 size={17} style={{ animation: "k-spin .7s linear infinite" }} /> Submitting...</> : <><Send size={17} /> Submit Rating</>}
             </button>
             <button className="k-btn k-btn-ghost k-btn-block" style={{ marginTop: 10 }} onClick={onClose}>Skip</button>
           </>

@@ -4,6 +4,7 @@ import "../designcustomerflow/customer-common.css";
 import "../designcustomerflow/customer-layout.css";
 import "../designcustomerflow/customer-components.css";
 
+import CustomerSplashScreen     from "../customer/splashscreenpage";
 import CustomerLandingPage      from "../customer/CustomerLandingPage";
 import CustomerMenuPage         from "../customer/CustomerMenuPage";
 import CustomerProductPopup     from "../customer/CustomerProductPopup";
@@ -17,12 +18,12 @@ import qrService              from "../services/qrService";
 import customerOrderService   from "../services/customerOrderService";
 
 const SCREENS = {
-  LANDING:"LANDING", MENU:"MENU", CART:"CART",
+  SPLASH:"SPLASH", LANDING:"LANDING", MENU:"MENU", CART:"CART",
   DINING:"DINING", PAYMENT:"PAYMENT", SUCCESS:"SUCCESS", TRACKING:"TRACKING"
 };
 
 const CustomerWrapper = ({ businessId }) => {
-  const [screen,        setScreen]        = useState(SCREENS.LANDING);
+  const [screen,        setScreen]        = useState(SCREENS.SPLASH);
   const [business,      setBusiness]      = useState(null);
   const [categories,    setCategories]    = useState([]);
   const [items,         setItems]         = useState([]);
@@ -276,6 +277,13 @@ const CustomerWrapper = ({ businessId }) => {
   return (
     <div className="cw-root">
       <div className="cw-phone">
+
+        {screen === SCREENS.SPLASH && (
+          <CustomerSplashScreen
+            business={business}
+            onContinue={() => setScreen(SCREENS.LANDING)}
+          />
+        )}
 
         {screen === SCREENS.LANDING && (
           <CustomerLandingPage

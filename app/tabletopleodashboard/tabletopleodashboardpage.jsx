@@ -12,6 +12,7 @@ import {
   AlertTriangle, ShoppingBag, CheckCircle2, ArrowRight,
 } from 'lucide-react';
 import '../tabletopleodashboard/adminagedummydesign.css';
+import AdminPayments from '../adminpaymentscomponent/AdminPayments'
 
 import NotificationTableTopLeo from '../notificationstabletopleo/notificationtabletopleopage';
 import MenuCategory             from '../menucategorypage/menucategorypage';
@@ -21,9 +22,13 @@ import HelpDeskPage             from '../ApplicationMainLayout/helpdesk';
 import PaymentSetup             from '../tabletopleopaymentsconfiguration/upisetups';
 import MyOrderTableTopleoPage   from '../orderstabletopleo/orderstabletopleopage';
 import useWebSocket             from '../hooks/useWebSocket';
+import notificationService      from '../services/notificationService';
 import { useCurrency }          from '../context/CurrencyContext';
 import { formatCurrency }       from '../utils/currencyHelper';
 import DashboardMainSetup from '../ApplicationMainLayout/dashboardsetup'
+import AdminBilling from '../adminbillingcomponent/AdminBilling'
+
+
 
 const PAY_LABEL = { upi:'UPI', razorpay:'Razorpay', stripe:'Stripe', paypal:'PayPal', pay_at_counter:'At Counter', cash:'Cash' };
 const PAY_COLOR = { upi:'#7c3aed', razorpay:'#3395ff', stripe:'#635bff', paypal:'#003087', pay_at_counter:'#b45309', cash:'#16a34a' };
@@ -64,8 +69,8 @@ const AdminDashboardNew = () => {
   const [user,           setUser]           = useState(null);
   const [highlightOrder, setHighlightOrder] = useState(null);
   const [bellOpen,       setBellOpen]       = useState(false);
-  const [newOrders,      setNewOrders]      = useState([]);
-  const [readIds,        setReadIds]        = useState(new Set());
+  const [newOrders,      setNewOrders]      = useState([]); // persisted notifications (backend-backed)
+  const [bellLoading,    setBellLoading]    = useState(true);
 
   const userRef = useRef(null);
   const bellRef = useRef(null);
@@ -93,17 +98,32 @@ const AdminDashboardNew = () => {
     if (activeMenu !== 'orders') setHighlightOrder(null);
   }, [activeMenu]);
 
+  // ── Notifications: fetch persisted list on mount so it survives
+  //    refresh / closing the browser / opening again tomorrow ─────
+  const loadBellNotifications = async () => {
+    try {
+      const res = await notificationService.getActiveNotifications();
+      if (res.success) setNewOrders(res.data || []);
+    } catch (e) {
+      console.error('Failed to load notifications:', e);
+    } finally {
+      setBellLoading(false);
+    }
+  };
+
+  useEffect(() => { loadBellNotifications(); }, []);
+
   // ── WebSocket: subscribe to admin's order topic ────────────────
   const adminId = user?.adminId;
   useWebSocket({
     topics:   adminId ? [`/topic/admin/${adminId}/orders`] : [],
     enabled:  !!adminId,
     onMessage: (topic, event) => {
+      // A new order was just confirmed — the backend has already
+      // persisted a notification for it, so simply re-fetch the
+      // real list rather than fabricating a local-only entry.
       if (event.eventType === 'NEW_ORDER') {
-        setNewOrders(prev => {
-          if (prev.find(o => o.orderId === event.orderId)) return prev;
-          return [event, ...prev].slice(0, 15);
-        });
+        loadBellNotifications();
       }
     },
   });
@@ -111,18 +131,23 @@ const AdminDashboardNew = () => {
   const unreadCount = newOrders.length;
 
   const handleBellOrderClick = (order) => {
-    setNewOrders(prev => prev.filter(o => o.orderId !== order.orderId));
+    setNewOrders(prev => prev.filter(o => o.notificationId !== order.notificationId));
     setBellOpen(false);
     setHighlightOrder(order.orderNumber || order.orderId);
     setActiveMenu('orders');
+    notificationService.markAsRead(order.notificationId).catch(e => console.error('Failed to dismiss notification:', e));
   };
 
-  const handleDismissOrder = (e, orderId) => {
+  const handleDismissOrder = (e, notificationId) => {
     e.stopPropagation();
-    setNewOrders(prev => prev.filter(o => o.orderId !== orderId));
+    setNewOrders(prev => prev.filter(o => o.notificationId !== notificationId));
+    notificationService.markAsRead(notificationId).catch(err => console.error('Failed to dismiss notification:', err));
   };
 
-  const clearAllBell = () => setNewOrders([]);
+  const clearAllBell = () => {
+    setNewOrders([]);
+    notificationService.clearAll().catch(e => console.error('Failed to clear notifications:', e));
+  };
 
   const confirmLogout = () => {
     localStorage.removeItem('ttl_token');
@@ -159,7 +184,7 @@ const AdminDashboardNew = () => {
     if (activeMenu === 'notifications') {
       return <div data-afd-theme={dark?'dark':'light'}><NotificationTableTopLeo dark={dark}/></div>;
     }
-    const PAGE_MAP = { 'menu-category':MenuCategory, 'business-info':BusinessInformation, 'settings':SettingsPage, 'help-desk':HelpDeskPage, 'payment-setup':PaymentSetup,'home':DashboardMainSetup };
+    const PAGE_MAP = { 'menu-category':MenuCategory, 'business-info':BusinessInformation, 'settings':SettingsPage, 'help-desk':HelpDeskPage, 'payment-setup':PaymentSetup,'home':DashboardMainSetup,'payments':AdminPayments,'billing':AdminBilling };
     const ActivePage = PAGE_MAP[activeMenu];
     if (ActivePage) return <div data-afd-theme={dark?'dark':'light'}><ActivePage/></div>;
     if (activeMenu === 'admin-setup') return null;
@@ -276,7 +301,7 @@ const AdminDashboardNew = () => {
               </div>
             ))}
             <div className="afd-sidebar__divider"/>
-            <div className="afd-sidebar__section-label">Products</div>
+            <div className="afd-sidebar__section-label">MORE</div>
             {PRODUCT_ITEMS.map(({id,label,icon:Icon})=>(
               <button key={id} className={`afd-sidebar__item${activeMenu===id?' afd-sidebar__item--active':''}`} onClick={()=>setActiveMenu(id)} title={collapsed?label:undefined}>
                 <Icon size={17}/><span className="afd-item-label">{label}</span>
@@ -319,33 +344,45 @@ const AdminDashboardNew = () => {
                     </div>
 
                     <div style={{maxHeight:320,overflowY:'auto'}}>
-                      {newOrders.length===0?(
+                      {bellLoading?(
+                        <div style={{padding:'28px 16px',textAlign:'center'}}>
+                          <div style={{fontSize:11.5,color:dk?'#6b7280':'#9ca3af'}}>Loading notifications...</div>
+                        </div>
+                      ):newOrders.length===0?(
                         <div style={{padding:'28px 16px',textAlign:'center'}}>
                           <ShoppingBag size={28} color={dk?'#4b5563':'#d1d5db'} strokeWidth={1.5} style={{display:'block',margin:'0 auto 8px'}}/>
                           <div style={{fontSize:12,fontWeight:600,color:dk?'#9ca3af':'#6b7280'}}>No new orders</div>
-                          <div style={{fontSize:10.5,color:dk?'#6b7280':'#9ca3af',marginTop:3}}>New orders appear here via WebSocket</div>
+                          <div style={{fontSize:10.5,color:dk?'#6b7280':'#9ca3af',marginTop:3}}>You're all caught up</div>
                         </div>
                       ):newOrders.map((order,idx)=>{
-                        const isUnread=!readIds.has(order.orderId);
-                        const amount=Number(order.grandTotal||0).toLocaleString('en-IN');
-                        const isPac  = order.payAtCounter || order.paymentStatus==='PAY_AT_COUNTER';
+                        const amount=Number(order.amount||0).toLocaleString('en-IN');
+                        const isPac  = order.paymentStatus==='PAY_AT_COUNTER';
                         const isPaid = !isPac && order.paymentStatus==='PAID';
                         return (
-                          <div key={order.orderId} onClick={()=>handleBellOrderClick(order)}
-                            style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,padding:'9px 13px',cursor:'pointer',borderBottom:`1px solid ${dk?'rgba(255,255,255,0.04)':'#f9fafb'}`,background:isUnread?(dk?'rgba(99,91,255,0.07)':'rgba(99,91,255,0.03)'):'transparent',transition:'background 0.12s'}}
+                          <div key={order.notificationId} onClick={()=>handleBellOrderClick(order)}
+                            style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,padding:'9px 13px',cursor:'pointer',borderBottom:`1px solid ${dk?'rgba(255,255,255,0.04)':'#f9fafb'}`,background:dk?'rgba(99,91,255,0.07)':'rgba(99,91,255,0.03)',transition:'background 0.12s'}}
                             onMouseOver={e=>e.currentTarget.style.background=dk?'rgba(255,255,255,0.06)':'#f8fafc'}
-                            onMouseOut={e=>e.currentTarget.style.background=isUnread?(dk?'rgba(99,91,255,0.07)':'rgba(99,91,255,0.03)'):'transparent'}
+                            onMouseOut={e=>e.currentTarget.style.background=dk?'rgba(99,91,255,0.07)':'rgba(99,91,255,0.03)'}
                           >
                             <div style={{display:'flex',alignItems:'center',gap:8,minWidth:0}}>
-                              {isUnread&&<div style={{width:7,height:7,borderRadius:'50%',background:'#635bff',flexShrink:0}}/>}
+                              <div style={{width:7,height:7,borderRadius:'50%',background:'#635bff',flexShrink:0}}/>
                               <div style={{minWidth:0}}>
                                 <div style={{fontSize:11,fontWeight:700,color:'#635bff',marginBottom:2}}>🔔 New Order Received</div>
                                 <div style={{fontSize:13,fontWeight:800,color:dk?'#e2e8f0':'#111827',fontFamily:'monospace',lineHeight:1}}>{order.orderNumber||order.orderId?.slice(0,14)}</div>
                               </div>
                             </div>
-                            <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:4,flexShrink:0}}>
-                              <span style={{fontSize:14,fontWeight:800,color:'#635bff'}}>{formatCurrency(amount, currencyCode)}</span>
-                              <span style={{fontSize:10,fontWeight:600,color:isPac?'#b45309':isPaid?'#16a34a':'#f59e0b'}}>{isPac?'🏪 At Counter':isPaid?'✓ Paid':'Pending'}</span>
+                            <div style={{display:'flex',alignItems:'center',gap:8,flexShrink:0}}>
+                              <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:4}}>
+                                <span style={{fontSize:14,fontWeight:800,color:'#635bff'}}>{formatCurrency(amount, currencyCode)}</span>
+                                <span style={{fontSize:10,fontWeight:600,color:isPac?'#b45309':isPaid?'#16a34a':'#f59e0b'}}>{isPac?'🏪 At Counter':isPaid?'✓ Paid':'Pending'}</span>
+                              </div>
+                              <button
+                                onClick={(e)=>handleDismissOrder(e, order.notificationId)}
+                                title="Dismiss"
+                                style={{background:'none',border:'none',cursor:'pointer',color:dk?'#6b7280':'#9ca3af',padding:2,display:'flex',flexShrink:0}}
+                              >
+                                <X size={13}/>
+                              </button>
                             </div>
                           </div>
                         );
