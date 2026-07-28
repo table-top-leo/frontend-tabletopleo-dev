@@ -1,11 +1,11 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import KioskWrapper from "../../kioskwrapper/KioskWrapper";
+import KioskV3Wrapper from "../../kioskv3/KioskV3Wrapper";
 
 export default function KioskPage() {
   const params = useParams();
   const businessId = params?.businessId;
 
-  return <KioskWrapper businessId={businessId} />;
+  return <KioskV3Wrapper businessId={businessId} />;
 }

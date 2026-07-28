@@ -189,7 +189,7 @@ const PaymentSetup =() =>{
                 className="ps-configure-btn"
                 onClick={() => setActivePage(m.id)}
               >
-                Configure
+                Get Started
               </button>
             </div>
           );
