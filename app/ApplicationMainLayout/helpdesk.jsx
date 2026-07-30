@@ -7,23 +7,39 @@ import {
   Phone, Mail, ExternalLink, Zap, ArrowLeft, LifeBuoy,
   Hash, RefreshCw, Download, Copy, Smile, Mic, Image as ImageIcon,
   TrendingUp, Users, MessageSquare, BarChart2, HelpCircle,
-  Home, Ticket, ChevronUp, Filter, Eye,
+  Home, Ticket, ChevronUp, Filter, Eye, Loader2,
 } from "lucide-react";
 import "../designdashboardcomponent/helpdesk.css";
 
+// NOTE: adjust this path to wherever your SupportModal/DeleteModal
+// file actually lives in your project (it exports both components).
+import { SupportModal } from "../ApplicationMainLayout/modalsettingspage";
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:6163";
+const WHATSAPP_NUMBER = "918688349726"; // 91 + 8688349726
+const CALL_NUMBER = "+918688349726";
+
+function authHeaders() {
+  const token = typeof window !== "undefined" ? localStorage.getItem("ttl_token") : null;
+  return {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+}
+
 const NAV = [
-  { id: "home",     label: "Help Center",   icon: Home },
-  { id: "chat",     label: "AI Assistant",  icon: Bot },
-  { id: "tickets",  label: "My Tickets",    icon: Ticket },
-  { id: "docs",     label: "Documentation", icon: BookOpen },
-  { id: "feedback", label: "Feedback",      icon: Star },
+  { id: "home",     label: "Help Center",    icon: Home },
+  { id: "chat",     label: "AI Assistant",   icon: Bot },
+  { id: "tickets",  label: "My Requests",    icon: Ticket },
+  { id: "docs",     label: "Documentation",  icon: BookOpen },
+  { id: "feedback", label: "Rate the App",   icon: Star },
 ];
 
 const QUICK_ACTIONS = [
-  { icon: MessageCircle, label: "Live Chat",      desc: "Avg 2 min response",   color: "qa-green",  badge: "Online" },
-  { icon: Mail,          label: "Email Support",  desc: "support@tabletop.in",  color: "qa-violet", badge: null },
-  { icon: Phone,         label: "Call Us",        desc: "+91 1800-123-4567",    color: "qa-blue",   badge: "9AM–9PM" },
-  { icon: Video,         label: "Schedule Demo",  desc: "Book a 30-min call",   color: "qa-amber",  badge: null },
+  { key: "chat",  icon: MessageCircle, label: "Live Chat",     desc: "Chat with us on WhatsApp", color: "qa-green",  badge: "Online" },
+  { key: "email", icon: Mail,          label: "Email Support", desc: "support@tabletopleo.com",   color: "qa-violet", badge: "24/7 Support" },
+  { key: "call",  icon: Phone,         label: "Call Us",       desc: "+91 86883 49726",           color: "qa-blue",   badge: "9AM–9PM" },
+  { key: "demo",  icon: Video,         label: "Schedule Demo", desc: "Book a 30-min call",         color: "qa-amber",  badge: null },
 ];
 
 const FAQ = [
@@ -44,69 +60,112 @@ const DOCS = [
   { icon: Users,       category: "Team",              title: "Adding Team Members",        time: "4 min read",  views: "3.9k" },
 ];
 
-const TICKETS_DATA = [
-  { id: "TKT-1042", subject: "Payment gateway not working",  status: "open",       priority: "high",   time: "2h ago",   replies: 3 },
-  { id: "TKT-1038", subject: "Menu images not uploading",    status: "inprogress", priority: "medium", time: "1d ago",   replies: 5 },
-  { id: "TKT-1031", subject: "QR code scan not redirecting", status: "resolved",   priority: "low",    time: "3d ago",   replies: 8 },
-  { id: "TKT-1029", subject: "Orders dashboard blank screen",status: "resolved",   priority: "high",   time: "5d ago",   replies: 12 },
-];
-
 const AI_SUGGESTIONS = [
   "How do I accept online payments?",
   "Why is my QR code not working?",
   "How to add staff accounts?",
   "How to export my order history?",
+  "How do I set up the self-service kiosk?",
+  "What happens if I miss an order?",
 ];
 
 const BOT_RESPONSES = {
-  default: "I'm here to help! Could you give me more details about your issue so I can assist you better? You can also browse our documentation or raise a support ticket.",
-  payment: "To set up payments, go to **Payment Setup** in the sidebar → select your gateway (Razorpay is recommended for India) → enter your API keys and click **Go Live**. Need help finding your API keys?",
-  qr: "Your QR code can be found in **Settings → QR Code**. If it's not scanning correctly, try clicking **Regenerate** to get a fresh one. Make sure your restaurant URL is correctly configured.",
-  menu: "To manage your menu, go to **Menu & Category**. You can add categories, upload item images, set prices and toggle item availability. All changes reflect instantly for customers.",
-  order: "Live orders appear in the **Orders** section. If orders are missing, check your internet connection and verify the Order API status in **Settings → Support & Help → System Status**.",
-  staff: "To add team members, go to **Settings → Team Management** (available on Pro and Elite plans). You can assign roles like Manager, Chef, or Cashier with different permission levels.",
+  default: "I'm here to help! 🙌 Could you give me a few more details about what you're trying to do? I can walk you through payments, menu setup, QR codes, kiosk mode, staff accounts, order handling and more — or you can browse our documentation or raise a support request any time.",
+  greeting: "Hey there! 👋 Great to have you here. TableTop Leo is built to make running your restaurant faster and easier — from QR ordering to kiosk checkout to live order tracking. What can I help you set up today?",
+  payment: "Setting up payments is quick: go to **Payment Setup** in the sidebar → choose your gateway (Razorpay is great for India, Stripe works well internationally) → enter your API keys → click **Go Live**. Most merchants are accepting live payments within 10 minutes. Want help finding your API keys?",
+  qr: "Your QR code lives in **Settings → QR Code**. If it's not scanning well, tap **Regenerate** for a crisp new one, or download it as a high-res PNG for printing on table tents. A well-placed QR code can boost order speed by up to 30% — worth printing a few extra for busy tables!",
+  menu: "Managing your menu is one of the easiest parts of TableTop Leo: head to **Menu & Category**, add categories, upload appetizing photos, set prices, and toggle item availability in real time. Customers see changes instantly, so you're always in control — even mid-shift.",
+  order: "Live orders show up automatically in your **Orders** dashboard the moment a customer checks out — no refresh needed. If something looks off, double-check your connection and peek at **Settings → System Status**. Most order hiccups resolve themselves within a minute or two.",
+  staff: "Adding your team is simple: **Settings → Team Management** (Pro and Elite plans) lets you invite Managers, Chefs, and Cashiers, each with their own permission level — so everyone sees exactly what they need, nothing more.",
+  kiosk: "Kiosk mode turns any tablet or touchscreen into a full self-service ordering station — great for reducing queues during rush hours! Head to **Settings → Kiosk Setup** to enable it for your business, then just open the kiosk URL in full-screen browser mode on your device.",
+  pricing: "TableTop Leo scales with you — start free, and upgrade only when you need more. You can see your current plan and usage any time under **Settings → Billing**. Reach out any time if you'd like a walkthrough of what each plan unlocks.",
+  thanks: "You're very welcome! 😊 That's what I'm here for. Feel free to ask me anything else — or if you'd like a real human, our team is one WhatsApp message away.",
 };
 
 const STATUS_MAP = {
-  open:       { label: "Open",        cls: "tk-open",       icon: Circle },
-  inprogress: { label: "In Progress", cls: "tk-inprogress", icon: RefreshCw },
-  resolved:   { label: "Resolved",    cls: "tk-resolved",   icon: CheckCircle2 },
+  OPEN:        { label: "Open",        cls: "tk-open",       icon: Circle },
+  IN_PROGRESS: { label: "In Progress", cls: "tk-inprogress", icon: RefreshCw },
+  RESOLVED:    { label: "Resolved",    cls: "tk-resolved",   icon: CheckCircle2 },
+  CLOSED:      { label: "Closed",      cls: "tk-resolved",   icon: CheckCircle2 },
 };
 
 const PRIORITY_MAP = {
-  high:   { label: "High",   cls: "pr-high" },
-  medium: { label: "Medium", cls: "pr-medium" },
-  low:    { label: "Low",    cls: "pr-low" },
+  High:   { label: "High",   cls: "pr-high" },
+  Medium: { label: "Medium", cls: "pr-medium" },
+  Low:    { label: "Low",    cls: "pr-low" },
 };
 
 function getBotReply(msg) {
   const m = msg.toLowerCase();
-  if (m.includes("payment") || m.includes("gateway") || m.includes("razorpay")) return BOT_RESPONSES.payment;
+  if (m.includes("thank")) return BOT_RESPONSES.thanks;
+  if (/^(hi|hey|hello|yo)\b/.test(m.trim())) return BOT_RESPONSES.greeting;
+  if (m.includes("payment") || m.includes("gateway") || m.includes("razorpay") || m.includes("stripe")) return BOT_RESPONSES.payment;
   if (m.includes("qr") || m.includes("scan") || m.includes("code")) return BOT_RESPONSES.qr;
   if (m.includes("menu") || m.includes("item") || m.includes("category")) return BOT_RESPONSES.menu;
   if (m.includes("order") || m.includes("missing") || m.includes("blank")) return BOT_RESPONSES.order;
   if (m.includes("staff") || m.includes("team") || m.includes("member")) return BOT_RESPONSES.staff;
+  if (m.includes("kiosk") || m.includes("self service") || m.includes("self-service")) return BOT_RESPONSES.kiosk;
+  if (m.includes("price") || m.includes("plan") || m.includes("billing") || m.includes("subscription")) return BOT_RESPONSES.pricing;
   return BOT_RESPONSES.default;
 }
 
 export default function HelpDesk() {
   const [active, setActive]         = useState("home");
   const [messages, setMessages]     = useState([
-    { role: "bot", text: "Hi! I'm **Leo**, your TableTop AI assistant 👋\n\nI can help you with orders, menu setup, payments, QR codes and more. What do you need help with today?", time: "Just now", liked: null },
+    { role: "bot", text: "Hi! I'm **Leo**, your TableTop AI assistant 👋\n\nI can help you with orders, menu setup, payments, kiosk mode, QR codes and more. What do you need help with today?", time: "Just now", liked: null },
   ]);
   const [input, setInput]           = useState("");
   const [typing, setTyping]         = useState(false);
   const [search, setSearch]         = useState("");
   const [openFaq, setOpenFaq]       = useState(null);
-  const [rating, setRating]         = useState(0);
-  const [hoverRating, setHoverRating] = useState(0);
-  const [feedback, setFeedback]     = useState("");
-  const [feedbackSent, setFeedbackSent] = useState(false);
-  const [newTicket, setNewTicket]   = useState(false);
-  const [ticketForm, setTicketForm] = useState({ subject: "", desc: "", priority: "medium" });
-  const [tickets, setTickets]       = useState(TICKETS_DATA);
-  const [filterStatus, setFilterStatus] = useState("all");
+  const [showSupportModal, setShowSupportModal] = useState(false);
   const chatEndRef = useRef();
+
+  // ── My Requests (real tickets) ──────────────────────────────────
+  const [tickets, setTickets]           = useState([]);
+  const [ticketsLoading, setTicketsLoading] = useState(true);
+  const [ticketsError, setTicketsError]     = useState("");
+  const [newTicket, setNewTicket]       = useState(false);
+  const [ticketForm, setTicketForm]     = useState({ subject: "", desc: "", priority: "Medium" });
+  const [submitting, setSubmitting]     = useState(false);
+  const [submitError, setSubmitError]   = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
+
+  const loadMyTickets = () => {
+    setTicketsLoading(true);
+    setTicketsError("");
+    fetch(`${API_BASE}/api/admin/support-tickets/mine`, { headers: authHeaders() })
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success) setTickets(json.data || []);
+        else setTicketsError(json.message || "Failed to load your requests");
+      })
+      .catch(() => setTicketsError("Failed to load your requests"))
+      .finally(() => setTicketsLoading(false));
+  };
+
+  useEffect(() => { loadMyTickets(); }, []);
+
+  // ── Rate the App (real review, write-once) ──────────────────────
+  const [myReview, setMyReview]         = useState(null);
+  const [reviewLoading, setReviewLoading] = useState(true);
+  const [rating, setRating]             = useState(0);
+  const [hoverRating, setHoverRating]   = useState(0);
+  const [feedback, setFeedback]         = useState("");
+  const [feedbackSending, setFeedbackSending] = useState(false);
+  const [feedbackError, setFeedbackError]     = useState("");
+  const [feedbackSent, setFeedbackSent]       = useState(false);
+
+  useEffect(() => {
+    setReviewLoading(true);
+    fetch(`${API_BASE}/api/admin/reviews/app/mine`, { headers: authHeaders() })
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success && json.data) setMyReview(json.data);
+      })
+      .catch(() => {})
+      .finally(() => setReviewLoading(false));
+  }, []);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -128,22 +187,77 @@ export default function HelpDesk() {
     setMessages(m => m.map((msg, i) => i === idx ? { ...msg, liked: val } : msg));
   };
 
-  const submitTicket = () => {
+  const submitTicket = async () => {
     if (!ticketForm.subject.trim()) return;
-    const t = {
-      id: `TKT-${1043 + tickets.length}`,
-      subject: ticketForm.subject,
-      status: "open",
-      priority: ticketForm.priority,
-      time: "Just now",
-      replies: 0,
-    };
-    setTickets(prev => [t, ...prev]);
-    setTicketForm({ subject: "", desc: "", priority: "medium" });
-    setNewTicket(false);
+    setSubmitting(true);
+    setSubmitError("");
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/support-tickets`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify({
+          subject: ticketForm.subject.trim(),
+          category: "Other",
+          priority: ticketForm.priority,
+          description: ticketForm.desc.trim() || ticketForm.subject.trim(),
+          includeSysInfo: false,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok || json.success === false) throw new Error(json.message || "Failed to submit request");
+      setTickets((prev) => [json.data, ...prev]);
+      setTicketForm({ subject: "", desc: "", priority: "Medium" });
+      setNewTicket(false);
+    } catch (e) {
+      setSubmitError(e.message || "Failed to submit request. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const filteredTickets = tickets.filter(t => filterStatus === "all" || t.status === filterStatus);
+  const submitFeedback = async () => {
+    if (rating === 0) return;
+    setFeedbackSending(true);
+    setFeedbackError("");
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/reviews/app`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify({ rating, reviewText: feedback.trim() || null }),
+      });
+      const json = await res.json();
+      if (!res.ok || json.success === false) throw new Error(json.message || "Failed to submit feedback");
+      setMyReview(json.data);
+      setFeedbackSent(true);
+    } catch (e) {
+      setFeedbackError(e.message || "Failed to submit feedback. Please try again.");
+    } finally {
+      setFeedbackSending(false);
+    }
+  };
+
+  const handleQuickAction = (key) => {
+    if (key === "chat") {
+      window.open(`https://wa.me/${WHATSAPP_NUMBER}`, "_blank");
+    } else if (key === "call") {
+      window.location.href = `tel:${CALL_NUMBER}`;
+    } else if (key === "email") {
+      setShowSupportModal(true);
+    } else if (key === "demo") {
+      setActive("chat");
+      sendMessage("I'd like to schedule a demo call");
+    }
+  };
+
+  const normalizedTickets = tickets.map((t) => ({
+    id: t.ticketId,
+    subject: t.subject,
+    status: t.status, // OPEN / IN_PROGRESS / RESOLVED / CLOSED
+    priority: t.priority,
+    time: new Date(t.createdAt).toLocaleDateString("en-US", { day: "2-digit", month: "short" }),
+  }));
+
+  const filteredTickets = normalizedTickets.filter(t => filterStatus === "all" || t.status === filterStatus);
   const filteredFaq     = FAQ.filter(f => f.q.toLowerCase().includes(search.toLowerCase()) || f.a.toLowerCase().includes(search.toLowerCase()));
   const filteredDocs    = DOCS.filter(d => d.title.toLowerCase().includes(search.toLowerCase()) || d.category.toLowerCase().includes(search.toLowerCase()));
 
@@ -153,6 +267,7 @@ export default function HelpDesk() {
   };
 
   const activeNav = NAV.find(n => n.id === active);
+  const openOrProgressCount = normalizedTickets.filter(t => t.status === "OPEN" || t.status === "IN_PROGRESS").length;
 
   return (
     <div className="hd-root">
@@ -173,7 +288,7 @@ export default function HelpDesk() {
               className={`hd-nav-btn ${active === id ? "hd-nav-active" : ""}`}>
               <Icon size={16} className={active === id ? "hd-nav-icon-active" : "hd-nav-icon"} />
               <span>{label}</span>
-              {id === "tickets" && <span className="hd-nav-count">{tickets.filter(t => t.status === "open" || t.status === "inprogress").length}</span>}
+              {id === "tickets" && openOrProgressCount > 0 && <span className="hd-nav-count">{openOrProgressCount}</span>}
             </button>
           ))}
         </nav>
@@ -181,11 +296,11 @@ export default function HelpDesk() {
         <div className="hd-sidebar-status">
           <div className="hd-status-row">
             <span className="hd-status-dot hd-status-green" />
-            <span className="hd-status-label">Support Online</span>
+            <span className="hd-status-label">24/7 AI Support</span>
           </div>
           <div className="hd-status-row">
             <Clock size={11} className="hd-status-clock" />
-            <span className="hd-status-label">Mon–Sun · 9AM–9PM</span>
+            <span className="hd-status-label">Live Team · Mon–Sun 9AM–9PM</span>
           </div>
         </div>
       </aside>
@@ -241,8 +356,8 @@ export default function HelpDesk() {
               </div>
 
               <div className="hd-quick-grid">
-                {QUICK_ACTIONS.map(({ icon: Icon, label, desc, color, badge }) => (
-                  <button key={label} type="button" className={`hd-quick-card ${color}`}>
+                {QUICK_ACTIONS.map(({ key, icon: Icon, label, desc, color, badge }) => (
+                  <button key={label} type="button" className={`hd-quick-card ${color}`} onClick={() => handleQuickAction(key)}>
                     <div className="hd-quick-top">
                       <div className="hd-quick-icon"><Icon size={18} /></div>
                       {badge && <span className="hd-quick-badge">{badge}</span>}
@@ -298,7 +413,7 @@ export default function HelpDesk() {
                   { icon: MessageSquare, val: "2 min",  label: "Avg Response" },
                   { icon: CheckCircle2,  val: "98.4%",  label: "Resolution Rate" },
                   { icon: Star,          val: "4.9 ★",  label: "Satisfaction" },
-                  { icon: Users,         val: "24/7",   label: "AI Available" },
+                  { icon: Users,         val: "24/7",   label: "AI Support" },
                 ].map(({ icon: Icon, val, label }) => (
                   <div key={label} className="hd-stat-card">
                     <Icon size={16} className="hd-stat-icon" />
@@ -381,7 +496,7 @@ export default function HelpDesk() {
               </div>
 
               <div className="hd-chat-footer-note">
-                Powered by TableTop Leo AI · Responses may not always be perfect · <span className="hd-chat-link" onClick={() => setActive("tickets")}>Raise a ticket</span> for complex issues
+                Powered by TableTop Leo AI · Responses may not always be perfect · <span className="hd-chat-link" onClick={() => setActive("tickets")}>Raise a request</span> for complex issues
               </div>
             </div>
           )}
@@ -390,18 +505,18 @@ export default function HelpDesk() {
             <div className="hd-tickets-wrap">
               <div className="hd-tickets-head">
                 <div>
-                  <h2 className="hd-section-title">Support Tickets</h2>
-                  <p className="hd-section-sub">Track and manage your support requests</p>
+                  <h2 className="hd-section-title">My Requests</h2>
+                  <p className="hd-section-sub">Track and manage the support requests you've raised</p>
                 </div>
                 <button type="button" onClick={() => setNewTicket(true)} className="hd-btn-primary">
-                  <Plus size={14} /> New Ticket
+                  <Plus size={14} /> New Request
                 </button>
               </div>
 
               {newTicket && (
                 <div className="hd-ticket-form">
                   <div className="hd-tf-head">
-                    <span className="hd-tf-title">Create New Ticket</span>
+                    <span className="hd-tf-title">Create New Request</span>
                     <button type="button" onClick={() => setNewTicket(false)} className="hd-tf-close"><X size={16} /></button>
                   </div>
                   <div className="hd-tf-body">
@@ -418,18 +533,20 @@ export default function HelpDesk() {
                     <div className="hd-tf-field">
                       <label className="hd-tf-label">Priority</label>
                       <div className="hd-priority-btns">
-                        {["low", "medium", "high"].map(p => (
+                        {["Low", "Medium", "High"].map(p => (
                           <button key={p} type="button" onClick={() => setTicketForm(f => ({ ...f, priority: p }))}
                             className={`hd-priority-btn ${ticketForm.priority === p ? "hd-priority-active" : ""}`}>
-                            {p.charAt(0).toUpperCase() + p.slice(1)}
+                            {p}
                           </button>
                         ))}
                       </div>
                     </div>
+                    {submitError && <div className="hd-tf-field" style={{ color: "#dc2626", fontSize: 12.5, fontWeight: 600 }}>⚠ {submitError}</div>}
                     <div className="hd-tf-actions">
                       <button type="button" onClick={() => setNewTicket(false)} className="hd-btn-ghost">Cancel</button>
-                      <button type="button" onClick={submitTicket} className="hd-btn-primary">
-                        <Send size={13} /> Submit Ticket
+                      <button type="button" onClick={submitTicket} disabled={submitting || !ticketForm.subject.trim()} className="hd-btn-primary">
+                        {submitting ? <Loader2 size={13} style={{ animation: "spin .7s linear infinite" }} /> : <Send size={13} />}
+                        {submitting ? "Submitting..." : "Submit Request"}
                       </button>
                     </div>
                   </div>
@@ -437,43 +554,46 @@ export default function HelpDesk() {
               )}
 
               <div className="hd-filter-row">
-                {["all", "open", "inprogress", "resolved"].map(s => (
+                {["all", "OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"].map(s => (
                   <button key={s} type="button" onClick={() => setFilterStatus(s)}
                     className={`hd-filter-btn ${filterStatus === s ? "hd-filter-active" : ""}`}>
-                    {s === "all" ? "All" : s === "inprogress" ? "In Progress" : s.charAt(0).toUpperCase() + s.slice(1)}
-                    {s !== "all" && <span className="hd-filter-count">{tickets.filter(t => t.status === s).length}</span>}
+                    {s === "all" ? "All" : STATUS_MAP[s]?.label || s}
+                    {s !== "all" && <span className="hd-filter-count">{normalizedTickets.filter(t => t.status === s).length}</span>}
                   </button>
                 ))}
               </div>
 
               <div className="hd-ticket-list">
-                {filteredTickets.length === 0 && (
-                  <div className="hd-empty">No tickets found.</div>
-                )}
-                {filteredTickets.map(t => {
-                  const st = STATUS_MAP[t.status];
-                  const pr = PRIORITY_MAP[t.priority];
-                  const StIcon = st.icon;
-                  return (
-                    <div key={t.id} className="hd-ticket-card">
-                      <div className="hd-ticket-top">
-                        <div className="hd-ticket-id">{t.id}</div>
-                        <div className="hd-ticket-badges">
-                          <span className={`hd-status-badge ${st.cls}`}>
-                            <StIcon size={11} /> {st.label}
-                          </span>
-                          <span className={`hd-priority-badge ${pr.cls}`}>{pr.label}</span>
+                {ticketsLoading ? (
+                  <div className="hd-empty"><Loader2 size={20} style={{ animation: "spin .7s linear infinite" }} /></div>
+                ) : ticketsError ? (
+                  <div className="hd-empty">{ticketsError}</div>
+                ) : filteredTickets.length === 0 ? (
+                  <div className="hd-empty">No requests found. Raise one above if you need help!</div>
+                ) : (
+                  filteredTickets.map(t => {
+                    const st = STATUS_MAP[t.status] || STATUS_MAP.OPEN;
+                    const pr = PRIORITY_MAP[t.priority] || PRIORITY_MAP.Medium;
+                    const StIcon = st.icon;
+                    return (
+                      <div key={t.id} className="hd-ticket-card">
+                        <div className="hd-ticket-top">
+                          <div className="hd-ticket-id">{t.id}</div>
+                          <div className="hd-ticket-badges">
+                            <span className={`hd-status-badge ${st.cls}`}>
+                              <StIcon size={11} /> {st.label}
+                            </span>
+                            <span className={`hd-priority-badge ${pr.cls}`}>{pr.label}</span>
+                          </div>
+                        </div>
+                        <div className="hd-ticket-subject">{t.subject}</div>
+                        <div className="hd-ticket-meta">
+                          <span><Clock size={11} /> {t.time}</span>
                         </div>
                       </div>
-                      <div className="hd-ticket-subject">{t.subject}</div>
-                      <div className="hd-ticket-meta">
-                        <span><Clock size={11} /> {t.time}</span>
-                        <span><MessageCircle size={11} /> {t.replies} replies</span>
-                        <button type="button" className="hd-ticket-view"><Eye size={11} /> View</button>
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })
+                )}
               </div>
             </div>
           )}
@@ -528,20 +648,21 @@ export default function HelpDesk() {
 
           {active === "feedback" && (
             <div className="hd-feedback-wrap">
-              {feedbackSent ? (
+              {reviewLoading ? (
+                <div className="hd-empty"><Loader2 size={20} style={{ animation: "spin .7s linear infinite" }} /></div>
+              ) : myReview || feedbackSent ? (
                 <div className="hd-feedback-success">
                   <CheckCircle2 size={40} className="hd-success-icon" />
                   <h2 className="hd-success-title">Thank you for your feedback!</h2>
-                  <p className="hd-success-sub">Your response helps us improve TableTop Leo every day.</p>
-                  <button type="button" onClick={() => { setFeedbackSent(false); setRating(0); setFeedback(""); }} className="hd-btn-primary">
-                    Submit Another
-                  </button>
+                  <p className="hd-success-sub">
+                    You rated TableTop Leo {(myReview?.rating || rating)} / 5. Your response helps us improve every day.
+                  </p>
                 </div>
               ) : (
                 <>
                   <div className="hd-feedback-hero">
                     <Star size={28} className="hd-feedback-star-icon" />
-                    <h2 className="hd-feedback-title">Share Your Experience</h2>
+                    <h2 className="hd-feedback-title">Rate the App</h2>
                     <p className="hd-feedback-sub">Help us make TableTop Leo better for everyone</p>
                   </div>
 
@@ -569,39 +690,19 @@ export default function HelpDesk() {
                     <div className="hd-fb-divider" />
 
                     <div className="hd-fb-section">
-                      <div className="hd-fb-label">What went well?</div>
-                      <div className="hd-chip-group">
-                        {["Fast responses", "Easy to use", "Helpful AI", "Good documentation", "Quick resolution", "Friendly support"].map(c => (
-                          <button key={c} type="button" className="hd-chip">{c}</button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="hd-fb-divider" />
-
-                    <div className="hd-fb-section">
                       <div className="hd-fb-label">Tell us more (optional)</div>
                       <textarea className="hd-fb-textarea" rows={3}
                         placeholder="Share your thoughts, suggestions or report any issues..."
                         value={feedback} onChange={e => setFeedback(e.target.value)} />
                     </div>
 
-                    <div className="hd-fb-divider" />
+                    {feedbackError && (
+                      <div className="hd-fb-section" style={{ color: "#dc2626", fontSize: 12.5, fontWeight: 600 }}>⚠ {feedbackError}</div>
+                    )}
 
-                    <div className="hd-fb-section">
-                      <div className="hd-fb-label">Would you recommend TableTop Leo?</div>
-                      <div className="hd-nps-row">
-                        {Array.from({ length: 11 }, (_, i) => (
-                          <button key={i} type="button" className={`hd-nps-btn ${i >= 9 ? "hd-nps-green" : i >= 7 ? "hd-nps-yellow" : "hd-nps-red"}`}>{i}</button>
-                        ))}
-                      </div>
-                      <div className="hd-nps-labels">
-                        <span>Not likely</span><span>Very likely</span>
-                      </div>
-                    </div>
-
-                    <button type="button" onClick={() => setFeedbackSent(true)} className="hd-fb-submit">
-                      <Send size={14} /> Submit Feedback
+                    <button type="button" onClick={submitFeedback} disabled={rating === 0 || feedbackSending} className="hd-fb-submit">
+                      {feedbackSending ? <Loader2 size={14} style={{ animation: "spin .7s linear infinite" }} /> : <Send size={14} />}
+                      {feedbackSending ? "Submitting..." : "Submit Feedback"}
                     </button>
                   </div>
                 </>
@@ -611,6 +712,10 @@ export default function HelpDesk() {
 
         </main>
       </div>
+
+      {showSupportModal && <SupportModal onClose={() => setShowSupportModal(false)} />}
+
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }

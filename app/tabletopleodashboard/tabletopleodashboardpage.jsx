@@ -27,6 +27,7 @@ import { useCurrency }          from '../context/CurrencyContext';
 import { formatCurrency }       from '../utils/currencyHelper';
 import DashboardMainSetup from '../ApplicationMainLayout/dashboardsetup'
 import AdminBilling from '../adminbillingcomponent/AdminBilling'
+import InventoryPage from '../inventorypage/InventoryPage'
 
 
 
@@ -184,7 +185,7 @@ const AdminDashboardNew = () => {
     if (activeMenu === 'notifications') {
       return <div data-afd-theme={dark?'dark':'light'}><NotificationTableTopLeo dark={dark}/></div>;
     }
-    const PAGE_MAP = { 'menu-category':MenuCategory, 'business-info':BusinessInformation, 'settings':SettingsPage, 'help-desk':HelpDeskPage, 'payment-setup':PaymentSetup,'home':DashboardMainSetup,'payments':AdminPayments,'billing':AdminBilling };
+    const PAGE_MAP = { 'menu-category':MenuCategory, 'business-info':BusinessInformation, 'settings':SettingsPage, 'help-desk':HelpDeskPage, 'payment-setup':PaymentSetup,'home':DashboardMainSetup,'payments':AdminPayments,'billing':AdminBilling,'inventory':InventoryPage };
     const ActivePage = PAGE_MAP[activeMenu];
     if (ActivePage) return <div data-afd-theme={dark?'dark':'light'}><ActivePage/></div>;
     if (activeMenu === 'admin-setup') return null;
@@ -309,7 +310,7 @@ const AdminDashboardNew = () => {
             ))}
           </nav>
           <div className="afd-sidebar__bottom">
-            <button className="afd-sidebar__item" onClick={()=>setActiveMenu('feedback')}><MessageSquare size={17}/><span className="afd-item-label">Give Feedback</span></button>
+             
             <button className="afd-sidebar__item" onClick={()=>setActiveMenu('help-desk')}><HelpCircle size={17}/><span className="afd-item-label">Help</span></button>
             <button className="afd-sidebar__item afd-sidebar__item--danger" onClick={()=>setShowLogout(true)} style={{color:'#e53e3e'}}><LogOut size={17}/><span className="afd-item-label">Logout</span></button>
           </div>
@@ -319,7 +320,7 @@ const AdminDashboardNew = () => {
           <header className="afd-topbar">
             <div className="afd-topbar__search"><Search size={14}/><span>Search</span></div>
             <div className="afd-topbar__actions">
-              <button className="afd-topbar__icon-btn" title="Apps"><LayoutGrid size={17}/></button>
+              
 
               {/* ── BELL + REAL-TIME DROPDOWN ── */}
               <div style={{position:'relative'}} ref={bellRef}>

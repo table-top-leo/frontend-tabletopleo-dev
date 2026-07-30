@@ -4,6 +4,8 @@ import {
   Mail, X, CheckCircle2, Loader2, Trash2, Paperclip, Send, AlertCircle,
 } from "lucide-react";
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:6163";
+
 function getUser() {
   try { const s = localStorage.getItem("ttl_user"); return s ? JSON.parse(s) : null; }
   catch { return null; }
@@ -27,14 +29,44 @@ export function SupportModal({ onClose }) {
   const [file,    setFile]    = useState(null);
   const [sent,    setSent]    = useState(false);
   const [sending, setSending] = useState(false);
+  const [error,   setError]   = useState("");
   const fileRef = useRef();
 
   const handleFile   = (e) => { if (e.target.files[0]) setFile(e.target.files[0]); };
-  const handleSubmit = () => {
+
+  const handleSubmit = async () => {
     if (!form.subject.trim() || !form.category || !form.description.trim()) return;
     setSending(true);
-    setTimeout(() => { setSent(true); setSending(false); }, 1000);
+    setError("");
+    try {
+      const token = localStorage.getItem("ttl_token");
+      const res = await fetch(`${API_BASE}/api/admin/support-tickets`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          subject: form.subject.trim(),
+          category: form.category,
+          priority: form.priority,
+          description: form.description.trim(),
+          includeSysInfo: form.includeSysInfo,
+          attachmentName: file ? file.name : null,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok || json.success === false) {
+        throw new Error(json.message || "Failed to submit ticket.");
+      }
+      setSent(true);
+    } catch (e) {
+      setError(e.message || "Failed to submit ticket. Please try again.");
+    } finally {
+      setSending(false);
+    }
   };
+
   const valid = form.subject.trim() && form.category && form.description.trim();
 
   return (
@@ -141,6 +173,12 @@ export function SupportModal({ onClose }) {
                 Include system info
               </label>
             </div>
+
+            {error && (
+              <div style={{ display:"flex", alignItems:"center", gap:7, background:"#fef2f2", border:"1px solid #fecaca", borderRadius:8, padding:"8px 11px", fontSize:12, color:"#dc2626", fontWeight:600 }}>
+                <AlertCircle size={13} /> {error}
+              </div>
+            )}
 
             {/* Actions */}
             <div style={{ display:"flex", gap:8, justifyContent:"flex-end", paddingTop:2 }}>

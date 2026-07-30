@@ -2,7 +2,7 @@
 import { useState } from "react";
 import {
   Search, Bell, Settings, HelpCircle, LogOut, LayoutGrid, Store,
-  Trash2, CreditCard, ShieldCheck, Globe,
+  Trash2, CreditCard, ShieldCheck, Globe, Mail, Star,
 } from "lucide-react";
 import { MdVerified } from "react-icons/md";
 import "../tabletopleoportal/designtabletopleoportal.css";
@@ -11,6 +11,8 @@ import OverviewTab from "../tabletopleoportal/components/OverviewTab";
 import MerchantsTab from "../tabletopleoportal/components/MerchantsTab";
 import DeletionRequestsTab from "../tabletopleoportal/components/DeletionRequestsTab";
 import SubscriptionsTab from "../tabletopleoportal/components/SubscriptionsTab";
+import EmailSupportTab from "../tabletopleoportal/components/EmailSupportTab";
+import ReviewsTab from "../tabletopleoportal/components/ReviewsTab";
 import { MERCHANTS, DELETION_REQUESTS, SUBSCRIPTIONS } from "../tabletopleoportal/data";
 
 const TABS = [
@@ -18,6 +20,8 @@ const TABS = [
   { id: "merchants",    label: "Merchants",             icon: Store },
   { id: "deletions",    label: "Deletion Requests",     icon: Trash2 },
   { id: "subscriptions",label: "Subscriptions",         icon: CreditCard },
+  { id: "support",      label: "Email Support",         icon: Mail },
+  { id: "reviews",      label: "Reviews",               icon: Star },
 ];
 
 export default function TableTopLeoPortal({ operatorName = "Operations Admin" }) {
@@ -28,6 +32,8 @@ export default function TableTopLeoPortal({ operatorName = "Operations Admin" })
     merchants: MERCHANTS.length,
     deletions: DELETION_REQUESTS.filter((d) => d.status === "PENDING").length,
     subscriptions: SUBSCRIPTIONS.filter((s) => s.plan !== "Free").length,
+    support: null,
+    reviews: null,
   };
 
   const now = new Date();
@@ -112,6 +118,8 @@ export default function TableTopLeoPortal({ operatorName = "Operations Admin" })
         {activeTab === "merchants" && <MerchantsTab />}
         {activeTab === "deletions" && <DeletionRequestsTab />}
         {activeTab === "subscriptions" && <SubscriptionsTab />}
+        {activeTab === "support" && <EmailSupportTab />}
+        {activeTab === "reviews" && <ReviewsTab />}
       </main>
     </div>
   );
