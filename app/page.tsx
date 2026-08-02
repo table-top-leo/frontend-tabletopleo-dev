@@ -4,6 +4,7 @@ import MenuCategory from './menucategorypage/menucategorypage'
 import MainAdminDashboard from './tabletopleodashboard/tabletopleodashboardpage'
 import AdminDashboardNew from './tabletopleodashboard/adminpagedummy'
 import CustomerWrapper from './cusotomerwrapper/CustomerWrapper'
+import PortlPage from './tabletopleoportal/TableTopLeoPortal'
 function Home() {
   return (
     <>
@@ -12,6 +13,7 @@ function Home() {
     {/* <MainAdminDashboard/> */}
     {/* <AdminDashboardNew/> */}
     {/* <CustomerWrapper/> */}
+     
     </>
   );
 }

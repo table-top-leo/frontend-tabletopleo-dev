@@ -59,6 +59,8 @@ export default function SettingsPage() {
   const [pwErrors,        setPwErrors]        = useState({});
   const [passwords,       setPasswords]       = useState({ current:"", new:"", confirm:"" });
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteLoading,   setDeleteLoading]   = useState(false);
+  const [deleteError,     setDeleteError]     = useState("");
   const [showSupportModal,setShowSupportModal]= useState(false);
   const [showUpgrade,     setShowUpgrade]     = useState(false);
   const [logoUrl,         setLogoUrl]         = useState(null);
@@ -126,9 +128,33 @@ export default function SettingsPage() {
     } finally { setPwLoading(false); }
   };
 
-  const handleDeleteAccount = () => {
-    setShowDeleteModal(false);
-    showToast("Account deletion request sent. Our team will contact you within 24 hours.");
+  const handleDeleteAccount = async ({ reason, comment }) => {
+    if (!reason) {
+      setDeleteError("Please select a reason before continuing.");
+      return;
+    }
+    setDeleteLoading(true);
+    setDeleteError("");
+    try {
+      const res = await fetch("http://localhost:6163/api/account-deletion/request", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("ttl_token") || ""}`,
+        },
+        body: JSON.stringify({ reason, comments: comment || null }),
+      });
+      const json = await res.json();
+      if (!res.ok || json.success === false) {
+        throw new Error(json.message || "Failed to submit your deletion request.");
+      }
+      setShowDeleteModal(false);
+      showToast(json.message || "Account deletion request submitted. Check your email for details.");
+    } catch (err) {
+      setDeleteError(err.message || "Failed to submit your deletion request. Please try again.");
+    } finally {
+      setDeleteLoading(false);
+    }
   };
 
   const PlanBanner = () => (
@@ -456,7 +482,15 @@ export default function SettingsPage() {
         <div className={`stg-toast ${toast.type==="error"?"stg-toast-err":""}`}>{toast.msg}</div>
       )}
       {showSupportModal && <SupportModal onClose={()=>setShowSupportModal(false)}/>}
-      {showDeleteModal && <DeleteModal fullName={fullName} onConfirm={handleDeleteAccount} onCancel={()=>setShowDeleteModal(false)} loading={false}/>}
+      {showDeleteModal && (
+        <DeleteModal
+          fullName={fullName}
+          onConfirm={handleDeleteAccount}
+          onCancel={() => { setShowDeleteModal(false); setDeleteError(""); }}
+          loading={deleteLoading}
+          error={deleteError}
+        />
+      )}
 
       <div className="stg-page-header">
         <div>

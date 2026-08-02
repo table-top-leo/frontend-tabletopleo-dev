@@ -102,7 +102,7 @@ function fmt12h(t) {
   return `${h12}:${String(m).padStart(2,"0")} ${ampm}`;
 }
 
-const CustomerLandingPage = ({ business, categories, items, onStart, onItemClick }) => {
+const CustomerLandingPage = ({ business, categories, items, activeDiscounts = [], onStart, onViewOffers, onItemClick }) => {
   const [search,         setSearch]         = useState("");
   const [activeCategory, setActiveCategory] = useState(null);
 
@@ -247,6 +247,31 @@ const CustomerLandingPage = ({ business, categories, items, onStart, onItemClick
               </button>
             )}
           </div>
+        </div>
+
+        {/* Offers entry point — always visible, regardless of whether an
+            offer happens to be live right this second */}
+        <div style={{ padding:"2px 14px 6px", background:"var(--surface)" }}>
+          <button
+            onClick={onViewOffers}
+            style={{
+              display:"flex", alignItems:"center", gap:8, width:"100%",
+              padding:"10px 14px", borderRadius:12,
+              background:"linear-gradient(90deg,#dc2626,#ea580c)",
+              border:"none", cursor:"pointer",
+            }}
+          >
+            <Flame size={15} color="#fff" style={{ flexShrink:0 }}/>
+            <span style={{ flex:1, textAlign:"left", fontSize:12.5, fontWeight:800, color:"#fff" }}>
+              Offers &amp; deals
+            </span>
+            {activeDiscounts.length > 0 && (
+              <span style={{ background:"#fff", color:"#dc2626", fontSize:11, fontWeight:800, borderRadius:"9999px", minWidth:20, height:20, display:"flex", alignItems:"center", justifyContent:"center", padding:"0 6px", flexShrink:0 }}>
+                {activeDiscounts.length > 9 ? "9+" : activeDiscounts.length}
+              </span>
+            )}
+            <ChevronRight size={14} color="#fff" style={{ flexShrink:0 }}/>
+          </button>
         </div>
 
         {/* Categories */}

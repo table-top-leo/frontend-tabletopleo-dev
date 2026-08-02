@@ -2,7 +2,7 @@
 
 import { getCurrencySymbol, formatCurrency } from "../utils/currencyHelper";
 
-// Read currency at module level so sub-components can access it
+ 
 function getStoredCurrCode() {
   try { return JSON.parse(localStorage.getItem("ttl_user") || "{}")?.currencyCode || "INR"; }
   catch { return "INR"; }
@@ -19,7 +19,7 @@ const ICON_URLS = {
   "Visa":        "https://img.icons8.com/color/96/000000/visa.png",
   "Mastercard":  "https://img.icons8.com/color/96/000000/mastercard-logo.png",
   "Apple Pay":   "https://img.icons8.com/color/96/000000/apple-pay.png",
-  "Mobile Pay":  "https://img.icons8.com/color/96/000000/mobile-payment.png",
+  "Mobile Pay":  "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQr2_F3MVPlc3Hu_tCBeHZkgEmqi26yjuF8undocwwg0g&s=10",
 };
 
 const PaymentIcon = ({ name, size = 36 }) => {
@@ -179,6 +179,14 @@ const METHODS = [
       { name:"Other Cards & Net Banking", generic:true },
     ],
   },
+  {
+    id: "mobilepay", label: "Mobile Pay",
+    sub: "Scan with your phone's wallet to pay instantly",
+    apps: [
+      { name:"Mobile Pay" },
+    ],
+    dummy: true, // UI preview only — no backend integration yet
+  },
   // {
   //   id: "paypal", label: "PayPal",
   //   sub: "Fast, secure — available in 200+ countries",
@@ -201,6 +209,12 @@ const CustomerPaymentPage = ({ total, business, diningInfo, onBack, onInitiatePa
     setSelectedMethod(methodId);
     setPaymentData(null);
     setError("");
+
+    // Mobile Pay is a UI preview only for now — no backend gateway exists
+    // for it yet, so skip the real initiate-payment call entirely.
+    const method = METHODS.find(m => m.id === methodId);
+    if (method?.dummy) return;
+
     setLoading(true);
     try {
       const data = await onInitiatePayment(methodId);
@@ -462,6 +476,26 @@ const CustomerPaymentPage = ({ total, business, diningInfo, onBack, onInitiatePa
           </div>
         )}
 
+        {/* Mobile Pay Section — UI preview only, dummy QR, no backend yet */}
+        {selectedMethod==="mobilepay" && (
+          <div style={{ margin:"0 16px", animation:"fadeIn 0.22s ease" }}>
+            <div style={{ background:"var(--surface-2)", border:"1.5px solid var(--border)", borderRadius:"var(--radius-lg)", padding:20, display:"flex", flexDirection:"column", alignItems:"center", gap:12 }}>
+              <div style={{ fontSize:13, color:"var(--text-muted)", fontWeight:600 }}>Scan to pay <strong style={{ color:"var(--text-primary)" }}>{business?.businessName}</strong></div>
+              <div style={{ fontSize:28, fontWeight:900, color:"var(--brand)" }}>{formatCurrency(total, _currCode)}</div>
+              <div style={{ background:"#fff", padding:12, borderRadius:12, border:"1.5px solid var(--border)" }}>
+                <QRCode value={`mobilepay-demo://pay?merchant=${encodeURIComponent(business?.businessName||"TableTop Leo")}&amount=${total}`} size={150} fgColor="#7B3F00"/>
+              </div>
+              <div style={{ display:"flex", alignItems:"center", gap:7, fontSize:12, color:"var(--text-muted)" }}>
+                <span style={{ width:7, height:7, borderRadius:"50%", background:"#f59e0b", animation:"pulse 1.4s ease-in-out infinite" }}/>
+                Waiting for payment confirmation...
+              </div>
+              <div style={{ fontSize:11, color:"var(--text-muted)", textAlign:"center", background:"#fffbeb", border:"1px solid #fde68a", borderRadius:8, padding:"8px 12px" }}>
+                Preview only — Mobile Pay integration is coming soon
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* PayPal Section */}
         {/* {selectedMethod==="paypal" && paymentData && !loading && (
           <div style={{ margin:"0 16px", animation:"fadeIn 0.22s ease" }}>
@@ -557,7 +591,7 @@ const CustomerPaymentPage = ({ total, business, diningInfo, onBack, onInitiatePa
         )}
       </div>
 
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}`}</style>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.35}}`}</style>
     </div>
   );
 };

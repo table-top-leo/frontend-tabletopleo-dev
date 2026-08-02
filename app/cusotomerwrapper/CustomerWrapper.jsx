@@ -6,6 +6,7 @@ import "../designcustomerflow/customer-components.css";
 
 import CustomerSplashScreen     from "../customer/splashscreenpage";
 import CustomerLandingPage      from "../customer/CustomerLandingPage";
+import CustomerOffersPage       from "../customer/CustomerOffersPage";
 import CustomerMenuPage         from "../customer/CustomerMenuPage";
 import CustomerProductPopup     from "../customer/CustomerProductPopup";
 import CustomerCartPage         from "../customer/CustomerCartPage";
@@ -16,14 +17,16 @@ import CustomerLiveTracking     from "../customer/CustomerLiveTracking";
 
 import qrService              from "../services/qrService";
 import customerOrderService   from "../services/customerOrderService";
+import discountService        from "../services/discountService";
 
 const SCREENS = {
-  SPLASH:"SPLASH", LANDING:"LANDING", MENU:"MENU", CART:"CART",
+  SPLASH:"SPLASH", LANDING:"LANDING", OFFERS:"OFFERS", MENU:"MENU", CART:"CART",
   DINING:"DINING", PAYMENT:"PAYMENT", SUCCESS:"SUCCESS", TRACKING:"TRACKING"
 };
 
 const CustomerWrapper = ({ businessId }) => {
   const [screen,        setScreen]        = useState(SCREENS.SPLASH);
+  const [offersOrigin,  setOffersOrigin]   = useState(SCREENS.LANDING);
   const [business,      setBusiness]      = useState(null);
   const [categories,    setCategories]    = useState([]);
   const [items,         setItems]         = useState([]);
@@ -38,6 +41,7 @@ const CustomerWrapper = ({ businessId }) => {
   const [paymentData,   setPaymentData]   = useState(null);
   const [confirmedData, setConfirmedData] = useState(null);
   const [payAtCounterAvailable, setPayAtCounterAvailable] = useState(false);
+  const [activeDiscounts, setActiveDiscounts] = useState([]);
 
   const cartCount = cart.reduce((s, c) => s + c.qty, 0);
   const subtotal  = cart.reduce((s, c) => s + c.price * c.qty, 0);
@@ -69,6 +73,22 @@ const CustomerWrapper = ({ businessId }) => {
           }))
         );
         setItems(allItems);
+
+        // Active discounts/offers — never blocks the menu if it fails,
+        // but ALWAYS logs the real reason so it's visible in devtools
+        // instead of silently looking like "no offers exist".
+        try {
+          const discRes = await discountService.getActiveDiscounts(businessId);
+          if (discRes.success) {
+            setActiveDiscounts(discRes.data || []);
+          } else {
+            console.error("[Discounts] API responded but success=false:", discRes.message);
+            setActiveDiscounts([]);
+          }
+        } catch (discErr) {
+          console.error("[Discounts] Failed to fetch active discounts:", discErr);
+          setActiveDiscounts([]);
+        }
 
         const sessionRes = await customerOrderService.createSession(businessId, null);
         if (sessionRes.success) {
@@ -105,8 +125,54 @@ const CustomerWrapper = ({ businessId }) => {
     setPopupItem(null);
   };
 
+  // Adds one unit of an item directly (used from the Offers page, where
+  // tapping "+" should add immediately rather than opening the item popup)
+  const addItemDirect = (item) => addToCart(item, 1);
+
+  // Adds every item in a combo offer to the cart at once, one unit each
+  const addComboToCart = (comboItems) => {
+    setCart(prev => {
+      let next = [...prev];
+      comboItems.forEach((item) => {
+        const existing = next.find(c => c.id === item.id);
+        next = existing
+          ? next.map(c => c.id === item.id ? { ...c, qty: c.qty + 1 } : c)
+          : [...next, { ...item, qty: 1 }];
+      });
+      return next;
+    });
+  };
+
   const updateQty      = (id, delta) => setCart(prev => prev.map(c => c.id === id ? { ...c, qty: Math.max(1, c.qty + delta) } : c));
   const removeFromCart = (id)        => setCart(prev => prev.filter(c => c.id !== id));
+
+  // Resolves the REAL discounted unit price per cart item — including combo
+  // and storewide offers, which can't be computed correctly on a per-item
+  // basis alone — right before an order is placed. Falls back to original
+  // prices if the discount service is unreachable, so checkout never breaks.
+  const buildDiscountedItems = async () => {
+    const fallback = () => cart.map(c => ({
+      productId: c.id, productName: c.name, productDescription: c.desc,
+      productImageUrl: c.img, categoryName: c.catName,
+      unitPrice: c.price, quantity: c.qty, specialRequest: null,
+    }));
+    try {
+      const evalRes = await discountService.evaluateCart(businessId, cart.map(c => ({
+        productId: c.id, categoryId: c.catId, quantity: c.qty, originalUnitPrice: c.price,
+      })));
+      if (!evalRes.success || !evalRes.data?.items) return fallback();
+      const priceMap = {};
+      evalRes.data.items.forEach(i => { priceMap[i.productId] = i.discountedUnitPrice; });
+      return cart.map(c => ({
+        productId: c.id, productName: c.name, productDescription: c.desc,
+        productImageUrl: c.img, categoryName: c.catName,
+        unitPrice: priceMap[c.id] != null ? priceMap[c.id] : c.price,
+        quantity: c.qty, specialRequest: null,
+      }));
+    } catch {
+      return fallback();
+    }
+  };
 
   const handleDiningContinue = (info) => {
     setDiningInfo(info);
@@ -126,16 +192,7 @@ const CustomerWrapper = ({ businessId }) => {
           customerEmail:diningInfo.email  || null,
           customerNote: diningInfo.note   || null,
           payAtCounter: true,
-          items: cart.map(c => ({
-            productId:          c.id,
-            productName:        c.name,
-            productDescription: c.desc,
-            productImageUrl:    c.img,
-            categoryName:       c.catName,
-            unitPrice:          c.price,
-            quantity:           c.qty,
-            specialRequest:     null,
-          })),
+          items: await buildDiscountedItems(),
         };
         const orderRes = await customerOrderService.placeOrder(orderPayload);
         if (!orderRes.success) throw new Error(orderRes.message);
@@ -172,16 +229,7 @@ const CustomerWrapper = ({ businessId }) => {
           customerEmail:diningInfo.email  || null,
           customerNote: diningInfo.note   || null,
           payAtCounter: false,
-          items: cart.map(c => ({
-            productId:          c.id,
-            productName:        c.name,
-            productDescription: c.desc,
-            productImageUrl:    c.img,
-            categoryName:       c.catName,
-            unitPrice:          c.price,
-            quantity:           c.qty,
-            specialRequest:     null,
-          })),
+          items: await buildDiscountedItems(),
         };
 
         const orderRes = await customerOrderService.placeOrder(orderPayload);
@@ -288,15 +336,35 @@ const CustomerWrapper = ({ businessId }) => {
         {screen === SCREENS.LANDING && (
           <CustomerLandingPage
             business={business} categories={categories} items={items}
-            onStart={() => setScreen(SCREENS.MENU)} onItemClick={setPopupItem}
+            activeDiscounts={activeDiscounts}
+            onStart={() => setScreen(SCREENS.MENU)}
+            onViewOffers={() => { setOffersOrigin(SCREENS.LANDING); setScreen(SCREENS.OFFERS); }}
+            onItemClick={setPopupItem}
+          />
+        )}
+
+        {screen === SCREENS.OFFERS && (
+          <CustomerOffersPage
+            business={business} businessId={businessId} items={items}
+            activeDiscounts={activeDiscounts}
+            onDiscountsRefetched={setActiveDiscounts}
+            cart={cart} cartCount={cartCount} cartTotal={total}
+            onAddItem={addItemDirect}
+            onAddCombo={addComboToCart}
+            onItemClick={setPopupItem}
+            onBrowseMenu={() => setScreen(SCREENS.MENU)}
+            onViewCart={() => setScreen(SCREENS.CART)}
+            onBack={() => setScreen(offersOrigin)}
           />
         )}
 
         {screen === SCREENS.MENU && (
           <CustomerMenuPage
             business={business} categories={categories} items={items}
+            activeDiscounts={activeDiscounts}
             cart={cart} cartCount={cartCount} cartTotal={total}
             onItemClick={setPopupItem}
+            onViewOffers={() => { setOffersOrigin(SCREENS.MENU); setScreen(SCREENS.OFFERS); }}
             onViewCart={() => setScreen(SCREENS.CART)}
             onBack={() => setScreen(SCREENS.LANDING)}
           />
@@ -305,6 +373,7 @@ const CustomerWrapper = ({ businessId }) => {
         {screen === SCREENS.CART && (
           <CustomerCartPage
             cart={cart} subtotal={subtotal} gst={gst} total={total}
+            activeDiscounts={activeDiscounts}
             onUpdateQty={updateQty} onRemove={removeFromCart}
             onBack={() => setScreen(SCREENS.MENU)}
             onProceed={() => setScreen(SCREENS.DINING)}

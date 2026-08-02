@@ -7,6 +7,7 @@ import {
   Printer, Phone, MessageSquare, CreditCard, Utensils,
   Package, Filter, RefreshCw,
   Banknote, Smartphone, Globe, Store, ArrowRight,
+  FileImage, FileText,
 } from "lucide-react";
 import "../orderstabletopleo/designorderspage.css";
 import adminOrderService from "../services/adminOrderService";
@@ -151,6 +152,8 @@ const MyOrderTableTopleoPage = ({ highlightOrder = null, isDark: darkProp = fals
   const [filterPay,    setFilterPay]    = useState("all");
   const [updatingId,   setUpdatingId]   = useState(null);
   const [showStatusDd, setShowStatusDd] = useState(false);
+  const [showInvoiceDd,setShowInvoiceDd]= useState(false);
+  const [invoiceLoading,setInvoiceLoading]=useState(false);
   const [docDark,      setDocDark]      = useState(false);
   const [hoveredOrder,   setHoveredOrder]   = useState(null);
   const [tooltipPos,     setTooltipPos]     = useState({ x:0, y:0 });
@@ -159,6 +162,8 @@ const MyOrderTableTopleoPage = ({ highlightOrder = null, isDark: darkProp = fals
   const calRef    = useRef(null);
   const filterRef = useRef(null);
   const statusRef = useRef(null);
+  const invoiceDdRef = useRef(null);
+  const invoiceRef   = useRef(null);
   const highlightRef = useRef(null);
 
   // Watch data-afd-theme attribute on <html> so dark mode from dashboard applies instantly
@@ -181,6 +186,7 @@ const MyOrderTableTopleoPage = ({ highlightOrder = null, isDark: darkProp = fals
       if(calRef.current&&!calRef.current.contains(e.target))    setCalOpen(false);
       if(filterRef.current&&!filterRef.current.contains(e.target)) setFilterOpen(false);
       if(statusRef.current&&!statusRef.current.contains(e.target)) setShowStatusDd(false);
+      if(invoiceDdRef.current&&!invoiceDdRef.current.contains(e.target)) setShowInvoiceDd(false);
     };
     document.addEventListener("mousedown",fn);
     return ()=>document.removeEventListener("mousedown",fn);
@@ -226,6 +232,38 @@ const MyOrderTableTopleoPage = ({ highlightOrder = null, isDark: darkProp = fals
         setPage(1);
       }
     } catch {} finally { setUpdatingId(null); }
+  };
+
+  // ── Invoice download — same capture/JPG/PDF logic as the customer
+  // Order Success page, adapted to this page's real order field names ──
+  const captureInvoice = async () => {
+    const html2canvas = (await import("html2canvas")).default;
+    return html2canvas(invoiceRef.current, { scale:3, useCORS:true, backgroundColor:"#ffffff", logging:false });
+  };
+
+  const downloadInvoiceJPG = async () => {
+    if (!selected) return;
+    setInvoiceLoading(true); setShowInvoiceDd(false);
+    try {
+      const canvas = await captureInvoice();
+      const link   = document.createElement("a");
+      link.download = `Invoice-${selected.orderNumber||"order"}.jpg`;
+      link.href     = canvas.toDataURL("image/jpeg", 0.95);
+      link.click();
+    } catch(e){ console.error(e); } finally { setInvoiceLoading(false); }
+  };
+
+  const downloadInvoicePDF = async () => {
+    if (!selected) return;
+    setInvoiceLoading(true); setShowInvoiceDd(false);
+    try {
+      const canvas   = await captureInvoice();
+      const imgData  = canvas.toDataURL("image/jpeg", 0.95);
+      const { jsPDF } = await import("jspdf");
+      const pdf      = new jsPDF({ orientation:"portrait", unit:"px", format:[canvas.width/3, canvas.height/3] });
+      pdf.addImage(imgData, "JPEG", 0, 0, canvas.width/3, canvas.height/3);
+      pdf.save(`Invoice-${selected.orderNumber||"order"}.pdf`);
+    } catch(e){ console.error(e); } finally { setInvoiceLoading(false); }
   };
 
   const handleRowMouseEnter = (e, order) => {
@@ -327,6 +365,7 @@ const MyOrderTableTopleoPage = ({ highlightOrder = null, isDark: darkProp = fals
         @keyframes morTooltipIn{from{opacity:0;transform:scale(0.96)}to{opacity:1;transform:scale(1)}}
         @keyframes highlightPulse{0%{box-shadow:0 0 0 0 rgba(99,91,255,0.4)}50%{box-shadow:0 0 0 6px rgba(99,91,255,0)}100%{box-shadow:0 0 0 0 rgba(99,91,255,0)}}
         @keyframes statusDdIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes morInvoiceDdIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
         .mor-ref-spinning{animation:morRefSpin 0.6s linear!important}
       `}</style>
 
@@ -572,6 +611,9 @@ const MyOrderTableTopleoPage = ({ highlightOrder = null, isDark: darkProp = fals
         const inits = getInitials(selected.customerName);
         const isDine= selected.orderType==="DINE_IN";
         const tlDone= getTimelineDone(selected.orderStatus);
+        const invUser = (typeof window!=="undefined") ? (()=>{ try { return JSON.parse(localStorage.getItem("ttl_user")||"{}"); } catch { return {}; } })() : {};
+        const invBusinessName = invUser.businessName || invUser.fullName || "TableTop Leo";
+        const invBusinessLogo = invUser.logoUrl || null;
         return (
           <div className="mor-right">
             <div className="mor-detail-header" style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 16px",borderBottom:"1px solid #f3f4f6",flexShrink:0}}>
@@ -692,8 +734,152 @@ const MyOrderTableTopleoPage = ({ highlightOrder = null, isDark: darkProp = fals
                 })}
               </div>
             </div>
-            <div className="mor-detail-footer" style={{padding:"12px 16px",borderTop:"1px solid #f3f4f6",flexShrink:0}}>
-              <button className="mor-print-btn"><Printer size={13}/> Print Invoice</button>
+            <div className="mor-detail-footer" style={{padding:"12px 16px",borderTop:"1px solid #f3f4f6",flexShrink:0,position:"relative"}} ref={invoiceDdRef}>
+              <button
+                className="mor-print-btn"
+                onClick={()=>setShowInvoiceDd(o=>!o)}
+                disabled={invoiceLoading}
+              >
+                <Printer size={13}/> {invoiceLoading?"Preparing...":"Print Invoice"}
+                <ChevronDown size={12} style={{transform:showInvoiceDd?"rotate(180deg)":"rotate(0deg)",transition:"transform 0.15s"}}/>
+              </button>
+
+              {showInvoiceDd&&(
+                <div
+                  onClick={e=>e.stopPropagation()}
+                  style={{position:"absolute",bottom:"calc(100% + 6px)",left:16,right:16,background:"#fff",border:"1px solid #e5e7eb",borderRadius:9,boxShadow:"0 6px 20px rgba(0,0,0,0.12)",overflow:"hidden",zIndex:20,animation:"morInvoiceDdIn 0.12s ease"}}
+                >
+                  <button onClick={downloadInvoiceJPG} style={{display:"flex",alignItems:"center",gap:8,width:"100%",padding:"9px 12px",border:"none",background:"#fff",fontSize:12,fontWeight:600,color:"#374151",cursor:"pointer",textAlign:"left",borderBottom:"1px solid #f3f4f6"}}
+                    onMouseOver={e=>e.currentTarget.style.background="#f9fafb"} onMouseOut={e=>e.currentTarget.style.background="#fff"}>
+                    <FileImage size={13} color="#6b7280"/> Download JPG
+                  </button>
+                  <button onClick={downloadInvoicePDF} style={{display:"flex",alignItems:"center",gap:8,width:"100%",padding:"9px 12px",border:"none",background:"#fff",fontSize:12,fontWeight:600,color:"#374151",cursor:"pointer",textAlign:"left"}}
+                    onMouseOver={e=>e.currentTarget.style.background="#f9fafb"} onMouseOut={e=>e.currentTarget.style.background="#fff"}>
+                    <FileText size={13} color="#6b7280"/> Download PDF
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* ── HIDDEN INVOICE — same professional black & white template
+                 as the customer Order Success page, captured off-screen ── */}
+            <div style={{ position:"absolute", left:"-9999px", top:0, width:420 }}>
+              <div ref={invoiceRef} style={{ width:420, background:"#fff", fontFamily:"'Segoe UI',Arial,sans-serif", fontSize:12, color:"#111" }}>
+
+                <div style={{ background:"#111", height:4 }}/>
+
+                <div style={{ padding:"20px 28px 16px", borderBottom:"2px solid #111", display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+                    {invBusinessLogo ? (
+                      <img src={invBusinessLogo} alt="logo" style={{ width:44, height:44, objectFit:"cover", borderRadius:4, border:"1px solid #e5e7eb" }} crossOrigin="anonymous"/>
+                    ) : (
+                      <div style={{ width:44, height:44, border:"2px solid #111", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20, fontWeight:900, borderRadius:4 }}>
+                        {invBusinessName[0]}
+                      </div>
+                    )}
+                    <div>
+                      <div style={{ fontSize:16, fontWeight:800, letterSpacing:"-0.4px", color:"#111" }}>{invBusinessName}</div>
+                    </div>
+                  </div>
+                  <div style={{ textAlign:"right" }}>
+                    <div style={{ fontSize:9, textTransform:"uppercase", letterSpacing:"0.1em", color:"#888", marginBottom:4 }}>TAX INVOICE</div>
+                    <div style={{ fontSize:18, fontWeight:900, fontFamily:"monospace", color:"#111", letterSpacing:"1px" }}>{selected.orderNumber}</div>
+                    <div style={{ fontSize:10, color:"#555", marginTop:4 }}>{formatDate(dt.date)} {dt.time}</div>
+                  </div>
+                </div>
+
+                <div style={{ display:"flex", borderBottom:"1px solid #ddd" }}>
+                  <div style={{ flex:1, padding:"12px 28px", borderRight:"1px solid #ddd" }}>
+                    <div style={{ fontSize:9, textTransform:"uppercase", letterSpacing:"0.1em", color:"#888", marginBottom:5 }}>Bill To</div>
+                    <div style={{ fontSize:12, fontWeight:700, color:"#111" }}>{selected.customerName || "Guest"}</div>
+                    <div style={{ fontSize:10.5, color:"#555", marginTop:2 }}>
+                      {isDine ? "Dine In" : "Take Away"}
+                    </div>
+                  </div>
+                  <div style={{ flex:1, padding:"12px 28px" }}>
+                    <div style={{ fontSize:9, textTransform:"uppercase", letterSpacing:"0.1em", color:"#888", marginBottom:5 }}>Order Reference</div>
+                    <div style={{ fontSize:10, fontFamily:"monospace", color:"#333", wordBreak:"break-all" }}>{selected.orderId}</div>
+                    <div style={{ fontSize:10.5, color:"#555", marginTop:4 }}>{PayI.label}</div>
+                  </div>
+                </div>
+
+                <div style={{ padding:"0 28px" }}>
+                  <table style={{ width:"100%", borderCollapse:"collapse", marginTop:0 }}>
+                    <thead>
+                      <tr style={{ borderBottom:"2px solid #111" }}>
+                        <th style={{ padding:"10px 0 8px", textAlign:"left", fontSize:9.5, textTransform:"uppercase", letterSpacing:"0.08em", color:"#444", fontWeight:700 }}>#</th>
+                        <th style={{ padding:"10px 0 8px", textAlign:"left", fontSize:9.5, textTransform:"uppercase", letterSpacing:"0.08em", color:"#444", fontWeight:700 }}>Description</th>
+                        <th style={{ padding:"10px 0 8px", textAlign:"center", fontSize:9.5, textTransform:"uppercase", letterSpacing:"0.08em", color:"#444", fontWeight:700 }}>Qty</th>
+                        <th style={{ padding:"10px 0 8px", textAlign:"right", fontSize:9.5, textTransform:"uppercase", letterSpacing:"0.08em", color:"#444", fontWeight:700 }}>Rate</th>
+                        <th style={{ padding:"10px 0 8px", textAlign:"right", fontSize:9.5, textTransform:"uppercase", letterSpacing:"0.08em", color:"#444", fontWeight:700 }}>Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(selected.items||[]).length > 0 ? (selected.items||[]).map((item,i) => {
+                        const qty  = Number(item.quantity||1);
+                        const amt  = Number(item.lineTotal||0);
+                        const rate = qty > 0 ? amt / qty : amt;
+                        return (
+                          <tr key={i} style={{ borderBottom:"1px solid #f0f0f0" }}>
+                            <td style={{ padding:"7px 0", fontSize:11, color:"#888", verticalAlign:"top" }}>{i+1}</td>
+                            <td style={{ padding:"7px 8px 7px 0", verticalAlign:"top" }}>
+                              <div style={{ fontSize:12, fontWeight:600, color:"#111" }}>{item.productName}</div>
+                              {item.specialRequest && <div style={{ fontSize:10, color:"#888", marginTop:1 }}>↳ {item.specialRequest}</div>}
+                            </td>
+                            <td style={{ padding:"7px 0", textAlign:"center", fontSize:12, color:"#333" }}>{qty}</td>
+                            <td style={{ padding:"7px 0", textAlign:"right", fontSize:12, color:"#333" }}>{formatCurrency(rate, currencyCode)}</td>
+                            <td style={{ padding:"7px 0", textAlign:"right", fontSize:12, fontWeight:600, color:"#111" }}>{formatCurrency(amt, currencyCode)}</td>
+                          </tr>
+                        );
+                      }) : (
+                        <tr><td colSpan={5} style={{ padding:"16px 0", textAlign:"center", color:"#aaa", fontSize:11 }}>No items</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div style={{ padding:"0 28px 20px", marginTop:4 }}>
+                  <div style={{ marginLeft:"auto", width:200 }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", padding:"5px 0", borderBottom:"1px solid #eee" }}>
+                      <span style={{ fontSize:11, color:"#555" }}>Subtotal</span>
+                      <span style={{ fontSize:11, color:"#333" }}>{formatCurrency(Number(selected.subtotal||0), currencyCode)}</span>
+                    </div>
+                    <div style={{ display:"flex", justifyContent:"space-between", padding:"5px 0", borderBottom:"1px solid #eee" }}>
+                      <span style={{ fontSize:11, color:"#555" }}>Tax</span>
+                      <span style={{ fontSize:11, color:"#333" }}>{formatCurrency(Number(selected.taxAmount||0), currencyCode)}</span>
+                    </div>
+                    {Number(selected.discountAmount||0) > 0 && (
+                      <div style={{ display:"flex", justifyContent:"space-between", padding:"5px 0", borderBottom:"1px solid #eee" }}>
+                        <span style={{ fontSize:11, color:"#555" }}>Discount</span>
+                        <span style={{ fontSize:11, color:"#dc2626" }}>- {formatCurrency(Number(selected.discountAmount||0), currencyCode)}</span>
+                      </div>
+                    )}
+                    <div style={{ display:"flex", justifyContent:"space-between", padding:"8px 0", borderTop:"2px solid #111", marginTop:2 }}>
+                      <span style={{ fontSize:13, fontWeight:800, color:"#111" }}>TOTAL</span>
+                      <span style={{ fontSize:14, fontWeight:900, color:"#111" }}>{formatCurrency(Number(selected.grandTotal||0), currencyCode)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ margin:"0 28px 20px", border:"1px solid #e5e7eb", borderRadius:6, padding:"10px 14px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                  <div>
+                    <div style={{ fontSize:9, textTransform:"uppercase", letterSpacing:"0.08em", color:"#888", marginBottom:3 }}>Payment Status</div>
+                    <div style={{ fontSize:12, fontWeight:700, color: selected.paymentStatus==="PAID" ? "#16a34a" : "#b45309" }}>
+                      {selected.payAtCounter ? "Pay at Counter" : (selected.paymentStatus || "Pending")}
+                    </div>
+                  </div>
+                  <div style={{ textAlign:"right" }}>
+                    <div style={{ fontSize:9, textTransform:"uppercase", letterSpacing:"0.08em", color:"#888", marginBottom:3 }}>Method</div>
+                    <div style={{ fontSize:12, fontWeight:600, color:"#333" }}>{PayI.label}</div>
+                  </div>
+                </div>
+
+                <div style={{ borderTop:"2px solid #111", padding:"12px 28px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                  <div style={{ fontSize:10.5, fontWeight:600, color:"#111" }}>Thank you for your visit!</div>
+                  <div style={{ fontSize:9.5, color:"#888" }}>Powered by TableTop Leo</div>
+                </div>
+                <div style={{ background:"#111", height:4 }}/>
+              </div>
             </div>
           </div>
         );

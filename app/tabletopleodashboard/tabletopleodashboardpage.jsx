@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import '../tabletopleodashboard/adminagedummydesign.css';
 import AdminPayments from '../adminpaymentscomponent/AdminPayments'
+import AdminDiscountManagement from '../discountmanagement/AdminDiscountManagement'
 
 import NotificationTableTopLeo from '../notificationstabletopleo/notificationtabletopleopage';
 import MenuCategory             from '../menucategorypage/menucategorypage';
@@ -47,6 +48,7 @@ const MENU_ITEMS = [
   ]},
   { id:'inventory', label:'Inventory', icon:Package },
   { id:'help-desk', label:'Help Desk', icon:HelpCircle },
+  { id:'discount-management', label:'Discounts & Offers', icon:HelpCircle },
 ];
 const PRODUCT_ITEMS = [
   { id:'payments',  label:'Payments',  icon:CreditCard },
@@ -185,7 +187,7 @@ const AdminDashboardNew = () => {
     if (activeMenu === 'notifications') {
       return <div data-afd-theme={dark?'dark':'light'}><NotificationTableTopLeo dark={dark}/></div>;
     }
-    const PAGE_MAP = { 'menu-category':MenuCategory, 'business-info':BusinessInformation, 'settings':SettingsPage, 'help-desk':HelpDeskPage, 'payment-setup':PaymentSetup,'home':DashboardMainSetup,'payments':AdminPayments,'billing':AdminBilling,'inventory':InventoryPage };
+    const PAGE_MAP = { 'menu-category':MenuCategory, 'business-info':BusinessInformation, 'settings':SettingsPage, 'help-desk':HelpDeskPage, 'payment-setup':PaymentSetup,'home':DashboardMainSetup,'payments':AdminPayments,'billing':AdminBilling,'inventory':InventoryPage,'discount-management':AdminDiscountManagement };
     const ActivePage = PAGE_MAP[activeMenu];
     if (ActivePage) return <div data-afd-theme={dark?'dark':'light'}><ActivePage/></div>;
     if (activeMenu === 'admin-setup') return null;

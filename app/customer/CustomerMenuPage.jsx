@@ -1,16 +1,19 @@
 "use client";
 
 import { getCurrencySymbol, formatCurrency } from "../utils/currencyHelper";
+import { getItemDiscount, computeDiscountedPrice } from "../utils/discountHelper";
 import { useState, useRef } from "react";
-import { ArrowLeft, Search, ShoppingCart, X, Plus, ImageOff } from "lucide-react";
+import { ArrowLeft, Search, ShoppingCart, X, Plus, ImageOff, Tag } from "lucide-react";
 
 const CustomerMenuPage = ({
   business,
   categories = [],
   items = [],
+  activeDiscounts = [],
   cart: propCart = [],
   onItemClick,
   onViewCart,
+  onViewOffers,
   onBack,
 }) => {
   const _user = (typeof window !== "undefined")
@@ -115,15 +118,25 @@ const CustomerMenuPage = ({
           <span className="cx-topbar-title" style={{ fontSize:15 }}>
             {business?.businessName || "Menu"}
           </span>
-          <button className="cx-topbar-action" onClick={onViewCart}
-            style={{ position:"relative", touchAction:"manipulation" }}>
-            <ShoppingCart size={18}/>
-            {cartCount > 0 && (
-              <span style={{ position:"absolute", top:-4, right:-4, background:"var(--brand)", color:"#fff", fontSize:10, fontWeight:700, borderRadius:"9999px", minWidth:16, height:16, display:"flex", alignItems:"center", justifyContent:"center", padding:"0 3px", lineHeight:1 }}>
-                {cartCount > 9 ? "9+" : cartCount}
-              </span>
-            )}
-          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <button onClick={onViewOffers} className="cx-topbar-action" style={{ position: "relative", touchAction: "manipulation" }} aria-label="Offers">
+              <Tag size={18} />
+              {activeDiscounts.length > 0 && (
+                <span style={{ position:"absolute", top:-4, right:-4, background:"#dc2626", color:"#fff", fontSize:10, fontWeight:700, borderRadius:"9999px", minWidth:16, height:16, display:"flex", alignItems:"center", justifyContent:"center", padding:"0 3px", lineHeight:1 }}>
+                  {activeDiscounts.length > 9 ? "9+" : activeDiscounts.length}
+                </span>
+              )}
+            </button>
+            <button className="cx-topbar-action" onClick={onViewCart}
+              style={{ position:"relative", touchAction:"manipulation" }}>
+              <ShoppingCart size={18}/>
+              {cartCount > 0 && (
+                <span style={{ position:"absolute", top:-4, right:-4, background:"var(--brand)", color:"#fff", fontSize:10, fontWeight:700, borderRadius:"9999px", minWidth:16, height:16, display:"flex", alignItems:"center", justifyContent:"center", padding:"0 3px", lineHeight:1 }}>
+                  {cartCount > 9 ? "9+" : cartCount}
+                </span>
+              )}
+            </button>
+          </div>
         </div>
 
         {/* Search */}
@@ -214,6 +227,8 @@ const CustomerMenuPage = ({
           </div>
         ) : filtered.map((item, idx) => {
           const qty = getCartQty(item.id);
+          const discount = getItemDiscount(item, activeDiscounts);
+          const discountedPrice = discount ? computeDiscountedPrice(item.price, discount) : null;
           return (
             <div
               key={item.id}
@@ -247,6 +262,11 @@ const CustomerMenuPage = ({
                     {qty}
                   </div>
                 )}
+                {discount && (
+                  <div style={{ position:"absolute", bottom:-4, left:-4, display:"flex", alignItems:"center", gap:2, background:"#dc2626", color:"#fff", fontSize:7.5, fontWeight:800, padding:"2px 5px", borderRadius:20, border:"1.5px solid #fff" }}>
+                    <Tag size={7} /> {discount.badgeLabel}
+                  </div>
+                )}
               </div>
 
               {/* Text info */}
@@ -275,8 +295,15 @@ const CustomerMenuPage = ({
 
                 {/* Price + in-cart */}
                 <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginTop:4 }}>
-                  <span className="mp-item-price" style={{ fontSize:13, fontWeight:800, color:"var(--brand)" }}>
-                    {formatCurrency(item.price, _currCode)}
+                  <span style={{ display:"flex", alignItems:"baseline", gap:5 }}>
+                    <span className="mp-item-price" style={{ fontSize:13, fontWeight:800, color: discount ? "#dc2626" : "var(--brand)" }}>
+                      {formatCurrency(discount ? discountedPrice : item.price, _currCode)}
+                    </span>
+                    {discount && (
+                      <span style={{ fontSize:10.5, color:"var(--text-muted)", textDecoration:"line-through" }}>
+                        {formatCurrency(item.price, _currCode)}
+                      </span>
+                    )}
                   </span>
                   {qty > 0 && (
                     <span style={{ fontSize:10, fontWeight:700, color:"var(--brand)" }}>

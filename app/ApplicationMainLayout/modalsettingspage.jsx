@@ -201,7 +201,7 @@ export function SupportModal({ onClose }) {
 }
 
 // ── DELETE ACCOUNT POPUP ──────────────────────────────────────
-export function DeleteModal({ fullName, onConfirm, onCancel, loading }) {
+export function DeleteModal({ fullName, onConfirm, onCancel, loading, error }) {
   const [reason,  setReason]  = useState("");
   const [comment, setComment] = useState("");
 
@@ -233,7 +233,7 @@ export function DeleteModal({ fullName, onConfirm, onCancel, loading }) {
               "Deactivate your business profile",
               "Disable customer ordering via QR",
               "Cancel active subscription (if any)",
-              "Schedule permanent deletion after 30 days",
+              "Schedule permanent deletion after a short grace period",
             ].map(item=>(
               <div key={item} style={{ display:"flex", alignItems:"center", gap:7, fontSize:12, color:"#78350f", marginBottom:4 }}>
                 <div style={{ width:5, height:5, borderRadius:"50%", background:"#d97706", flexShrink:0 }}/>
@@ -262,13 +262,20 @@ export function DeleteModal({ fullName, onConfirm, onCancel, loading }) {
               style={{ width:"100%", padding:"8px 11px", borderRadius:8, border:"1.5px solid #e4e4e7", fontSize:12.5, outline:"none", resize:"none", fontFamily:"inherit", boxSizing:"border-box", lineHeight:1.5, color:"#374151" }}/>
           </div>
 
+          {/* Error */}
+          {error && (
+            <div style={{ background:"#fef2f2", border:"1px solid #fecaca", borderRadius:8, padding:"9px 12px", fontSize:12, color:"#dc2626", fontWeight:600 }}>
+              ⚠ {error}
+            </div>
+          )}
+
           {/* Actions */}
           <div style={{ display:"flex", gap:8, justifyContent:"flex-end" }}>
             <button onClick={onCancel} disabled={loading} type="button"
               style={{ padding:"8px 16px", borderRadius:8, border:"1.5px solid #e4e4e7", background:"#fff", fontSize:13, fontWeight:600, color:"#374151", cursor:"pointer", fontFamily:"inherit" }}>
               Cancel
             </button>
-            <button onClick={onConfirm} disabled={loading} type="button"
+            <button onClick={() => onConfirm({ reason, comment })} disabled={loading} type="button"
               style={{ display:"flex", alignItems:"center", gap:6, padding:"8px 16px", borderRadius:8, border:"none", background:"#dc2626", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit", minWidth:180, justifyContent:"center" }}>
               {loading
                 ? <><Loader2 size={13} style={{ animation:"spin .7s linear infinite" }}/> Deleting...</>

@@ -13,7 +13,7 @@ import DeletionRequestsTab from "../tabletopleoportal/components/DeletionRequest
 import SubscriptionsTab from "../tabletopleoportal/components/SubscriptionsTab";
 import EmailSupportTab from "../tabletopleoportal/components/EmailSupportTab";
 import ReviewsTab from "../tabletopleoportal/components/ReviewsTab";
-import { MERCHANTS, DELETION_REQUESTS, SUBSCRIPTIONS } from "../tabletopleoportal/data";
+import { MERCHANTS, SUBSCRIPTIONS } from "../tabletopleoportal/data";
 
 const TABS = [
   { id: "overview",     label: "Overview",             icon: LayoutGrid },
@@ -30,7 +30,7 @@ export default function TableTopLeoPortal({ operatorName = "Operations Admin" })
   const tabCounts = {
     overview: null,
     merchants: MERCHANTS.length,
-    deletions: DELETION_REQUESTS.filter((d) => d.status === "PENDING").length,
+    deletions: null,
     subscriptions: SUBSCRIPTIONS.filter((s) => s.plan !== "Free").length,
     support: null,
     reviews: null,

@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import UPIPayments from "../tabletopleopaymentsconfiguration/upipayments";
 import RazorPayPayments from "../tabletopleopaymentsconfiguration/razorpaypayments";
 import StripePaypalPayments from "../tabletopleopaymentsconfiguration/stripepayments";
+import MobilePayPayments from "../tabletopleopaymentsconfiguration/mobilepaypayments";
+import { SiRazorpay, SiStripe } from "react-icons/si";
 
 const PAYMENT_METHODS = [
   {
@@ -10,9 +12,9 @@ const PAYMENT_METHODS = [
     desc: "Direct bank transfer via UPI",
     icon: (
       <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
-        <rect width="48" height="48" rx="10" fill="#F0F4FF" />
-        <path d="M24 8L36 16V32L24 40L12 32V16L24 8Z" fill="#0066CC" opacity="0.15" />
-        <path d="M18 20L24 14L30 20V30L24 34L18 30V20Z" fill="#0066CC" />
+        <rect width="48" height="48" rx="10" fill="#FFF3EA" />
+        <path d="M24 8L36 16V32L24 40L12 32V16L24 8Z" fill="#ED752E" opacity="0.12" />
+        <path d="M18 20L24 14L30 20V30L24 34L18 30V20Z" fill="#ED752E" />
         <path d="M24 14V34M18 20L30 30M30 20L18 30" stroke="white" strokeWidth="2" strokeLinecap="round" />
       </svg>
     ),
@@ -24,10 +26,9 @@ const PAYMENT_METHODS = [
     name: "Razorpay",
     desc: "Cards, UPI, Net Banking, Wallets & more",
     icon: (
-      <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
-        <rect width="48" height="48" rx="10" fill="#F0F4FF" />
-        <path d="M14 34L22 14H28L32 22L26 26L30 34H24L21 28L18 34H14Z" fill="#3395FF" />
-      </svg>
+      <div style={{ width: 32, height: 32, borderRadius: 7, background: "#EAF3FF", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <SiRazorpay size={17} color="#0C2451" />
+      </div>
     ),
     features: ["Cards, UPI, Net Banking", "Wallets & EMI", "Secure & Reliable"],
     badge: "Recommended",
@@ -37,14 +38,27 @@ const PAYMENT_METHODS = [
     name: "Stripe",
     desc: "Accept global payments in 135+ currencies",
     icon: (
-      <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
-        <rect width="48" height="48" rx="10" fill="#F0F4FF" />
-        <rect x="10" y="10" width="28" height="28" rx="6" fill="#635BFF" />
-        <path d="M22 19c0-1.1.9-1.8 2.2-1.8 1.9 0 3.8.7 5.1 1.9l1.7-3.3C29.5 14.6 27 14 24.2 14 20.1 14 17 16.3 17 20c0 6.2 8.5 5.2 8.5 8 0 1.3-1.1 2-2.7 2-2.3 0-4.4-.9-5.9-2.3l-1.9 3.2C16.8 32.6 19.8 34 23 34c4.3 0 7.5-2.1 7.5-6 0-6.5-8.5-5.3-8.5-9z" fill="white" />
-      </svg>
+      <div style={{ width: 32, height: 32, borderRadius: 7, background: "#F0EEFF", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <SiStripe size={18} color="#635BFF" />
+      </div>
     ),
     features: ["Cards, Apple Pay", "Google Pay, Link", "Global payment support"],
     badge: "International",
+  },
+  {
+    id: "mobilepay",
+    name: "Mobile Pay",
+    desc: "Tap-to-pay checkout via Apple Pay & Google Pay",
+    icon: (
+      <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
+        <rect width="48" height="48" rx="10" fill="#F5F0FF" />
+        <rect x="16" y="9" width="16" height="30" rx="4" fill="#7C3AED" opacity="0.15" />
+        <rect x="18" y="11" width="12" height="26" rx="2.5" fill="#7C3AED" />
+        <circle cx="24" cy="33.5" r="1.6" fill="white" />
+      </svg>
+    ),
+    features: ["Apple Pay & Google Pay", "Tap-to-pay ready", "Fast, tokenized checkout"],
+    badge: "New",
   },
   // {
   //   id: "paypal",
@@ -65,15 +79,6 @@ const PAYMENT_METHODS = [
 const PaymentSetup =() =>{
   const [activePage,         setActivePage]         = useState(null);
   const [enabledMethods,     setEnabledMethods]     = useState(["upi"]);
-
-  // ── Pay at Counter: draft (what the admin is toggling right now, unsaved)
-  //    vs saved (what's actually persisted in the DB) ─────────────────────
-  // The toggle ONLY changes `payAtCounterDraft`. Nothing is sent to the
-  // backend until the admin explicitly clicks "Save". This is what fixes
-  // the "disables itself" bug — the switch used to call the API instantly
-  // on every click and never loaded the real saved value on page load, so
-  // it looked like it silently reset. Now it always mirrors the DB value
-  // until the admin (and only the admin) chooses to change and save it.
   const [payAtCounterSaved,  setPayAtCounterSaved]  = useState(false);
   const [payAtCounterDraft,  setPayAtCounterDraft]  = useState(false);
   const [pacInitialLoading,  setPacInitialLoading]  = useState(true);
@@ -138,6 +143,7 @@ const PaymentSetup =() =>{
   if (activePage === "razorpay") return <RazorPayPayments onBack={() => setActivePage(null)} />;
   if (activePage === "stripe") return <StripePaypalPayments onBack={() => setActivePage(null)} initialTab="stripe" />;
   if (activePage === "paypal") return <StripePaypalPayments onBack={() => setActivePage(null)} initialTab="paypal" />;
+  if (activePage === "mobilepay") return <MobilePayPayments onBack={() => setActivePage(null)} />;
 
   return (
     <div className="ps-root">
@@ -312,10 +318,7 @@ const PaymentSetup =() =>{
         </ol>
       </div>
 
-      <div className="ps-footer">
-        <button className="ps-btn-cancel">Cancel</button>
-        <button className="ps-btn-save">Save Configuration &amp; Continue</button>
-      </div>
+       
 
       <style>{`
         .ps-root {
