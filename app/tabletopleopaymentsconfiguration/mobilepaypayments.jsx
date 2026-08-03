@@ -1,299 +1,754 @@
 "use client";
 import { useState } from "react";
-import { Smartphone, ShieldCheck } from "lucide-react";
-import { SiApplepay, SiGooglepay } from "react-icons/si";
+import { Eye, EyeOff, AlertCircle, CheckCircle, Loader, Copy, Download } from "lucide-react";
+import axios from "axios";
 
-export default function MobilePayPayments({ onBack }) {
-  const [merchantName, setMerchantName] = useState("");
-  const [merchantId,   setMerchantId]   = useState("");
-  const [wallets,      setWallets]      = useState(["applepay", "googlepay"]);
-  const [nameError,    setNameError]    = useState("");
-  const [idError,      setIdError]      = useState("");
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:6163/api";
 
-  const [saved,    setSaved]    = useState(false);
-  const [editMode, setEditMode] = useState(true);
-  const [agreed,   setAgreed]   = useState(false);
-  const [saving,   setSaving]   = useState(false);
+export default function MobilePayPayments({ onBack, adminId, businessId }) {
+  const [loading, setLoading] = useState(false);
+  const [configSaved, setConfigSaved] = useState(false);
+  const [showQRModal, setShowQRModal] = useState(false);
+  const [generatedQR, setGeneratedQR] = useState(null);
+  const [copied, setCopied] = useState(false);
 
-  const WALLET_OPTIONS = [
-    { id: "applepay",  label: "Apple Pay",  icon: <SiApplepay size={16} /> },
-    { id: "googlepay", label: "Google Pay", icon: <SiGooglepay size={16} /> },
-  ];
+  // Form State
+  const [form, setForm] = useState({
+    merchantSerialNumber: "",
+    clientId: "",
+    clientSecret: "",
+    subscriptionKey: "",
+    webhookSecret: "",
+    environment: "sandbox",
+    currencyCode: "DKK",
+    enableQrCode: true,
+  });
 
-  const toggleWallet = (id) => {
-    if (!editMode) return;
-    setWallets((prev) => (prev.includes(id) ? prev.filter((w) => w !== id) : [...prev, id]));
+  const [showPasswords, setShowPasswords] = useState({
+    clientSecret: false,
+    subscriptionKey: false,
+    webhookSecret: false,
+  });
+
+  const [formErrors, setFormErrors] = useState({});
+  const [success, setSuccess] = useState("");
+  const [error, setError] = useState("");
+
+  const validateForm = () => {
+    const newErrors = {};
+    if (!form.merchantSerialNumber?.trim()) newErrors.merchantSerialNumber = "Merchant Serial Number required";
+    if (!form.clientId?.trim()) newErrors.clientId = "Client ID required";
+    if (!form.clientSecret?.trim()) newErrors.clientSecret = "Client Secret required";
+    if (!form.subscriptionKey?.trim()) newErrors.subscriptionKey = "Subscription Key required";
+    if (!form.webhookSecret?.trim()) newErrors.webhookSecret = "Webhook Secret required";
+    setFormErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
-  const validate = () => {
-    let valid = true;
-    if (!merchantName.trim()) { setNameError("Merchant name is required."); valid = false; }
-    else setNameError("");
+  const handleSave = async () => {
+    if (!validateForm()) return;
+    setLoading(true);
+    setError("");
+    setSuccess("");
 
-    if (!merchantId.trim()) { setIdError("Mobile Pay Merchant ID is required."); valid = false; }
-    else setIdError("");
+    try {
+      const payload = {
+        businessId: businessId || "",
+        adminId: adminId || "",
+        merchantSerialNumber: form.merchantSerialNumber,
+        clientId: form.clientId,
+        clientSecret: form.clientSecret,
+        subscriptionKey: form.subscriptionKey,
+        webhookSecret: form.webhookSecret,
+        environment: form.environment,
+        currencyCode: form.currencyCode,
+        enableQrCode: form.enableQrCode,
+      };
 
-    return valid;
+      const token = localStorage.getItem("token");
+      const response = await axios.post(`${API_BASE_URL}/payment/mobilepay/config/save`, payload, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.data.success) {
+        setSuccess("✓ MobilePay configuration saved successfully!");
+        setConfigSaved(true);
+
+        // Generate QR for merchant
+        const qrData = {
+          merchant: form.merchantSerialNumber,
+          env: form.environment,
+          currency: form.currencyCode,
+          saved: true,
+        };
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(JSON.stringify(qrData))}`;
+        setGeneratedQR(qrUrl);
+        setShowQRModal(true);
+
+        setTimeout(() => setSuccess(""), 3000);
+      } else {
+        setError(response.data.message || "Failed to save configuration");
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || "Error saving configuration. Check backend on port 6163");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // UI-only for now — no backend call yet. Swap this for a real API POST
-  // once the Mobile Pay integration is actually built server-side.
-  const handleSave = () => {
-    if (!validate()) return;
-    setSaving(true);
-    setTimeout(() => {
-      setSaving(false);
-      setSaved(true);
-      setEditMode(false);
-    }, 700);
+  const handleFieldChange = (field, value) => {
+    setForm(prev => ({ ...prev, [field]: value }));
+    if (formErrors[field]) setFormErrors(prev => ({ ...prev, [field]: "" }));
   };
 
-  const handleEdit = () => setEditMode(true);
+  const togglePasswordField = (field) => {
+    setShowPasswords(prev => ({ ...prev, [field]: !prev[field] }));
+  };
+
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   return (
-    <div className="mobpay-root">
+    <div className="payment-config-container">
       {/* Header */}
-      <div className="mobpay-header">
-        <button className="mobpay-back-btn" onClick={onBack}>
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path d="M10 12L6 8l4-4" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          Back to Payment Methods
+      <div className="payment-config-header">
+        <button className="back-button" onClick={onBack}>
+          ← Back
         </button>
-        <div className="mobpay-header-inner">
-          <div className="mobpay-header-icon">
-            <svg width="36" height="36" viewBox="0 0 48 48" fill="none">
-              <rect width="48" height="48" rx="10" fill="#F5F0FF" />
-              <rect x="16" y="9" width="16" height="30" rx="4" fill="#7C3AED" opacity="0.15" />
-              <rect x="18" y="11" width="12" height="26" rx="2.5" fill="#7C3AED" />
-              <circle cx="24" cy="33.5" r="1.6" fill="white" />
-            </svg>
-          </div>
-          <div>
-            <div className="mobpay-header-title">
-              Mobile Pay Setup
-              <span className="mobpay-badge">New</span>
-            </div>
-            <div className="mobpay-header-sub">Accept tap-to-pay checkout via Apple Pay, Google Pay &amp; mobile wallets</div>
-          </div>
+        <div>
+          <h1 className="config-title">Mobile Pay Configuration</h1>
+          <p className="config-subtitle">Setup your MobilePay Business API credentials</p>
         </div>
       </div>
 
-      <div className="mobpay-body">
-        <div className="mobpay-main">
+      {/* Alerts */}
+      {success && (
+        <div className="alert alert-success">
+          <CheckCircle size={18} />
+          <span>{success}</span>
+        </div>
+      )}
+      {error && (
+        <div className="alert alert-error">
+          <AlertCircle size={18} />
+          <span>{error}</span>
+        </div>
+      )}
 
-          {/* Step 1 — Merchant Details */}
-          <div className="mobpay-section">
-            <div className="mobpay-step-label">
-              <span className="mobpay-step-num">1</span>
-              Merchant Details
+      {/* Main Form */}
+      <div className="config-card">
+        {/* Section 1: Merchant Credentials */}
+        <div className="config-section">
+          <h2 className="section-title">Merchant Credentials</h2>
+          <p className="section-description">Enter your MobilePay Business API credentials</p>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label className="form-label">Merchant Serial Number *</label>
+              <input
+                type="text"
+                placeholder="e.g., MERCHANT123456"
+                value={form.merchantSerialNumber}
+                onChange={(e) => handleFieldChange("merchantSerialNumber", e.target.value)}
+                disabled={configSaved}
+                className={`form-input ${formErrors.merchantSerialNumber ? "input-error" : form.merchantSerialNumber ? "input-valid" : ""}`}
+              />
+              {formErrors.merchantSerialNumber && <span className="error-text">{formErrors.merchantSerialNumber}</span>}
             </div>
-            <p className="mobpay-step-desc">Enter your merchant display name and Mobile Pay Merchant ID. Your admin ID and business ID are linked automatically from your account.</p>
+            <div className="form-group">
+              <label className="form-label">Client ID *</label>
+              <input
+                type="text"
+                placeholder="e.g., 123e4567-e89b-12d3"
+                value={form.clientId}
+                onChange={(e) => handleFieldChange("clientId", e.target.value)}
+                disabled={configSaved}
+                className={`form-input ${formErrors.clientId ? "input-error" : form.clientId ? "input-valid" : ""}`}
+              />
+              {formErrors.clientId && <span className="error-text">{formErrors.clientId}</span>}
+            </div>
+          </div>
 
-            <div className="mobpay-form-row">
-              <div className="mobpay-field">
-                <label className="mobpay-label">Merchant Display Name <span className="mobpay-req">*</span></label>
+          <div className="form-row">
+            <div className="form-group">
+              <label className="form-label">Client Secret *</label>
+              <div className="password-input-wrapper">
                 <input
-                  className={`mobpay-input ${nameError ? "mobpay-input--error" : merchantName && !nameError ? "mobpay-input--valid" : ""}`}
-                  placeholder="As shown at checkout (e.g. Brew & Beans Cafe)"
-                  value={merchantName}
-                  onChange={(e) => { setMerchantName(e.target.value); if (nameError) setNameError(""); }}
-                  disabled={!editMode}
+                  type={showPasswords.clientSecret ? "text" : "password"}
+                  placeholder="Your client secret"
+                  value={form.clientSecret}
+                  onChange={(e) => handleFieldChange("clientSecret", e.target.value)}
+                  disabled={configSaved}
+                  className={`form-input ${formErrors.clientSecret ? "input-error" : form.clientSecret ? "input-valid" : ""}`}
                 />
-                {nameError && <div className="mobpay-error-msg">{nameError}</div>}
+                <button
+                  type="button"
+                  className="password-toggle"
+                  onClick={() => togglePasswordField("clientSecret")}
+                  disabled={configSaved}
+                >
+                  {showPasswords.clientSecret ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
               </div>
-
-              <div className="mobpay-field">
-                <label className="mobpay-label">Mobile Pay Merchant ID <span className="mobpay-req">*</span></label>
+              {formErrors.clientSecret && <span className="error-text">{formErrors.clientSecret}</span>}
+            </div>
+            <div className="form-group">
+              <label className="form-label">Subscription Key *</label>
+              <div className="password-input-wrapper">
                 <input
-                  className={`mobpay-input ${idError ? "mobpay-input--error" : merchantId && !idError ? "mobpay-input--valid" : ""}`}
-                  placeholder="e.g. MP-MERCHANT-00123"
-                  value={merchantId}
-                  onChange={(e) => { setMerchantId(e.target.value); if (idError) setIdError(""); }}
-                  disabled={!editMode}
+                  type={showPasswords.subscriptionKey ? "text" : "password"}
+                  placeholder="Your subscription key"
+                  value={form.subscriptionKey}
+                  onChange={(e) => handleFieldChange("subscriptionKey", e.target.value)}
+                  disabled={configSaved}
+                  className={`form-input ${formErrors.subscriptionKey ? "input-error" : form.subscriptionKey ? "input-valid" : ""}`}
                 />
-                {idError && <div className="mobpay-error-msg">{idError}</div>}
+                <button
+                  type="button"
+                  className="password-toggle"
+                  onClick={() => togglePasswordField("subscriptionKey")}
+                  disabled={configSaved}
+                >
+                  {showPasswords.subscriptionKey ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
               </div>
+              {formErrors.subscriptionKey && <span className="error-text">{formErrors.subscriptionKey}</span>}
             </div>
           </div>
 
-          {/* Step 2 — Supported Wallets */}
-          <div className="mobpay-section">
-            <div className="mobpay-step-label">
-              <span className="mobpay-step-num">2</span>
-              Supported Wallets
-            </div>
-            <p className="mobpay-step-desc">Choose which mobile wallets customers can pay with at checkout.</p>
-
-            <div className="mobpay-wallet-grid">
-              {WALLET_OPTIONS.map((w) => {
-                const active = wallets.includes(w.id);
-                return (
-                  <button
-                    key={w.id}
-                    type="button"
-                    className={`mobpay-wallet-card ${active ? "mobpay-wallet-card--active" : ""}`}
-                    onClick={() => toggleWallet(w.id)}
-                    disabled={!editMode}
-                  >
-                    <span className="mobpay-wallet-icon">{w.icon}</span>
-                    {w.label}
-                    {active && (
-                      <svg width="14" height="14" viewBox="0 0 16 16" className="mobpay-wallet-check"><circle cx="8" cy="8" r="8" fill="#16a34a" /><path d="M5 8l2 2 4-4" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Step 3 — Integration Keys */}
-          <div className="mobpay-section">
-            <div className="mobpay-step-label">
-              <span className="mobpay-step-num">3</span>
-              Integration Keys
-            </div>
-            <p className="mobpay-step-desc">These will be issued once your Mobile Pay integration is activated. Placeholder fields for now.</p>
-
-            <div className="mobpay-form-row">
-              <div className="mobpay-field">
-                <label className="mobpay-label">API Key</label>
-                <input className="mobpay-input" placeholder="Issued after activation" value="" disabled />
-              </div>
-              <div className="mobpay-field">
-                <label className="mobpay-label">Webhook URL</label>
-                <input className="mobpay-input" placeholder="https://yourdomain.com/webhooks/mobile-pay" value="" disabled />
-              </div>
-            </div>
-          </div>
-
-          {/* Save / Update button */}
-          {editMode ? (
-            <div>
-              <button className="mobpay-btn-primary" onClick={handleSave} disabled={saving}>
-                {saving ? "Saving..." : (saved ? "Update Configuration" : "Save & Continue")}
+          <div className="form-group">
+            <label className="form-label">Webhook Secret *</label>
+            <div className="password-input-wrapper">
+              <input
+                type={showPasswords.webhookSecret ? "text" : "password"}
+                placeholder="Your webhook secret"
+                value={form.webhookSecret}
+                onChange={(e) => handleFieldChange("webhookSecret", e.target.value)}
+                disabled={configSaved}
+                className={`form-input ${formErrors.webhookSecret ? "input-error" : form.webhookSecret ? "input-valid" : ""}`}
+              />
+              <button
+                type="button"
+                className="password-toggle"
+                onClick={() => togglePasswordField("webhookSecret")}
+                disabled={configSaved}
+              >
+                {showPasswords.webhookSecret ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
-          ) : (
-            <div className="mobpay-saved-bar">
-              <svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="8" fill="#16a34a" /><path d="M5 8l2 2 4-4" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
-              Configuration saved
-              <button className="mobpay-edit-link" onClick={handleEdit}>Edit</button>
-            </div>
-          )}
+            {formErrors.webhookSecret && <span className="error-text">{formErrors.webhookSecret}</span>}
+          </div>
+        </div>
 
-          {/* Terms */}
-          <div className="mobpay-section mobpay-section--terms">
-            <div className="mobpay-terms-title">Terms &amp; Conditions</div>
-            <ol className="mobpay-terms-list">
-              <li>Mobile Pay transactions are processed by the respective wallet provider (Apple Pay / Google Pay).</li>
-              <li>TableTop Leo does not store or process any card details directly.</li>
-              <li>Transaction fees are charged by the underlying payment processor, not TableTop Leo.</li>
-              <li>You must comply with each wallet provider's merchant terms of service.</li>
-            </ol>
-            <label className="mobpay-agree">
-              <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} />
-              I have read and agree to the terms above
+        {/* Section 2: Settings */}
+        <div className="config-section">
+          <h2 className="section-title">Settings</h2>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label className="form-label">Environment</label>
+              <select
+                value={form.environment}
+                onChange={(e) => handleFieldChange("environment", e.target.value)}
+                disabled={configSaved}
+                className="form-select"
+              >
+                <option value="sandbox">🧪 Sandbox (Testing)</option>
+                <option value="production">🚀 Production (Live)</option>
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Currency</label>
+              <select
+                value={form.currencyCode}
+                onChange={(e) => handleFieldChange("currencyCode", e.target.value)}
+                disabled={configSaved}
+                className="form-select"
+              >
+                <option value="DKK">DKK - Danish Krone</option>
+                <option value="EUR">EUR - Euro</option>
+                <option value="SEK">SEK - Swedish Krona</option>
+                <option value="NOK">NOK - Norwegian Krone</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="form-group checkbox-group">
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                checked={form.enableQrCode}
+                onChange={(e) => handleFieldChange("enableQrCode", e.target.checked)}
+                disabled={configSaved}
+              />
+              <span>Enable QR Code generation for payments</span>
             </label>
           </div>
-
-          <div className="mobpay-footer">
-            <button className="mobpay-btn-cancel" onClick={onBack}>Cancel</button>
-            <button className={`mobpay-btn-activate ${!agreed ? "mobpay-btn-activate--disabled" : ""}`} disabled={!agreed}>
-              Activate Mobile Pay
-            </button>
-          </div>
         </div>
 
-        {/* Sidebar */}
-        <div className="mobpay-sidebar">
-          <div className="mobpay-sidebar-card">
-            <div className="mobpay-sidebar-title">How it works</div>
-            <ol className="mobpay-how-list">
-              <li>Customer taps "Mobile Pay" at checkout</li>
-              <li>Their phone's wallet sheet opens automatically</li>
-              <li>They confirm with Face ID / fingerprint</li>
-              <li>Payment is confirmed instantly</li>
-            </ol>
-          </div>
-
-          <div className="mobpay-sidebar-card">
-            <div className="mobpay-sidebar-title">Supported Wallets</div>
-            <div className="mobpay-apps-grid">
-              <span className="mobpay-app-chip"><SiApplepay size={13} /> Apple Pay</span>
-              <span className="mobpay-app-chip"><SiGooglepay size={13} /> Google Pay</span>
-            </div>
-          </div>
-
-          <div className="mobpay-sidebar-card">
-            <div className="mobpay-sidebar-title" style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <ShieldCheck size={13} color="#16a34a" /> Secure by design
-            </div>
-            <p style={{ fontSize: 11.5, color: "#64748b", margin: 0, lineHeight: 1.6 }}>
-              Card details never touch your servers — every transaction is tokenized by the wallet provider.
-            </p>
-          </div>
+        {/* Action Buttons */}
+        <div className="form-actions">
+          <button onClick={onBack} className="btn btn-secondary">
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={loading || configSaved}
+            className="btn btn-primary"
+          >
+            {loading ? (
+              <>
+                <Loader size={16} className="spinner" /> Saving...
+              </>
+            ) : configSaved ? (
+              <>
+                <CheckCircle size={16} /> Saved ✓
+              </>
+            ) : (
+              "Save Configuration"
+            )}
+          </button>
         </div>
+
+        {/* Success Info */}
+        {configSaved && (
+          <div className="success-info-box">
+            <CheckCircle size={20} className="success-icon" />
+            <div>
+              <p className="success-title">Configuration Saved!</p>
+              <p className="success-description">Your MobilePay is now configured. Customers can pay using MobilePay in the payment page.</p>
+            </div>
+          </div>
+        )}
       </div>
 
+      {/* QR Code Modal */}
+      {showQRModal && generatedQR && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <button className="modal-close" onClick={() => setShowQRModal(false)}>
+              ✕
+            </button>
+
+            <h2 className="modal-title">MobilePay Merchant QR Code</h2>
+
+            <div className="qr-container">
+              <img src={generatedQR} alt="MobilePay QR" className="qr-image" />
+            </div>
+
+            <div className="qr-info">
+              <p><strong>Merchant:</strong> {form.merchantSerialNumber}</p>
+              <p><strong>Environment:</strong> {form.environment.toUpperCase()}</p>
+              <p><strong>Currency:</strong> {form.currencyCode}</p>
+            </div>
+
+            <div className="modal-actions">
+              <button
+                onClick={() => copyToClipboard(generatedQR)}
+                className="btn btn-secondary"
+              >
+                {copied ? "✓ Copied" : <Copy size={14} />} Copy Link
+              </button>
+              <a href={generatedQR} download="mobilepay-qr.png" className="btn btn-primary">
+                <Download size={14} /> Download QR
+              </a>
+              <button onClick={() => setShowQRModal(false)} className="btn btn-secondary">
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <style>{`
-        .mobpay-root { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #1a1a2e; max-width: 1080px; padding: 28px 32px; }
-        .mobpay-back-btn { display: inline-flex; align-items: center; gap: 6px; background: none; border: none; cursor: pointer; color: #3b82f6; font-size: 13px; font-weight: 500; padding: 0; margin-bottom: 18px; }
-        .mobpay-back-btn:hover { text-decoration: underline; }
-        .mobpay-header { margin-bottom: 24px; }
-        .mobpay-header-inner { display: flex; align-items: center; gap: 14px; }
-        .mobpay-header-title { font-size: 19px; font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 10px; }
-        .mobpay-badge { font-size: 10px; font-weight: 600; background: #ede9fe; color: #7c3aed; border-radius: 20px; padding: 2px 9px; }
-        .mobpay-header-sub { font-size: 12px; color: #64748b; margin-top: 2px; }
-        .mobpay-body { display: flex; gap: 24px; }
-        .mobpay-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 18px; }
-        .mobpay-sidebar { width: 240px; flex-shrink: 0; display: flex; flex-direction: column; gap: 14px; }
-        .mobpay-section { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; }
-        .mobpay-section--terms { background: #fafafa; }
-        .mobpay-step-label { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 6px; }
-        .mobpay-step-num { width: 24px; height: 24px; border-radius: 50%; background: #7c3aed; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
-        .mobpay-step-desc { font-size: 12px; color: #64748b; margin: 0 0 16px; }
-        .mobpay-form-row { display: flex; gap: 16px; flex-wrap: wrap; }
-        .mobpay-field { flex: 1; min-width: 220px; display: flex; flex-direction: column; gap: 6px; }
-        .mobpay-label { font-size: 12px; font-weight: 600; color: #374151; }
-        .mobpay-req { color: #ef4444; }
-        .mobpay-input { width: 100%; padding: 9px 12px; border-radius: 8px; border: 1.5px solid #e2e8f0; font-size: 13px; color: #0f172a; background: #fff; outline: none; transition: border-color 0.15s; box-sizing: border-box; }
-        .mobpay-input:focus { border-color: #7c3aed; }
-        .mobpay-input--valid { border-color: #16a34a; }
-        .mobpay-input--error { border-color: #ef4444; }
-        .mobpay-input:disabled { background: #f8fafc; color: #94a3b8; cursor: not-allowed; }
-        .mobpay-error-msg { font-size: 11px; color: #ef4444; }
-        .mobpay-wallet-grid { display: flex; gap: 12px; flex-wrap: wrap; }
-        .mobpay-wallet-card { position: relative; display: flex; align-items: center; gap: 8px; padding: 11px 18px; border-radius: 10px; border: 1.5px solid #e2e8f0; background: #fff; font-size: 13px; font-weight: 600; color: #334155; cursor: pointer; transition: border-color 0.15s, background 0.15s; }
-        .mobpay-wallet-card--active { border-color: #7c3aed; background: #faf5ff; color: #6d28d9; }
-        .mobpay-wallet-card:disabled { cursor: not-allowed; opacity: 0.7; }
-        .mobpay-wallet-icon { display: flex; align-items: center; }
-        .mobpay-wallet-check { margin-left: 2px; }
-        .mobpay-btn-primary { display: inline-flex; align-items: center; gap: 8px; padding: 9px 20px; background: #7c3aed; border: none; border-radius: 8px; color: #fff; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.15s; }
-        .mobpay-btn-primary:hover:not(:disabled) { background: #6d28d9; }
-        .mobpay-btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
-        .mobpay-saved-bar { display: flex; align-items: center; gap: 8px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 10px 14px; font-size: 13px; color: #16a34a; font-weight: 500; }
-        .mobpay-edit-link { margin-left: auto; background: none; border: none; color: #7c3aed; font-size: 12px; font-weight: 600; cursor: pointer; text-decoration: underline; }
-        .mobpay-terms-title { font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 10px; }
-        .mobpay-terms-list { margin: 0 0 14px; padding-left: 18px; display: flex; flex-direction: column; gap: 5px; }
-        .mobpay-terms-list li { font-size: 12px; color: #475569; line-height: 1.6; }
-        .mobpay-agree { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 500; color: #334155; cursor: pointer; }
-        .mobpay-agree input { width: 15px; height: 15px; accent-color: #7c3aed; }
-        .mobpay-footer { display: flex; justify-content: flex-end; gap: 10px; padding-top: 4px; }
-        .mobpay-btn-cancel { padding: 9px 20px; border: 1.5px solid #e2e8f0; background: #fff; border-radius: 8px; color: #64748b; font-size: 13px; font-weight: 600; cursor: pointer; }
-        .mobpay-btn-cancel:hover { border-color: #94a3b8; }
-        .mobpay-btn-activate { display: inline-flex; align-items: center; gap: 8px; padding: 9px 20px; background: #7c3aed; border: none; border-radius: 8px; color: #fff; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.15s; }
-        .mobpay-btn-activate:hover:not(.mobpay-btn-activate--disabled) { background: #6d28d9; }
-        .mobpay-btn-activate--disabled { opacity: 0.5; cursor: not-allowed; }
-        .mobpay-sidebar-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px 16px; }
-        .mobpay-sidebar-title { font-size: 12px; font-weight: 700; color: #0f172a; margin-bottom: 10px; }
-        .mobpay-how-list { margin: 0; padding-left: 16px; display: flex; flex-direction: column; gap: 7px; }
-        .mobpay-how-list li { font-size: 12px; color: #475569; }
-        .mobpay-apps-grid { display: flex; flex-wrap: wrap; gap: 6px; }
-        .mobpay-app-chip { display: inline-flex; align-items: center; gap: 5px; background: #f1f5f9; border-radius: 20px; padding: 4px 10px; font-size: 11px; font-weight: 600; color: #475569; }
-        @media (max-width: 768px) {
-          .mobpay-body { flex-direction: column; }
-          .mobpay-sidebar { width: 100%; }
+        .payment-config-container {
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+          max-width: 900px;
+          margin: 0 auto;
+          padding: 20px;
+        }
+
+        .payment-config-header {
+          display: flex;
+          align-items: flex-start;
+          gap: 20px;
+          margin-bottom: 28px;
+        }
+
+        .back-button {
+          background: none;
+          border: none;
+          color: #3b82f6;
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+          padding: 8px 12px;
+          border-radius: 6px;
+          transition: all 0.2s;
+          margin-top: -8px;
+        }
+
+        .back-button:hover {
+          background: #eff6ff;
+        }
+
+        .config-title {
+          font-size: 28px;
+          font-weight: 700;
+          color: #0f172a;
+          margin: 0 0 4px;
+        }
+
+        .config-subtitle {
+          font-size: 14px;
+          color: #64748b;
+          margin: 0;
+        }
+
+        .alert {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 12px 16px;
+          border-radius: 8px;
+          margin-bottom: 20px;
+          font-weight: 500;
+          font-size: 13px;
+        }
+
+        .alert-success {
+          background: #f0fdf4;
+          border: 1px solid #86efac;
+          color: #16a34a;
+        }
+
+        .alert-error {
+          background: #fef2f2;
+          border: 1px solid #fecaca;
+          color: #dc2626;
+        }
+
+        .config-card {
+          background: #fff;
+          border: 1px solid #e2e8f0;
+          border-radius: 12px;
+          padding: 28px;
+        }
+
+        .config-section {
+          margin-bottom: 28px;
+        }
+
+        .config-section:last-of-type {
+          margin-bottom: 24px;
+        }
+
+        .section-title {
+          font-size: 16px;
+          font-weight: 700;
+          color: #0f172a;
+          margin: 0 0 4px;
+        }
+
+        .section-description {
+          font-size: 13px;
+          color: #64748b;
+          margin: 0 0 16px;
+        }
+
+        .form-row {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 16px;
+          margin-bottom: 16px;
+        }
+
+        .form-group {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+
+        .checkbox-group {
+          gap: 10px;
+        }
+
+        .form-label {
+          font-size: 13px;
+          font-weight: 600;
+          color: #374151;
+        }
+
+        .form-input,
+        .form-select {
+          padding: 10px 12px;
+          border: 1.5px solid #e2e8f0;
+          border-radius: 8px;
+          font-size: 13px;
+          font-family: inherit;
+          outline: none;
+          transition: all 0.2s;
+          background: #fff;
+        }
+
+        .form-input:focus,
+        .form-select:focus {
+          border-color: #3b82f6;
+          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .form-input:disabled,
+        .form-select:disabled {
+          background: #f8fafc;
+          color: #94a3b8;
+          cursor: not-allowed;
+        }
+
+        .input-error {
+          border-color: #ef4444 !important;
+        }
+
+        .input-valid {
+          border-color: #10b981 !important;
+        }
+
+        .password-input-wrapper {
+          position: relative;
+          display: flex;
+          align-items: center;
+        }
+
+        .password-toggle {
+          position: absolute;
+          right: 10px;
+          background: none;
+          border: none;
+          cursor: pointer;
+          color: #64748b;
+          padding: 6px;
+          display: flex;
+          align-items: center;
+        }
+
+        .password-toggle:disabled {
+          cursor: not-allowed;
+          opacity: 0.5;
+        }
+
+        .error-text {
+          font-size: 11px;
+          color: #ef4444;
+          font-weight: 500;
+        }
+
+        .checkbox-label {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          font-size: 13px;
+          cursor: pointer;
+          user-select: none;
+          font-weight: 500;
+          color: #374151;
+        }
+
+        .checkbox-label input {
+          width: 18px;
+          height: 18px;
+          cursor: pointer;
+          accent-color: #3b82f6;
+        }
+
+        .checkbox-label input:disabled {
+          cursor: not-allowed;
+        }
+
+        .form-actions {
+          display: flex;
+          gap: 12px;
+          justify-content: flex-end;
+          margin-top: 24px;
+          padding-top: 20px;
+          border-top: 1px solid #e2e8f0;
+        }
+
+        .btn {
+          padding: 10px 20px;
+          border: none;
+          border-radius: 8px;
+          font-size: 13px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s;
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .btn-primary {
+          background: #3b82f6;
+          color: #fff;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+          background: #2563eb;
+        }
+
+        .btn-primary:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+
+        .btn-secondary {
+          background: #fff;
+          color: #64748b;
+          border: 1.5px solid #e2e8f0;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+          border-color: #94a3b8;
+          color: #475569;
+        }
+
+        .btn-secondary:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+
+        .spinner {
+          animation: spin 1s linear infinite;
+        }
+
+        .success-info-box {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          padding: 16px;
+          background: #f0fdf4;
+          border: 1px solid #86efac;
+          border-radius: 8px;
+          margin-top: 20px;
+        }
+
+        .success-icon {
+          color: #16a34a;
+          flex-shrink: 0;
+        }
+
+        .success-title {
+          font-size: 14px;
+          font-weight: 700;
+          color: #16a34a;
+          margin: 0 0 2px;
+        }
+
+        .success-description {
+          font-size: 12px;
+          color: #16a34a;
+          margin: 0;
+        }
+
+        .modal-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.5);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 9999;
+        }
+
+        .modal-content {
+          background: #fff;
+          border-radius: 12px;
+          padding: 28px;
+          max-width: 400px;
+          width: 90%;
+          position: relative;
+        }
+
+        .modal-close {
+          position: absolute;
+          top: 12px;
+          right: 12px;
+          background: none;
+          border: none;
+          font-size: 24px;
+          cursor: pointer;
+          color: #64748b;
+          padding: 0;
+          width: 32px;
+          height: 32px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .modal-title {
+          font-size: 18px;
+          font-weight: 700;
+          color: #0f172a;
+          margin: 0 0 20px;
+        }
+
+        .qr-container {
+          background: #f8fafc;
+          border: 2px solid #e2e8f0;
+          border-radius: 12px;
+          padding: 16px;
+          text-align: center;
+          margin-bottom: 16px;
+        }
+
+        .qr-image {
+          max-width: 100%;
+          height: auto;
+          display: block;
+        }
+
+        .qr-info {
+          background: #f0f9ff;
+          border: 1px solid #bfdbfe;
+          border-radius: 8px;
+          padding: 12px;
+          margin-bottom: 16px;
+          font-size: 12px;
+          color: #1e40af;
+        }
+
+        .qr-info p {
+          margin: 4px 0;
+        }
+
+        .modal-actions {
+          display: flex;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+
+        @media (max-width: 600px) {
+          .form-row {
+            grid-template-columns: 1fr;
+          }
+          .modal-actions {
+            flex-direction: column;
+          }
+          .modal-actions .btn {
+            width: 100%;
+            justify-content: center;
+          }
+        }
+
+        @keyframes spin {
+          to {
+            transform: rotate(360deg);
+          }
         }
       `}</style>
     </div>

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import { CurrencyProvider } from "./context/CurrencyContext";
 import { LanguageProvider } from "./context/LanguageContext";
@@ -15,6 +16,20 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
+      <head>
+        {/* ── STRIPE SDK - Load before interactive ── */}
+        <Script
+          src="https://js.stripe.com/v3/"
+          strategy="beforeInteractive"
+        />
+        
+        {/* ── RAZORPAY SDK ── */}
+        <Script
+          src="https://checkout.razorpay.com/v1/checkout.js"
+          strategy="lazyOnload"
+        />
+      </head>
+      
       <body className="min-h-full flex flex-col">
         <LanguageProvider>
           <CurrencyProvider>

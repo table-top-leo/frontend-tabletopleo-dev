@@ -2,14 +2,17 @@
 
 import { getCurrencySymbol, formatCurrency } from "../utils/currencyHelper";
 
- 
 function getStoredCurrCode() {
   try { return JSON.parse(localStorage.getItem("ttl_user") || "{}")?.currencyCode || "INR"; }
   catch { return "INR"; }
 }
-import { useState } from "react";
-import { ArrowLeft, CreditCard } from "lucide-react";
+
+import { useState, useEffect } from "react";
+import { ArrowLeft, CreditCard, Copy, X, CheckCircle, AlertCircle } from "lucide-react";
 import QRCode from "react-qr-code";
+import axios from "axios";
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:6163/api";
 
 const ICON_URLS = {
   "PhonePe":     "https://img.icons8.com/color/96/000000/phone-pe.png",
@@ -23,8 +26,6 @@ const ICON_URLS = {
 };
 
 const PaymentIcon = ({ name, size = 36 }) => {
-  const _currCode = getStoredCurrCode();
-
   const [broken, setBroken] = useState(false);
   const r = Math.round(size * 0.28);
   const url = ICON_URLS[name];
@@ -148,6 +149,358 @@ const OtherCardsIcon = ({ size = 36 }) => (
 const renderAppIcon = (a, size) =>
   a.generic ? <OtherCardsIcon key={a.name} size={size} /> : <PaymentIcon key={a.name} name={a.name} size={size} />;
 
+// ════════════════════════════════════════════════════════════
+// MOBILEPAY MODAL COMPONENT - NEW
+// ════════════════════════════════════════════════════════════
+
+const MobilePayModal = ({ businessId, orderId, total, currencyCode, businessName, onSuccess, onClose }) => {
+  const [loading, setLoading] = useState(true);
+  const [paymentData, setPaymentData] = useState(null);
+  const [paymentStatus, setPaymentStatus] = useState("PENDING");
+  const [timeRemaining, setTimeRemaining] = useState(900); // 15 minutes
+  const [error, setError] = useState("");
+  const [copied, setCopied] = useState(false);
+  const [pollCount, setPollCount] = useState(0);
+
+  // Initiate payment on mount
+  useEffect(() => {
+    initiatePayment();
+  }, []);
+
+  // Poll for payment status
+  useEffect(() => {
+    if (!paymentData || paymentStatus === "CAPTURED") return;
+
+    const pollInterval = setInterval(() => {
+      checkPaymentStatus();
+    }, 2500);
+
+    return () => clearInterval(pollInterval);
+  }, [paymentData, paymentStatus]);
+
+  // Countdown timer
+  useEffect(() => {
+    if (!paymentData) return;
+
+    const timerInterval = setInterval(() => {
+      setTimeRemaining((prev) => {
+        if (prev <= 1) {
+          setPaymentStatus("EXPIRED");
+          clearInterval(timerInterval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timerInterval);
+  }, [paymentData]);
+
+  const initiatePayment = async () => {
+    try {
+      setLoading(true);
+      setError("");
+
+      const response = await axios.post(`${API_BASE_URL}/payment/mobilepay/initiate`, {
+        businessId: businessId,
+        orderId: orderId,
+        amount: total,
+        currency: currencyCode || "DKK",
+        businessName: businessName,
+        generateQrCode: true,
+        environment: "sandbox",
+      });
+
+      if (response.data.success && response.data.data) {
+        setPaymentData(response.data.data);
+        setTimeRemaining(response.data.data.expiresIn || 900);
+      } else {
+        setError(response.data.message || "Failed to initiate payment");
+      }
+    } catch (err) {
+      console.error("MobilePay initiate error:", err);
+      setError(err.response?.data?.message || "Failed to initiate MobilePay payment");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const checkPaymentStatus = async () => {
+    if (!paymentData?.paymentReference) return;
+
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/payment/mobilepay/status/${businessId}/${paymentData.paymentReference}`
+      );
+
+      if (response.data.success && response.data.data) {
+        const status = response.data.data.status;
+        setPaymentStatus(status);
+        setPollCount((p) => p + 1);
+
+        if (status === "CAPTURED") {
+          onSuccess({
+            paymentReference: paymentData.paymentReference,
+            transactionId: paymentData.transactionId,
+            amount: total,
+            currency: currencyCode || "DKK",
+            status: "CAPTURED",
+          });
+        }
+      }
+    } catch (err) {
+      console.error("Status check error:", err);
+    }
+  };
+
+  const copyToClipboard = () => {
+    if (paymentData?.paymentLink) {
+      navigator.clipboard.writeText(paymentData.paymentLink);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
+
+  // Loading state
+  if (loading) {
+    return (
+      <div style={{
+        position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+        background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999
+      }}>
+        <div style={{
+          background: "#fff", borderRadius: 16, padding: 32, maxWidth: 420, textAlign: "center"
+        }}>
+          <div style={{
+            width: 48, height: 48, borderRadius: "50%", border: "3px solid #e2e8f0",
+            borderTop: "3px solid #3b82f6", animation: "spin 1s linear infinite", margin: "0 auto 16px"
+          }} />
+          <p style={{ fontSize: 14, color: "#64748b", fontWeight: 500, margin: 0 }}>
+            Initiating MobilePay payment...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error && !paymentData) {
+    return (
+      <div style={{
+        position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+        background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999
+      }}>
+        <div style={{
+          background: "#fff", borderRadius: 16, padding: 32, maxWidth: 450
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+            <AlertCircle size={32} style={{ color: "#ef4444", flexShrink: 0 }} />
+            <div>
+              <h3 style={{ margin: "0 0 4px", fontSize: 16, fontWeight: 600, color: "#ef4444" }}>
+                Cannot Process Payment
+              </h3>
+              <p style={{ margin: 0, fontSize: 13, color: "#64748b" }}>{error}</p>
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={onClose} style={{
+              flex: 1, padding: "10px 16px", background: "#3b82f6", color: "#fff",
+              border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer"
+            }}>
+              Close
+            </button>
+            <button onClick={initiatePayment} style={{
+              flex: 1, padding: "10px 16px", background: "#fff", color: "#3b82f6",
+              border: "1.5px solid #3b82f6", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer"
+            }}>
+              Retry
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Success state
+  if (paymentStatus === "CAPTURED") {
+    return (
+      <div style={{
+        position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+        background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999
+      }}>
+        <div style={{
+          background: "#fff", borderRadius: 16, padding: 32, maxWidth: 450, textAlign: "center"
+        }}>
+          <CheckCircle size={48} style={{ color: "#10b981", margin: "0 auto 16px" }} />
+          <h3 style={{ margin: 0, fontSize: 18, fontWeight: 600, color: "#10b981" }}>
+            Payment Successful!
+          </h3>
+          <p style={{ margin: "8px 0 0", fontSize: 13, color: "#64748b" }}>
+            Your payment has been confirmed
+          </p>
+          <div style={{
+            marginTop: 20, padding: 12, background: "#f0fdf4", borderRadius: 8, textAlign: "left", fontSize: 12
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+              <span style={{ color: "#475569" }}>Reference:</span>
+              <code style={{ color: "#16a34a", fontWeight: 600 }}>{paymentData?.paymentReference}</code>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <span style={{ color: "#475569" }}>Amount:</span>
+              <strong style={{ color: "#16a34a" }}>{paymentData?.amount} {paymentData?.currency}</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Payment waiting state
+  return (
+    <div style={{
+      position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+      background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999
+    }}>
+      <div style={{
+        background: "#fff", borderRadius: 16, padding: 28, maxWidth: 480, maxHeight: "90vh", overflow: "auto"
+      }}>
+        {/* Header */}
+        <div style={{
+          display: "flex", justifyContent: "space-between", alignItems: "center",
+          marginBottom: 24, paddingBottom: 20, borderBottom: "1px solid #e2e8f0"
+        }}>
+          <div>
+            <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "#0f172a" }}>
+              MobilePay Payment
+            </h2>
+            <p style={{ margin: "4px 0 0", fontSize: 13, color: "#64748b" }}>
+              Scan QR code with your MobilePay app
+            </p>
+          </div>
+          <button onClick={onClose} style={{
+            background: "none", border: "none", cursor: "pointer", color: "#94a3b8",
+            padding: 0, fontSize: 20, lineHeight: 1
+          }}>
+            ✕
+          </button>
+        </div>
+
+        {/* Amount */}
+        <div style={{
+          textAlign: "center", marginBottom: 24, paddingBottom: 20, borderBottom: "1px solid #e2e8f0"
+        }}>
+          <p style={{ margin: 0, fontSize: 12, color: "#64748b", fontWeight: 500 }}>Total Amount</p>
+          <div style={{ fontSize: 36, fontWeight: 700, color: "#0f172a", marginTop: 8 }}>
+            {paymentData?.amount} <span style={{ fontSize: 18, color: "#64748b" }}>
+              {paymentData?.currency}
+            </span>
+          </div>
+          <p style={{ margin: "8px 0 0", fontSize: 12, color: "#64748b" }}>{businessName}</p>
+        </div>
+
+        {/* QR Code */}
+        <div style={{
+          display: "flex", flexDirection: "column", alignItems: "center", gap: 16, marginBottom: 24
+        }}>
+          <div style={{
+            background: "#f8fafc", padding: 16, borderRadius: 12, border: "2px solid #e2e8f0"
+          }}>
+            {paymentData?.qrCodeData ? (
+              <img src={paymentData.qrCodeData} alt="MobilePay QR" style={{ width: 200, height: 200 }} />
+            ) : (
+              <QRCode
+                value={paymentData?.paymentLink || `https://mobilepay.dk/${paymentData?.paymentReference}`}
+                size={200}
+                level="H"
+              />
+            )}
+          </div>
+          <div style={{ textAlign: "center", fontSize: 12, color: "#64748b" }}>
+            Point your camera at this QR code or open with MobilePay app
+          </div>
+
+          {/* Payment Link */}
+          {paymentData?.paymentLink && (
+            <div style={{ width: "100%", padding: 12, background: "#f8fafc", borderRadius: 8 }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: "#64748b", marginBottom: 8 }}>
+                Can't scan? Use this link:
+              </div>
+              <div style={{
+                display: "flex", gap: 8, background: "#fff", border: "1px solid #e2e8f0",
+                borderRadius: 6, padding: 8
+              }}>
+                <code style={{
+                  flex: 1, fontSize: 10, color: "#3b82f6", wordBreak: "break-all", fontFamily: "monospace"
+                }}>
+                  {paymentData.paymentLink}
+                </code>
+                <button onClick={copyToClipboard} style={{
+                  background: "#3b82f6", color: "#fff", border: "none", borderRadius: 4,
+                  padding: "6px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer",
+                  display: "flex", alignItems: "center", gap: 4, flexShrink: 0
+                }}>
+                  {copied ? "✓" : <Copy size={12} />}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Status Bar */}
+        <div style={{
+          padding: 12, background: "#fef3c7", border: "1px solid #fcd34d", borderRadius: 8,
+          marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "space-between"
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{
+              width: 12, height: 12, borderRadius: "50%", background: "#f59e0b",
+              animation: "pulse 1.4s ease-in-out infinite"
+            }} />
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: "#92400e" }}>
+                Waiting for payment...
+              </div>
+              <div style={{ fontSize: 11, color: "#b45309" }}>Checked {pollCount} times</div>
+            </div>
+          </div>
+          {timeRemaining > 0 && (
+            <div style={{ fontSize: 11, fontWeight: 600, color: "#92400e", whiteSpace: "nowrap" }}>
+              {formatTime(timeRemaining)}
+            </div>
+          )}
+        </div>
+
+        {/* Buttons */}
+        <div style={{ display: "flex", gap: 8 }}>
+          <button onClick={checkPaymentStatus} style={{
+            flex: 1, padding: "10px 16px", background: "#fff", color: "#3b82f6",
+            border: "1.5px solid #e2e8f0", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer"
+          }}>
+            Check Status
+          </button>
+          <button onClick={onClose} style={{
+            flex: 1, padding: "10px 16px", background: "#fff", color: "#3b82f6",
+            border: "1.5px solid #e2e8f0", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer"
+          }}>
+            Cancel
+          </button>
+        </div>
+      </div>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.35}}`}</style>
+    </div>
+  );
+};
+
+// ════════════════════════════════════════════════════════════
+// MAIN PAYMENT PAGE - EXISTING CODE PRESERVED
+// ════════════════════════════════════════════════════════════
+
 const METHODS = [
   {
     id: "upi", label: "UPI",
@@ -185,13 +538,7 @@ const METHODS = [
     apps: [
       { name:"Mobile Pay" },
     ],
-    dummy: true, // UI preview only — no backend integration yet
   },
-  // {
-  //   id: "paypal", label: "PayPal",
-  //   sub: "Fast, secure — available in 200+ countries",
-  //   apps: [],
-  // },
 ];
 
 const CustomerPaymentPage = ({ total, business, diningInfo, onBack, onInitiatePayment, onConfirmPayment, payAtCounterAvailable }) => {
@@ -205,15 +552,51 @@ const CustomerPaymentPage = ({ total, business, diningInfo, onBack, onInitiatePa
   const [upiRef,         setUpiRef]         = useState("");
   const [payAtCounter,   setPayAtCounter]   = useState(false);
 
+  // NEW: MobilePay modal state
+  const [showMobilePayModal, setShowMobilePayModal] = useState(false);
+  const [mobilePayConfigured, setMobilePayConfigured] = useState(null);
+  const [checkingMobilePayConfig, setCheckingMobilePayConfig] = useState(false);
+
+  // NEW: Check MobilePay configuration before showing modal
+  const checkMobilePayConfiguration = async () => {
+    setCheckingMobilePayConfig(true);
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/payment/mobilepay/check-config/${business?.businessId}`
+      );
+
+      if (response.data.success && response.data.data) {
+        const isConfigured = response.data.data.configured;
+        setMobilePayConfigured(isConfigured);
+
+        if (isConfigured) {
+          // Admin has configured - show modal
+          setShowMobilePayModal(true);
+        } else {
+          // Admin hasn't configured
+          setError("⚠️ Admin Setup Pending: MobilePay is not configured yet. Please contact the restaurant admin.");
+          setSelectedMethod(null);
+        }
+      }
+    } catch (err) {
+      console.error("MobilePay config check error:", err);
+      setError("⚠️ Admin Setup Pending: MobilePay is not configured yet. Please contact the restaurant admin.");
+      setSelectedMethod(null);
+    } finally {
+      setCheckingMobilePayConfig(false);
+    }
+  };
+
   const handleSelectMethod = async (methodId) => {
     setSelectedMethod(methodId);
     setPaymentData(null);
     setError("");
 
-    // Mobile Pay is a UI preview only for now — no backend gateway exists
-    // for it yet, so skip the real initiate-payment call entirely.
-    const method = METHODS.find(m => m.id === methodId);
-    if (method?.dummy) return;
+    // NEW: Special handling for MobilePay
+    if (methodId === "mobilepay") {
+      await checkMobilePayConfiguration();
+      return;
+    }
 
     setLoading(true);
     try {
@@ -223,6 +606,36 @@ const CustomerPaymentPage = ({ total, business, diningInfo, onBack, onInitiatePa
       setError(e.message || "Failed to initiate payment. Please try again.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // NEW: Handle MobilePay payment success
+  const handleMobilePaySuccess = async (paymentData) => {
+    setShowMobilePayModal(false);
+    setConfirming(true);
+    setError("");
+
+    try {
+      const initData = await onInitiatePayment("mobilepay");
+      await onConfirmPayment({
+        paymentId: initData.paymentId,
+        orderId: initData.orderId,
+        orderNumber: initData.orderNumber,
+        grandTotal: initData.grandTotal,
+        orderType: initData.orderType,
+        customerName: initData.customerName,
+        createdAt: initData.createdAt,
+        gatewayName: "mobilepay",
+        paymentReference: paymentData.paymentReference,
+        transactionId: paymentData.transactionId,
+        amount: paymentData.amount,
+        currency: paymentData.currency,
+        gatewayResponse: JSON.stringify(paymentData),
+      });
+    } catch (e) {
+      setError(`MobilePay payment failed: ${e.message}`);
+    } finally {
+      setConfirming(false);
     }
   };
 
@@ -303,8 +716,6 @@ const CustomerPaymentPage = ({ total, business, diningInfo, onBack, onInitiatePa
 
   const handlePaypalPay = async () => {
     setError("PayPal: Click Pay Now and complete payment in the PayPal window that opens.");
-    // PayPal JS SDK would handle this via window.paypal.Buttons
-    // For now show a simulated confirm for demo
     if (!paymentData) return;
     setConfirming(true);
     try {
@@ -383,10 +794,12 @@ const CustomerPaymentPage = ({ total, business, diningInfo, onBack, onInitiatePa
         </div>
 
         {/* Loading spinner */}
-        {loading && (
+        {(loading || checkingMobilePayConfig) && (
           <div style={{ textAlign:"center", padding:24 }}>
             <div style={{ width:32, height:32, border:"3px solid var(--brand-muted)", borderTop:"3px solid var(--brand)", borderRadius:"50%", animation:"spin 0.7s linear infinite", margin:"0 auto 10px" }}/>
-            <p style={{ fontSize:13, color:"var(--text-muted)", margin:0 }}>Initializing payment...</p>
+            <p style={{ fontSize:13, color:"var(--text-muted)", margin:0 }}>
+              {checkingMobilePayConfig ? "Checking MobilePay configuration..." : "Initializing payment..."}
+            </p>
           </div>
         )}
 
@@ -397,7 +810,7 @@ const CustomerPaymentPage = ({ total, business, diningInfo, onBack, onInitiatePa
           </div>
         )}
 
-        {/* UPI Section */}
+        {/* UPI Section - UNCHANGED */}
         {selectedMethod==="upi" && paymentData && !loading && (
           <div style={{ margin:"0 16px", animation:"fadeIn 0.22s ease" }}>
             <div style={{ background:"var(--surface-2)", border:"1.5px solid var(--border)", borderRadius:"var(--radius-lg)", padding:20, display:"flex", flexDirection:"column", alignItems:"center", gap:12 }}>
@@ -437,7 +850,7 @@ const CustomerPaymentPage = ({ total, business, diningInfo, onBack, onInitiatePa
           </div>
         )}
 
-        {/* Razorpay Section */}
+        {/* Razorpay Section - UNCHANGED */}
         {selectedMethod==="razorpay" && paymentData && !loading && (
           <div style={{ margin:"0 16px", animation:"fadeIn 0.22s ease" }}>
             <div style={{ background:"var(--surface-2)", border:"1.5px solid var(--border)", borderRadius:"var(--radius-lg)", padding:20, textAlign:"center" }}>
@@ -458,7 +871,7 @@ const CustomerPaymentPage = ({ total, business, diningInfo, onBack, onInitiatePa
           </div>
         )}
 
-        {/* Stripe Section */}
+        {/* Stripe Section - UNCHANGED */}
         {selectedMethod==="stripe" && paymentData && !loading && (
           <div style={{ margin:"0 16px", animation:"fadeIn 0.22s ease" }}>
             <div style={{ background:"var(--surface-2)", border:"1.5px solid var(--border)", borderRadius:"var(--radius-lg)", padding:20, textAlign:"center" }}>
@@ -475,41 +888,6 @@ const CustomerPaymentPage = ({ total, business, diningInfo, onBack, onInitiatePa
             </div>
           </div>
         )}
-
-        {/* Mobile Pay Section — UI preview only, dummy QR, no backend yet */}
-        {selectedMethod==="mobilepay" && (
-          <div style={{ margin:"0 16px", animation:"fadeIn 0.22s ease" }}>
-            <div style={{ background:"var(--surface-2)", border:"1.5px solid var(--border)", borderRadius:"var(--radius-lg)", padding:20, display:"flex", flexDirection:"column", alignItems:"center", gap:12 }}>
-              <div style={{ fontSize:13, color:"var(--text-muted)", fontWeight:600 }}>Scan to pay <strong style={{ color:"var(--text-primary)" }}>{business?.businessName}</strong></div>
-              <div style={{ fontSize:28, fontWeight:900, color:"var(--brand)" }}>{formatCurrency(total, _currCode)}</div>
-              <div style={{ background:"#fff", padding:12, borderRadius:12, border:"1.5px solid var(--border)" }}>
-                <QRCode value={`mobilepay-demo://pay?merchant=${encodeURIComponent(business?.businessName||"TableTop Leo")}&amount=${total}`} size={150} fgColor="#7B3F00"/>
-              </div>
-              <div style={{ display:"flex", alignItems:"center", gap:7, fontSize:12, color:"var(--text-muted)" }}>
-                <span style={{ width:7, height:7, borderRadius:"50%", background:"#f59e0b", animation:"pulse 1.4s ease-in-out infinite" }}/>
-                Waiting for payment confirmation...
-              </div>
-              <div style={{ fontSize:11, color:"var(--text-muted)", textAlign:"center", background:"#fffbeb", border:"1px solid #fde68a", borderRadius:8, padding:"8px 12px" }}>
-                Preview only — Mobile Pay integration is coming soon
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* PayPal Section */}
-        {/* {selectedMethod==="paypal" && paymentData && !loading && (
-          <div style={{ margin:"0 16px", animation:"fadeIn 0.22s ease" }}>
-            <div style={{ background:"#e8f4fd", border:"1.5px solid #b3d7f5", borderRadius:"var(--radius-lg)", padding:20, textAlign:"center" }}>
-              <div style={{ fontSize:13, color:"#555", marginBottom:6 }}>Fast · Secure · Available worldwide</div>
-              <div style={{ fontSize:26, fontWeight:900, color:"#003087", marginBottom:12 }}>{formatCurrency(total, _currCode)}</div>
-            </div>
-            <div style={{ marginTop:12 }}>
-              <button style={{ ...s.payBtn(confirming), background:"#0070ba" }} disabled={confirming} onClick={handlePaypalPay}>
-                {confirming ? "Processing..." : "Pay with PayPal →"}
-              </button>
-            </div>
-          </div>
-        )} */}
 
         {/* ── PAY AT COUNTER TOGGLE ──────────────────────────── */}
         {payAtCounterAvailable && (
@@ -583,13 +961,29 @@ const CustomerPaymentPage = ({ total, business, diningInfo, onBack, onInitiatePa
           </button>
         ) : (
           <button
-            style={s.payBtn(!selectedMethod || loading)}
-            disabled={!selectedMethod || loading}
+            style={s.payBtn(!selectedMethod || loading || checkingMobilePayConfig)}
+            disabled={!selectedMethod || loading || checkingMobilePayConfig}
           >
             {!selectedMethod ? "Select a Payment Method" : `Pay ${formatCurrency(total, _currCode)}`}
           </button>
         )}
       </div>
+
+      {/* NEW: MobilePay Modal */}
+      {showMobilePayModal && (
+        <MobilePayModal
+          businessId={business?.businessId}
+          orderId={`order-${Date.now()}`}
+          total={total}
+          currencyCode={_currCode}
+          businessName={business?.businessName}
+          onSuccess={handleMobilePaySuccess}
+          onClose={() => {
+            setShowMobilePayModal(false);
+            setSelectedMethod(null);
+          }}
+        />
+      )}
 
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.35}}`}</style>
     </div>
