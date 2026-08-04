@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import "../designcustomerflow/customer-common.css";
 import "../designcustomerflow/customer-layout.css";
 import "../designcustomerflow/customer-components.css";
@@ -54,7 +54,20 @@ const CustomerWrapper = ({ businessId }) => {
   const [identity, setIdentity] = useState(null);
   const [screenBeforeMyOrders, setScreenBeforeMyOrders] = useState(SCREENS.LANDING);
 
-  const cartCount = cart.reduce((s, c) => s + c.qty, 0);
+  const cartCount = useMemo(() => {
+    const comboGroups = new Set();
+    let count = 0;
+    cart.forEach((c) => {
+      if (c.comboGroupKey) {
+        // Count each distinct "Add combo" tap as exactly 1, regardless of
+        // how many items are inside it — matches what the customer tapped.
+        if (!comboGroups.has(c.comboGroupKey)) { comboGroups.add(c.comboGroupKey); count += 1; }
+      } else {
+        count += c.qty;
+      }
+    });
+    return count;
+  }, [cart]);
   const subtotal  = cart.reduce((s, c) => s + c.price * c.qty, 0);
   const gst       = Math.round(subtotal * 0.05);
   const total     = subtotal + gst;
@@ -162,15 +175,25 @@ const CustomerWrapper = ({ businessId }) => {
   // tapping "+" should add immediately rather than opening the item popup)
   const addItemDirect = (item) => addToCart(item, 1);
 
-  // Adds every item in a combo offer to the cart at once, one unit each
-  const addComboToCart = (comboItems) => {
+  // Adds every item in a combo offer to the cart at once, one unit each.
+  // All items from the same "Add combo" tap share a comboGroupKey so the
+  // cart badge can count the whole combo as ONE entry (matching what the
+  // customer actually tapped) instead of counting every item inside it —
+  // the cart PAGE itself still lists and totals every item individually.
+  const addComboToCart = (comboItems, discount) => {
+    const comboGroupKey = discount ? `combo-${discount.discountId}-${Date.now()}` : null;
+    const offerTitle = discount?.title || null;
+    // Clean, stable discountId (not the group key, which also has a
+    // timestamp) — sent to the backend at checkout so combo pricing is
+    // ONLY applied to items explicitly added through this combo action,
+    // never to the same products picked individually from the normal menu.
+    const comboDiscountId = discount?.discountId || null;
     setCart(prev => {
       let next = [...prev];
       comboItems.forEach((item) => {
-        const existing = next.find(c => c.id === item.id);
-        next = existing
-          ? next.map(c => c.id === item.id ? { ...c, qty: c.qty + 1 } : c)
-          : [...next, { ...item, qty: 1 }];
+        // Each combo add is its own group, even if the same product was
+        // already in the cart individually — keeps combo accounting exact.
+        next = [...next, { ...item, qty: 1, comboGroupKey, offerTitle, comboDiscountId }];
       });
       return next;
     });
@@ -188,20 +211,33 @@ const CustomerWrapper = ({ businessId }) => {
       productId: c.id, productName: c.name, productDescription: c.desc,
       productImageUrl: c.img, categoryName: c.catName,
       unitPrice: c.price, quantity: c.qty, specialRequest: null,
+      offerTitle: c.offerTitle || null, originalPrice: c.offerTitle ? c.price : null,
     }));
     try {
       const evalRes = await discountService.evaluateCart(businessId, cart.map(c => ({
         productId: c.id, categoryId: c.catId, quantity: c.qty, originalUnitPrice: c.price,
+        comboDiscountId: c.comboDiscountId || null,
       })));
       if (!evalRes.success || !evalRes.data?.items) return fallback();
       const priceMap = {};
-      evalRes.data.items.forEach(i => { priceMap[i.productId] = i.discountedUnitPrice; });
-      return cart.map(c => ({
-        productId: c.id, productName: c.name, productDescription: c.desc,
-        productImageUrl: c.img, categoryName: c.catName,
-        unitPrice: priceMap[c.id] != null ? priceMap[c.id] : c.price,
-        quantity: c.qty, specialRequest: null,
-      }));
+      evalRes.data.items.forEach(i => { priceMap[i.productId] = i; });
+      return cart.map(c => {
+        const adjusted = priceMap[c.id];
+        // Prefer the server's own applied-discount label (authoritative,
+        // recalculated fresh at checkout); fall back to whatever offer tag
+        // the item was added to the cart with, so combo items whose price
+        // is fixed by the combo itself (not a per-item % discount) still
+        // carry their offer name through to the order.
+        const offerTitle = adjusted?.appliedDiscountLabel || c.offerTitle || null;
+        const unitPrice  = adjusted?.discountedUnitPrice != null ? adjusted.discountedUnitPrice : c.price;
+        return {
+          productId: c.id, productName: c.name, productDescription: c.desc,
+          productImageUrl: c.img, categoryName: c.catName,
+          unitPrice, quantity: c.qty, specialRequest: null,
+          offerTitle,
+          originalPrice: offerTitle ? c.price : null,
+        };
+      });
     } catch {
       return fallback();
     }

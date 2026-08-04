@@ -14,13 +14,29 @@ const CustomerDiningSelection = ({ diningInfo, onInfoChange, onBack, onContinue 
     onInfoChange(prev => ({ ...prev, [field]: e.target.value }));
     setErrors(prev => ({ ...prev, [field]: "" }));
   };
+ 
+  const setPhone = (e) => {
+    const digitsOnly = e.target.value.replace(/\D/g, "").slice(0, 10);
+    onInfoChange(prev => ({ ...prev, phone: digitsOnly }));
+    setErrors(prev => ({ ...prev, phone: "" }));
+  };
 
   const validate = () => {
     const errs = {};
     if (!diningInfo.type) errs.type = "Please select an order type.";
+
+    // Phone: required for Take Away, optional for Dine In — but whenever
+    // it's provided, it must be a valid 10-digit number, no more, no less.
+    const phone = (diningInfo.phone || "").trim();
+    if (diningInfo.type === "takeaway") {
+      if (!phone) errs.phone = "Phone number is required for Take Away.";
+      else if (!/^\d{10}$/.test(phone)) errs.phone = "Enter a valid 10-digit phone number.";
+    } else if (phone && !/^\d{10}$/.test(phone)) {
+      errs.phone = "Enter a valid 10-digit phone number.";
+    }
+
     if (diningInfo.type === "takeaway") {
       if (!diningInfo.name.trim())  errs.name  = "Name is required for Take Away.";
-      if (!diningInfo.phone.trim()) errs.phone = "Phone number is required for Take Away.";
     }
     return errs;
   };
@@ -93,7 +109,20 @@ const CustomerDiningSelection = ({ diningInfo, onInfoChange, onBack, onContinue 
             </div>
             <div>
               {label("Phone Number")}
-              <input style={inputStyle(false)} placeholder="Optional" value={diningInfo.phone} onChange={set("phone")} />
+              <input
+                style={inputStyle(!!errors.phone)}
+                placeholder="10-digit number (optional)"
+                value={diningInfo.phone}
+                onChange={setPhone}
+                type="tel"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={10}
+              />
+              {diningInfo.phone && !errors.phone && (
+                <div style={{ fontSize:11, color:"var(--text-muted)", marginTop:4 }}>{diningInfo.phone.length}/10 digits</div>
+              )}
+              {errMsg(errors.phone)}
             </div>
           </div>
         )}
@@ -108,7 +137,19 @@ const CustomerDiningSelection = ({ diningInfo, onInfoChange, onBack, onContinue 
             </div>
             <div>
               {label("Phone Number", true)}
-              <input style={inputStyle(!!errors.phone)} placeholder="+91 XXXXX XXXXX" value={diningInfo.phone} onChange={set("phone")} type="tel" />
+              <input
+                style={inputStyle(!!errors.phone)}
+                placeholder="10-digit number"
+                value={diningInfo.phone}
+                onChange={setPhone}
+                type="tel"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={10}
+              />
+              {diningInfo.phone && !errors.phone && (
+                <div style={{ fontSize:11, color:"var(--text-muted)", marginTop:4 }}>{diningInfo.phone.length}/10 digits</div>
+              )}
               {errMsg(errors.phone)}
             </div>
             <div>

@@ -103,6 +103,23 @@ export default function AccountSetup({ onNext, initialData }) {
       otpRefs.current[index - 1]?.focus();
   };
 
+  // Lets the customer copy the whole OTP from their email/SMS and paste it
+  // into ANY of the 6 boxes — it gets split across all of them starting
+  // from wherever they pasted, instead of being silently rejected because
+  // a single box only ever accepted one typed character.
+  const handleOtpPaste = (index, e) => {
+    e.preventDefault();
+    const pasted = (e.clipboardData || window.clipboardData).getData("text");
+    const digits = pasted.replace(/\D/g, "").slice(0, 6 - index).split("");
+    if (digits.length === 0) return;
+    const next = [...otp];
+    digits.forEach((d, i) => { next[index + i] = d; });
+    setOtp(next);
+    setOtpError("");
+    const nextEmptyIndex = Math.min(index + digits.length, 5);
+    otpRefs.current[nextEmptyIndex]?.focus();
+  };
+
   const handleVerifyOtp = async () => {
     if (otp.join("").length < 6) {
       setOtpError("Please enter all 6 digits.");
@@ -263,6 +280,7 @@ export default function AccountSetup({ onNext, initialData }) {
                 value={digit}
                 onChange={(e) => handleOtpChange(i, e.target.value)}
                 onKeyDown={(e) => handleOtpKeyDown(i, e)}
+                onPaste={(e) => handleOtpPaste(i, e)}
                 aria-label={`OTP digit ${i + 1}`}
               />
             ))}

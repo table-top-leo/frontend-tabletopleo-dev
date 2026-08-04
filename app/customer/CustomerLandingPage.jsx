@@ -115,6 +115,26 @@ const CustomerLandingPage = ({ business, categories, items, activeDiscounts = []
     );
   }
 
+  // Mouse click-and-drag horizontal scroll for desktop — native touch-swipe
+  // already works on mobile, but a PC user with a plain vertical-scroll
+  // mouse (no trackpad, no shift+wheel habit) had no way to move these rows.
+  const handleDragStart = (e) => {
+    const el = e.currentTarget;
+    const startX = e.pageX;
+    const startScrollLeft = el.scrollLeft;
+    el.classList.add("lp-dragging");
+    const onMove = (ev) => {
+      el.scrollLeft = startScrollLeft - (ev.pageX - startX);
+    };
+    const onUp = () => {
+      el.classList.remove("lp-dragging");
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+    };
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  };
+
   // Compute open/closed from DB data
   const openStatus  = isBusinessOpen(business?.openingTime, business?.closingTime, business?.workingDays);
   const openLabel   = openStatus === true  ? "Open Now"
@@ -141,8 +161,15 @@ const CustomerLandingPage = ({ business, categories, items, activeDiscounts = []
   return (
     <div className="cw-screen" style={{ overflow:"hidden", position:"relative" }}>
       <style>{`
-        .lp-cats::-webkit-scrollbar { display:none }
-        .lp-row::-webkit-scrollbar  { display:none }
+        /* Visible, slim, brand-colored scrollbar for horizontal rows —
+           works with native touch-swipe on mobile, and is now click-and-
+           drag-able + visibly scrollable with mouse/trackpad on desktop. */
+        .lp-cats, .lp-row { scrollbar-width: thin; scrollbar-color: var(--border) transparent; cursor: grab; }
+        .lp-cats::-webkit-scrollbar, .lp-row::-webkit-scrollbar { height: 5px; }
+        .lp-cats::-webkit-scrollbar-track, .lp-row::-webkit-scrollbar-track { background: transparent; }
+        .lp-cats::-webkit-scrollbar-thumb, .lp-row::-webkit-scrollbar-thumb { background: var(--border); border-radius: 999px; }
+        .lp-cats::-webkit-scrollbar-thumb:hover, .lp-row::-webkit-scrollbar-thumb:hover { background: var(--brand); }
+        .lp-cats.lp-dragging, .lp-row.lp-dragging { cursor: grabbing; scroll-behavior: auto; }
         @keyframes lp-spin { to{transform:rotate(360deg)} }
         @keyframes lp-pop  { from{opacity:0;transform:scale(0.93) translateY(5px)} to{opacity:1;transform:scale(1) translateY(0)} }
 
@@ -292,7 +319,7 @@ const CustomerLandingPage = ({ business, categories, items, activeDiscounts = []
             <span style={{ fontSize:10.5, fontWeight:700, color:"var(--text-muted)", textTransform:"uppercase", letterSpacing:"0.07em" }}>Categories</span>
             <span style={{ fontSize:10.5, color:"var(--brand)", fontWeight:600 }}>{categories.length}</span>
           </div>
-          <div className="lp-cats" style={{ display:"flex", gap:6, overflowX:"auto", padding:"0 14px", scrollbarWidth:"none", WebkitOverflowScrolling:"touch" }}>
+          <div className="lp-cats" onMouseDown={handleDragStart} style={{ display:"flex", gap:6, overflowX:"auto", padding:"0 14px", WebkitOverflowScrolling:"touch" }}>
             {/* All pill */}
             <button
               className="lp-cat-pill"
@@ -349,7 +376,8 @@ const CustomerLandingPage = ({ business, categories, items, activeDiscounts = []
             <div
               key={rowIdx}
               className="lp-row"
-              style={{ display:"flex", gap:7, overflowX:"auto", padding: rowIdx === 0 ? "0 14px 10px" : "0 14px 10px", scrollbarWidth:"none", WebkitOverflowScrolling:"touch" }}
+              onMouseDown={handleDragStart}
+              style={{ display:"flex", gap:7, overflowX:"auto", padding: rowIdx === 0 ? "0 14px 10px" : "0 14px 10px", WebkitOverflowScrolling:"touch" }}
             >
               {row.map((item, idx) => (
                 <div

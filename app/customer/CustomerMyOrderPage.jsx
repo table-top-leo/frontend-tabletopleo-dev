@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import {
   ArrowLeft, ChevronDown, ChevronUp, Receipt, ImageOff, CreditCard,
-  Wallet, Landmark, Banknote, Loader2, PackageSearch,
+  Wallet, Landmark, Banknote, Loader2, PackageSearch, Tag,
 } from "lucide-react";
 import { formatCurrency } from "../utils/currencyHelper";
 import customerOrderService from "../services/customerOrderService";
@@ -97,7 +97,14 @@ const CustomerMyOrdersPage = ({ businessId, phone, onBack, onBrowseMenu }) => {
                       <Receipt size={17} color="var(--brand)" />
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 13, fontWeight: 800, color: "var(--text-primary)" }}>{o.orderNumber}</div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <span style={{ fontSize: 13, fontWeight: 800, color: "var(--text-primary)" }}>{o.orderNumber}</span>
+                        {o.hasOffer && (
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 9, fontWeight: 800, color: "#dc2626", background: "#fef2f2", border: "1px solid #fecaca", padding: "1.5px 6px", borderRadius: 999, flexShrink: 0 }}>
+                            <Tag size={8.5} /> OFFER
+                          </span>
+                        )}
+                      </div>
                       <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>{fmtDate(o.createdAt)} · {(o.items || []).length} item{(o.items || []).length !== 1 ? "s" : ""}</div>
                     </div>
                     <div style={{ textAlign: "right", flexShrink: 0 }}>
@@ -122,8 +129,18 @@ const CustomerMyOrdersPage = ({ businessId, phone, onBack, onBrowseMenu }) => {
                               )}
                             </div>
                             <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.productName}</div>
+                              <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                                <span style={{ fontSize: 12.5, fontWeight: 700, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.productName}</span>
+                                {it.offerTitle && (
+                                  <span title={it.offerTitle} style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 8.5, fontWeight: 800, color: "#dc2626", background: "#fef2f2", border: "1px solid #fecaca", padding: "1px 5px", borderRadius: 999, flexShrink: 0 }}>
+                                    <Tag size={7.5} /> OFFER
+                                  </span>
+                                )}
+                              </div>
                               <div style={{ fontSize: 10.5, color: "var(--text-muted)" }}>Qty {it.quantity} × {formatCurrency(it.unitPrice, "INR")}</div>
+                              {it.offerTitle && (
+                                <div style={{ fontSize: 9.5, color: "#dc2626", marginTop: 1 }}>{it.offerTitle}</div>
+                              )}
                             </div>
                             <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)", flexShrink: 0 }}>{formatCurrency(it.lineTotal, "INR")}</div>
                           </div>
@@ -133,7 +150,13 @@ const CustomerMyOrdersPage = ({ businessId, phone, onBack, onBrowseMenu }) => {
                       {/* Bill breakdown */}
                       <div style={{ background: "var(--surface-2)", borderRadius: 10, padding: "10px 12px", fontSize: 12, color: "var(--text-secondary)", display: "flex", flexDirection: "column", gap: 5 }}>
                         <Row label="Subtotal" value={formatCurrency(o.subtotal, "INR")} />
-                        {Number(o.discountAmount) > 0 && <Row label="Discount" value={`- ${formatCurrency(o.discountAmount, "INR")}`} valueColor="#16a34a" />}
+                        {Number(o.discountAmount) > 0 && (
+                          <Row
+                            label={<span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><Tag size={10} color="#16a34a" /> Offer discount</span>}
+                            value={`- ${formatCurrency(o.discountAmount, "INR")}`}
+                            valueColor="#16a34a"
+                          />
+                        )}
                         <Row label="Tax / GST" value={formatCurrency(o.taxAmount, "INR")} />
                         <Row label="Grand Total" value={formatCurrency(o.grandTotal, "INR")} bold />
                       </div>

@@ -455,6 +455,14 @@ function DateRangeCalendar({ onApply }) {
 // ── MAIN DASHBOARD ────────────────────────────────────────────
 export default function DashboardMainSetup() {
   const [userName, setUserName] = useState("there");
+  // Rendered as a fixed placeholder on the server AND on the client's first
+  // paint, then swapped to the real time-of-day greeting right after mount.
+  // Calling new Date().getHours() directly during render caused a hydration
+  // mismatch — the server's clock/timezone doesn't necessarily agree with
+  // the browser's, so "Good Morning" vs "Good Evening" could differ between
+  // the SSR pass and the client pass.
+  const [greeting, setGreeting] = useState("Hello");
+  useEffect(() => { setGreeting(getGreeting()); }, []);
   const [currency, setCurrency] = useState("INR");
 
   // read the logged-in admin's name/currency only after mount (client-only)
@@ -676,7 +684,7 @@ export default function DashboardMainSetup() {
     <div className="meadow-root">
       <div className="meadow-header-row">
         <h1 className="meadow-greeting">
-          {getGreeting()}, <span className="meadow-greeting-name">{userName}</span> <span>👋</span>
+          {greeting}, <span className="meadow-greeting-name">{userName}</span> <span>👋</span>
         </h1>
         <div className="meadow-live">
           <span className="pearl-dot" />

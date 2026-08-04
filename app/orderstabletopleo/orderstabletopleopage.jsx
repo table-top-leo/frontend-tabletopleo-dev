@@ -7,7 +7,7 @@ import {
   Printer, Phone, MessageSquare, CreditCard, Utensils,
   Package, Filter, RefreshCw,
   Banknote, Smartphone, Globe, Store, ArrowRight,
-  FileImage, FileText,
+  FileImage, FileText, Tag,
 } from "lucide-react";
 import "../orderstabletopleo/designorderspage.css";
 import adminOrderService from "../services/adminOrderService";
@@ -367,6 +367,23 @@ const MyOrderTableTopleoPage = ({ highlightOrder = null, isDark: darkProp = fals
         @keyframes statusDdIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
         @keyframes morInvoiceDdIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
         .mor-ref-spinning{animation:morRefSpin 0.6s linear!important}
+
+        /* Colorful, continuously-cycling blink for every OFFER tag on this
+           page — order list, order detail header, and each line item —
+           so admins can spot offer-sourced orders at a glance, always. */
+        @keyframes morOfferBlink {
+          0%   { background:#fef2f2; color:#dc2626; border-color:#fecaca; }
+          20%  { background:#eff6ff; color:#2563eb; border-color:#bfdbfe; }
+          40%  { background:#f0fdf4; color:#16a34a; border-color:#bbf7d0; }
+          60%  { background:#fff7ed; color:#c2410c; border-color:#fed7aa; }
+          80%  { background:#fdf4ff; color:#a21caf; border-color:#f5d0fe; }
+          100% { background:#fef2f2; color:#dc2626; border-color:#fecaca; }
+        }
+        .mor-offer-tag {
+          display:inline-flex; align-items:center; gap:3px;
+          font-weight:800; border-radius:999px; border:1px solid transparent;
+          flex-shrink:0; animation:morOfferBlink 2.6s ease-in-out infinite;
+        }
       `}</style>
 
       {tooltipVisible&&hoveredOrder&&(
@@ -530,7 +547,14 @@ const MyOrderTableTopleoPage = ({ highlightOrder = null, isDark: darkProp = fals
                     style={{outline:isHighlighted?"2px solid #635bff":"none",outlineOffset:"-1px",animation:isHighlighted?"highlightPulse 2s ease":"none"}}
                   >
                     <td className="mor-td">
-                      <div className="mor-order-id">{order.orderNumber||order.orderId}</div>
+                      <div className="mor-order-id" style={{display:"flex",alignItems:"center",gap:6}}>
+                        {order.orderNumber||order.orderId}
+                        {order.hasOffer && (
+                          <span className="mor-offer-tag" title="This order used an active offer/discount" style={{fontSize:9,padding:"1.5px 6px"}}>
+                            <Tag size={8.5}/> OFFER
+                          </span>
+                        )}
+                      </div>
                       <div className="mor-order-sub" style={{fontSize:10,fontFamily:"monospace",color:"#9ca3af"}}>{order.orderId.slice(0,16)}...</div>
                     </td>
                     <td className="mor-td">
@@ -664,6 +688,11 @@ const MyOrderTableTopleoPage = ({ highlightOrder = null, isDark: darkProp = fals
             <div className="mor-detail-body">
               <div className="mor-detail-id-row">
                 <span className="mor-detail-id">{selected.orderNumber}</span>
+                {selected.hasOffer && (
+                  <span className="mor-offer-tag" title="This order used an active offer/discount" style={{fontSize:9.5,padding:"2px 7px"}}>
+                    <Tag size={9}/> OFFER
+                  </span>
+                )}
                 <span className={`mor-status-pill ${cfg.cls}`}><span className="mor-dot"/>{cfg.label}</span>
               </div>
               <div className="mor-detail-meta">
@@ -697,7 +726,13 @@ const MyOrderTableTopleoPage = ({ highlightOrder = null, isDark: darkProp = fals
                       {item.productImageUrl&&<img src={item.productImageUrl} alt={item.productName} style={{width:28,height:28,borderRadius:6,objectFit:"cover",flexShrink:0,border:"1px solid #f1f5f9"}} onError={e=>{e.target.style.display="none";}}/>}
                       <span className="mor-item-name">
                         {item.quantity} × {item.productName}
+                        {item.offerTitle && (
+                          <span className="mor-offer-tag" title={item.offerTitle} style={{fontSize:8.5,padding:"1px 5px",marginLeft:6}}>
+                            <Tag size={7.5}/> OFFER
+                          </span>
+                        )}
                         {item.specialRequest&&<span style={{fontSize:11,color:"#9ca3af",fontStyle:"italic",display:"block"}}>↳ {item.specialRequest}</span>}
+                        {item.offerTitle&&<span style={{fontSize:10.5,color:"#dc2626",display:"block",marginTop:1}}>🏷 {item.offerTitle}</span>}
                       </span>
                     </div>
                     <span className="mor-item-price">{formatCurrency(Number(item.lineTotal||0), currencyCode)}</span>
@@ -707,7 +742,7 @@ const MyOrderTableTopleoPage = ({ highlightOrder = null, isDark: darkProp = fals
               <div className="mor-totals">
                 <div className="mor-total-row"><span>Subtotal</span><span className="mor-total-val">{formatCurrency(Number(selected.subtotal||0), currencyCode)}</span></div>
                 <div className="mor-total-row"><span>Tax</span><span className="mor-total-val">{formatCurrency(Number(selected.taxAmount||0), currencyCode)}</span></div>
-                <div className="mor-total-row"><span>Discount</span><span className="mor-total-val" style={{color:"#dc2626"}}>- {formatCurrency(Number(selected.discountAmount||0), currencyCode)}</span></div>
+                <div className="mor-total-row"><span style={{display:"inline-flex",alignItems:"center",gap:4}}><Tag size={10} color="#dc2626"/> Offer Discount</span><span className="mor-total-val" style={{color:"#dc2626"}}>- {formatCurrency(Number(selected.discountAmount||0), currencyCode)}</span></div>
                 <div className="mor-total-row main"><span>Total Amount</span><span>{formatCurrency(Number(selected.grandTotal||0), currencyCode)}</span></div>
               </div>
               <div className="mor-pay-row">
@@ -823,7 +858,13 @@ const MyOrderTableTopleoPage = ({ highlightOrder = null, isDark: darkProp = fals
                           <tr key={i} style={{ borderBottom:"1px solid #f0f0f0" }}>
                             <td style={{ padding:"7px 0", fontSize:11, color:"#888", verticalAlign:"top" }}>{i+1}</td>
                             <td style={{ padding:"7px 8px 7px 0", verticalAlign:"top" }}>
-                              <div style={{ fontSize:12, fontWeight:600, color:"#111" }}>{item.productName}</div>
+                              <div style={{ fontSize:12, fontWeight:600, color:"#111", display:"flex", alignItems:"center", gap:6 }}>
+                                {item.productName}
+                                {item.offerTitle && (
+                                  <span style={{ fontSize:8.5, fontWeight:800, color:"#111", border:"1px solid #111", padding:"1px 5px", borderRadius:3, textTransform:"uppercase", letterSpacing:"0.04em" }}>Offer</span>
+                                )}
+                              </div>
+                              {item.offerTitle && <div style={{ fontSize:9.5, color:"#666", marginTop:1 }}>{item.offerTitle}</div>}
                               {item.specialRequest && <div style={{ fontSize:10, color:"#888", marginTop:1 }}>↳ {item.specialRequest}</div>}
                             </td>
                             <td style={{ padding:"7px 0", textAlign:"center", fontSize:12, color:"#333" }}>{qty}</td>
@@ -850,8 +891,8 @@ const MyOrderTableTopleoPage = ({ highlightOrder = null, isDark: darkProp = fals
                     </div>
                     {Number(selected.discountAmount||0) > 0 && (
                       <div style={{ display:"flex", justifyContent:"space-between", padding:"5px 0", borderBottom:"1px solid #eee" }}>
-                        <span style={{ fontSize:11, color:"#555" }}>Discount</span>
-                        <span style={{ fontSize:11, color:"#dc2626" }}>- {formatCurrency(Number(selected.discountAmount||0), currencyCode)}</span>
+                        <span style={{ fontSize:11, color:"#555" }}>Offer Discount</span>
+                        <span style={{ fontSize:11, color:"#111" }}>- {formatCurrency(Number(selected.discountAmount||0), currencyCode)}</span>
                       </div>
                     )}
                     <div style={{ display:"flex", justifyContent:"space-between", padding:"8px 0", borderTop:"2px solid #111", marginTop:2 }}>

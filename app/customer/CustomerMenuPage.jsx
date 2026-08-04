@@ -50,10 +50,34 @@ const CustomerMenuPage = ({
     ? "All Items"
     : allCats.find(c => c.id === activecat)?.name || "Items";
 
+  // Mouse click-and-drag horizontal scroll for desktop — mobile already
+  // scrolls fine via native touch-swipe.
+  const handleDragStart = (e) => {
+    const el = e.currentTarget;
+    const startX = e.pageX;
+    const startScrollLeft = el.scrollLeft;
+    el.classList.add("mp-dragging");
+    const onMove = (ev) => { el.scrollLeft = startScrollLeft - (ev.pageX - startX); };
+    const onUp = () => {
+      el.classList.remove("mp-dragging");
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+    };
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  };
+
   return (
     <div className="cw-screen" style={{ overflow:"hidden" }}>
       <style>{`
-        .mp-cats::-webkit-scrollbar  { display:none }
+        /* Visible, slim, brand-colored scrollbar for the categories row —
+           plus click-and-drag support for desktop mouse users. */
+        .mp-cats { scrollbar-width: thin; scrollbar-color: var(--border) transparent; cursor: grab; }
+        .mp-cats::-webkit-scrollbar  { height: 5px; }
+        .mp-cats::-webkit-scrollbar-track { background: transparent; }
+        .mp-cats::-webkit-scrollbar-thumb { background: var(--border); border-radius: 999px; }
+        .mp-cats::-webkit-scrollbar-thumb:hover { background: var(--brand); }
+        .mp-cats.mp-dragging { cursor: grabbing; scroll-behavior: auto; }
         .mp-items::-webkit-scrollbar { width:2px }
         .mp-items::-webkit-scrollbar-track { background:transparent }
         .mp-items::-webkit-scrollbar-thumb { background:var(--border); border-radius:99px }
@@ -160,7 +184,7 @@ const CustomerMenuPage = ({
         </div>
 
         {/* Category pills */}
-        <div className="mp-cats" style={{ display:"flex", gap:5, overflowX:"auto", padding:"7px 14px 6px", scrollbarWidth:"none", borderBottom:"1px solid var(--border-light)", WebkitOverflowScrolling:"touch" }}>
+        <div className="mp-cats" onMouseDown={handleDragStart} style={{ display:"flex", gap:5, overflowX:"auto", padding:"7px 14px 6px", borderBottom:"1px solid var(--border-light)", WebkitOverflowScrolling:"touch" }}>
           {allCats.map(cat => {
             const isActive = activecat === cat.id;
             const hasImg   = cat.id !== 0 && cat.imageUrl;
