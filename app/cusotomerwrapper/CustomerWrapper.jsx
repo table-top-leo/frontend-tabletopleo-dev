@@ -14,15 +14,23 @@ import CustomerDiningSelection  from "../customer/CustomerDiningSelection";
 import CustomerPaymentPage      from "../customer/CustomerPaymentPage";
 import CustomerOrderSuccess     from "../customer/CustomerOrderSuccess";
 import CustomerLiveTracking     from "../customer/CustomerLiveTracking";
+import CustomerSidebar          from "../customer/Customersidebar";
+import CustomerMyOrdersPage     from "../customer/CustomerMyOrderPage";
 
 import qrService              from "../services/qrService";
 import customerOrderService   from "../services/customerOrderService";
 import discountService        from "../services/discountService";
+import useWebSocket           from "../hooks/useWebSocket";
 
 const SCREENS = {
   SPLASH:"SPLASH", LANDING:"LANDING", OFFERS:"OFFERS", MENU:"MENU", CART:"CART",
-  DINING:"DINING", PAYMENT:"PAYMENT", SUCCESS:"SUCCESS", TRACKING:"TRACKING"
+  DINING:"DINING", PAYMENT:"PAYMENT", SUCCESS:"SUCCESS", TRACKING:"TRACKING", MY_ORDERS:"MY_ORDERS"
 };
+
+// Per-business identity key — a customer might visit multiple TableTop Leo
+// businesses from the same phone, so we don't want their name/email from
+// one restaurant leaking into another's sidebar.
+const identityKey = (businessId) => `ttl_customer_identity_${businessId}`;
 
 const CustomerWrapper = ({ businessId }) => {
   const [screen,        setScreen]        = useState(SCREENS.SPLASH);
@@ -42,14 +50,39 @@ const CustomerWrapper = ({ businessId }) => {
   const [confirmedData, setConfirmedData] = useState(null);
   const [payAtCounterAvailable, setPayAtCounterAvailable] = useState(false);
   const [activeDiscounts, setActiveDiscounts] = useState([]);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [identity, setIdentity] = useState(null);
+  const [screenBeforeMyOrders, setScreenBeforeMyOrders] = useState(SCREENS.LANDING);
 
   const cartCount = cart.reduce((s, c) => s + c.qty, 0);
   const subtotal  = cart.reduce((s, c) => s + c.price * c.qty, 0);
   const gst       = Math.round(subtotal * 0.05);
   const total     = subtotal + gst;
 
+  // Real-time offers: the moment the merchant activates/edits/removes a
+  // discount, the badge count and every open screen reflect it instantly.
+  useWebSocket({
+    topics: businessId ? [`/topic/business/${businessId}/discounts`] : [],
+    enabled: !!businessId,
+    onMessage: () => {
+      discountService.getActiveDiscounts(businessId).then((res) => {
+        if (res.success) setActiveDiscounts(res.data || []);
+      });
+    },
+  });
+
   useEffect(() => {
     if (businessId) loadMenu();
+  }, [businessId]);
+
+  // Load any previously-saved identity for this business (set after their
+  // last order). If none exists yet, the sidebar shows them as a Guest.
+  useEffect(() => {
+    if (!businessId) return;
+    try {
+      const saved = localStorage.getItem(identityKey(businessId));
+      if (saved) setIdentity(JSON.parse(saved));
+    } catch { /* ignore malformed storage */ }
   }, [businessId]);
 
   const loadMenu = async () => {
@@ -179,6 +212,15 @@ const CustomerWrapper = ({ businessId }) => {
     setScreen(SCREENS.PAYMENT);
   };
 
+  // Persist name/email/phone for this business so the hamburger sidebar and
+  // My Orders lookup work on return visits — no login required.
+  const saveIdentity = (info) => {
+    if (!businessId || !info) return;
+    const record = { name: info.name || "", email: info.email || "", phone: info.phone || "" };
+    try { localStorage.setItem(identityKey(businessId), JSON.stringify(record)); } catch {}
+    setIdentity(record);
+  };
+
   const handleInitiatePayment = async (gatewayName) => {
     try {
       if (gatewayName === "pay_at_counter") {
@@ -278,6 +320,7 @@ const CustomerWrapper = ({ businessId }) => {
             createdAt:       confirmPayload.createdAt,
           });
         }
+        saveIdentity(diningInfo);
         setScreen(SCREENS.SUCCESS);
         return;
       }
@@ -285,6 +328,7 @@ const CustomerWrapper = ({ businessId }) => {
       const res = await customerOrderService.confirmPayment(confirmPayload);
       if (!res.success) throw new Error(res.message);
       setConfirmedData(res.data);
+      saveIdentity(diningInfo);
       setScreen(SCREENS.SUCCESS);
     } catch (err) {
       throw new Error(err.response?.data?.message || err.message || "Payment confirmation failed");
@@ -340,6 +384,7 @@ const CustomerWrapper = ({ businessId }) => {
             onStart={() => setScreen(SCREENS.MENU)}
             onViewOffers={() => { setOffersOrigin(SCREENS.LANDING); setScreen(SCREENS.OFFERS); }}
             onItemClick={setPopupItem}
+            onOpenMenu={() => setSidebarOpen(true)}
           />
         )}
 
@@ -421,6 +466,25 @@ const CustomerWrapper = ({ businessId }) => {
             onBack={() => setScreen(SCREENS.SUCCESS)}
           />
         )}
+
+        {screen === SCREENS.MY_ORDERS && (
+          <CustomerMyOrdersPage
+            businessId={businessId}
+            phone={identity?.phone || diningInfo?.phone || ""}
+            onBack={() => setScreen(screenBeforeMyOrders)}
+            onBrowseMenu={() => setScreen(SCREENS.MENU)}
+          />
+        )}
+
+        <CustomerSidebar
+          open={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+          business={business}
+          identity={identity}
+          onHome={() => { setSidebarOpen(false); setScreen(SCREENS.LANDING); }}
+          onOffers={() => { setSidebarOpen(false); setOffersOrigin(screen); setScreen(SCREENS.OFFERS); }}
+          onMyOrders={() => { setSidebarOpen(false); setScreenBeforeMyOrders(screen); setScreen(SCREENS.MY_ORDERS); }}
+        />
 
         {popupItem && (
           <CustomerProductPopup

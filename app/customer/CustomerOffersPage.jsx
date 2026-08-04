@@ -4,6 +4,7 @@ import { ArrowLeft, ShoppingCart, Tag, Sparkles, PartyPopper, Gift, Sun, Plus, C
 import { formatCurrency } from "../utils/currencyHelper";
 import { computeDiscountedPrice } from "../utils/discountHelper";
 import discountService from "../services/discountService";
+import useWebSocket from "../hooks/useWebSocket";
 
 const CATEGORY_META = {
   FESTIVAL:    { icon: PartyPopper, color: "#dc2626", label: "Festival offers" },
@@ -56,6 +57,21 @@ const CustomerOffersPage = ({
   }, [businessId]);
 
   const getCartQty = (id) => cart.find((c) => c.id === id)?.qty || 0;
+
+  // Real-time: the instant the merchant activates/edits/removes an offer,
+  // this carousel refreshes itself — no pull-to-refresh needed.
+  useWebSocket({
+    topics: businessId ? [`/topic/business/${businessId}/discounts`] : [],
+    enabled: !!businessId,
+    onMessage: () => {
+      discountService.getActiveDiscounts(businessId).then((res) => {
+        if (res.success) {
+          setLiveDiscounts(res.data || []);
+          onDiscountsRefetched?.(res.data || []);
+        }
+      });
+    },
+  });
 
   const grouped = CATEGORY_ORDER.map((key) => ({
     key,
@@ -119,6 +135,11 @@ const CustomerOffersPage = ({
                     const originalTotal = comboItems.reduce((s, i) => s + i.price, 0);
                     return (
                       <div key={d.discountId} style={{ scrollSnapAlign: "start", flexShrink: 0, width: 190, border: `1.5px solid ${section.meta.color}30`, background: `${section.meta.color}08`, borderRadius: 14, padding: 12 }}>
+                        {d.imageUrl ? (
+                          <div style={{ width: "100%", height: 78, borderRadius: 10, overflow: "hidden", marginBottom: 8 }}>
+                            <img src={d.imageUrl} alt={d.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={(e) => { e.target.style.visibility = "hidden"; }} />
+                          </div>
+                        ) : (
                         <div style={{ display: "flex", gap: 5, marginBottom: 8 }}>
                           {(comboItems.length > 0 ? comboItems.slice(0, 3) : [null, null, null]).map((ci, idx) => (
                             <div key={ci?.id ?? idx} style={{ width: 44, height: 44, borderRadius: 9, background: "var(--surface-2)", overflow: "hidden", flexShrink: 0 }}>
@@ -126,6 +147,7 @@ const CustomerOffersPage = ({
                             </div>
                           ))}
                         </div>
+                        )}
                         <div style={{ fontSize: 12.5, fontWeight: 800, color: "var(--text-primary)", lineHeight: 1.3, minHeight: 32 }}>{d.title}</div>
                         <div style={{ display: "flex", alignItems: "baseline", gap: 6, margin: "6px 0" }}>
                           <span style={{ fontSize: 14, fontWeight: 800, color: section.meta.color }}>{formatCurrency(d.discountValue, "INR")}</span>
@@ -145,12 +167,28 @@ const CustomerOffersPage = ({
 
                   if (d.scope === "STOREWIDE") {
                     return (
-                      <div key={d.discountId} style={{ scrollSnapAlign: "start", flexShrink: 0, width: 190, border: `1.5px solid ${section.meta.color}30`, background: `${section.meta.color}08`, borderRadius: 14, padding: 14, display: "flex", flexDirection: "column", justifyContent: "center" }}>
-                        <section.meta.icon size={20} color={section.meta.color} />
-                        <div style={{ fontSize: 12.5, fontWeight: 800, color: "var(--text-primary)", marginTop: 8 }}>{d.title}</div>
-                        <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4, lineHeight: 1.4 }}>
-                          {d.badgeLabel}{d.minCartValue ? ` · min ${formatCurrency(d.minCartValue, "INR")}` : " · whole order"}
-                        </div>
+                      <div key={d.discountId} style={{ scrollSnapAlign: "start", flexShrink: 0, width: 190, border: `1.5px solid ${section.meta.color}30`, background: `${section.meta.color}08`, borderRadius: 14, padding: d.imageUrl ? 0 : 14, overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: d.imageUrl ? "flex-start" : "center" }}>
+                        {d.imageUrl ? (
+                          <>
+                            <div style={{ width: "100%", height: 78 }}>
+                              <img src={d.imageUrl} alt={d.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={(e) => { e.target.style.visibility = "hidden"; }} />
+                            </div>
+                            <div style={{ padding: 12 }}>
+                              <div style={{ fontSize: 12.5, fontWeight: 800, color: "var(--text-primary)" }}>{d.title}</div>
+                              <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4, lineHeight: 1.4 }}>
+                                {d.badgeLabel}{d.minCartValue ? ` · min ${formatCurrency(d.minCartValue, "INR")}` : " · whole order"}
+                              </div>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <section.meta.icon size={20} color={section.meta.color} />
+                            <div style={{ fontSize: 12.5, fontWeight: 800, color: "var(--text-primary)", marginTop: 8 }}>{d.title}</div>
+                            <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4, lineHeight: 1.4 }}>
+                              {d.badgeLabel}{d.minCartValue ? ` · min ${formatCurrency(d.minCartValue, "INR")}` : " · whole order"}
+                            </div>
+                          </>
+                        )}
                       </div>
                     );
                   }
@@ -170,7 +208,7 @@ const CustomerOffersPage = ({
                       style={{ scrollSnapAlign: "start", flexShrink: 0, width: 150, border: "1px solid var(--border-light)", borderRadius: 14, overflow: "hidden", background: "var(--surface)", cursor: first ? "pointer" : "default" }}
                     >
                       <div style={{ width: "100%", height: 100, background: "var(--surface-2)", position: "relative" }}>
-                        {first?.img && <img src={first.img} alt={first.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={(e) => { e.target.style.visibility = "hidden"; }} />}
+                        {(d.imageUrl || first?.img) && <img src={d.imageUrl || first.img} alt={first ? first.name : d.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={(e) => { e.target.style.visibility = "hidden"; }} />}
                         <span style={{ position: "absolute", top: 6, left: 6, fontSize: 9.5, fontWeight: 800, color: "#fff", background: section.meta.color, padding: "2px 7px", borderRadius: 999 }}>{d.badgeLabel}</span>
                       </div>
                       <div style={{ padding: 9 }}>

@@ -1,4 +1,4 @@
-import api from "./axiosInterceptor";
+import api from "../services/axiosInterceptor";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:6163";
 
@@ -22,6 +22,20 @@ const discountService = {
   },
   deleteDiscount: async (discountId) => {
     const res = await api.delete(`/api/admin/discounts/${discountId}`);
+    return res.data;
+  },
+
+  // ── Offer photo upload (admin, JWT) ─────────────────────────
+  uploadDiscountImage: async (file) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await api.post("/api/images/discount", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return res.data;
+  },
+  deleteDiscountImage: async (filename) => {
+    const res = await api.delete(`/api/images/discount/${filename}`);
     return res.data;
   },
 

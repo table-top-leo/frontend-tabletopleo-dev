@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { MapPin, Star, Clock, Search, ChevronRight, ImageOff, Flame, X } from "lucide-react";
+import { MapPin, Star, Clock, Search, ChevronRight, ImageOff, Flame, X, Menu } from "lucide-react";
 
 // ── Cover images per business type (high quality Unsplash) ──
 const COVER_BY_TYPE = {
@@ -102,7 +102,7 @@ function fmt12h(t) {
   return `${h12}:${String(m).padStart(2,"0")} ${ampm}`;
 }
 
-const CustomerLandingPage = ({ business, categories, items, activeDiscounts = [], onStart, onViewOffers, onItemClick }) => {
+const CustomerLandingPage = ({ business, categories, items, activeDiscounts = [], onStart, onViewOffers, onItemClick, onOpenMenu }) => {
   const [search,         setSearch]         = useState("");
   const [activeCategory, setActiveCategory] = useState(null);
 
@@ -193,6 +193,18 @@ const CustomerLandingPage = ({ business, categories, items, activeDiscounts = []
             style={{ width:"100%", height:155, objectFit:"cover", display:"block" }}
           />
           <div style={{ position:"absolute", inset:0, background:"linear-gradient(to bottom,rgba(0,0,0,0.05) 0%,rgba(0,0,0,0.6) 100%)" }}/>
+          {/* Hamburger menu — opens the customer sidebar (profile / My Orders) */}
+          <button
+            onClick={onOpenMenu}
+            aria-label="Menu"
+            style={{
+              position:"absolute", top:12, left:12, width:38, height:38, borderRadius:11,
+              background:"rgba(0,0,0,0.38)", backdropFilter:"blur(4px)", border:"1px solid rgba(255,255,255,0.25)",
+              display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", touchAction:"manipulation",
+            }}
+          >
+            <Menu size={19} color="#fff" />
+          </button>
           <div style={{ position:"absolute", bottom:0, left:0, right:0, padding:"10px 14px", display:"flex", alignItems:"flex-end", gap:10 }}>
             <div style={{ width:46, height:46, borderRadius:11, overflow:"hidden", border:"2.5px solid #fff", flexShrink:0, background:"#fff" }}>
               {(business.logoUrl || business.logo) ? (

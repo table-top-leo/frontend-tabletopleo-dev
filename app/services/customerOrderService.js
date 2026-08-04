@@ -32,6 +32,12 @@ const customerOrderService = {
     const res = await pub.get(`${API}/order/${orderId}/status`);
     return res.data;
   },
+
+  // ── My Orders — customer app hamburger menu ─────────────────
+  getMyOrders: async (businessId, phone) => {
+    const res = await pub.get(`${API}/orders`, { params: { businessId, phone } });
+    return res.data;
+  },
 };
 
 export default customerOrderService;
