@@ -467,6 +467,7 @@ const CustomerWrapper = ({ businessId }) => {
             onInfoChange={setDiningInfo}
             onBack={() => setScreen(SCREENS.CART)}
             onContinue={handleDiningContinue}
+            hasTableService={!!business?.hasTableService}
           />
         )}
 

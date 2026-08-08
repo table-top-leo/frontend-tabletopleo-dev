@@ -311,9 +311,16 @@ const CustomerMenuPage = ({
                       </span>
                     )}
                   </div>
-                  {/* + button */}
-                  <div style={{ flexShrink:0, width:24, height:24, borderRadius:7, border:"1.5px solid var(--brand)", display:"flex", alignItems:"center", justifyContent:"center", background: qty>0?"var(--brand)":"transparent", transition:"background 0.15s" }}>
-                    <Plus size={13} color={qty>0?"#fff":"var(--brand)"}/>
+                  {/* Add button — clean text pill instead of a cramped icon */}
+                  <div style={{
+                    flexShrink:0, minWidth:52, height:26, borderRadius:8, padding:"0 12px",
+                    border:"1.5px solid var(--brand)", display:"flex", alignItems:"center", justifyContent:"center",
+                    background: qty>0 ? "var(--brand)" : "transparent",
+                    color: qty>0 ? "#fff" : "var(--brand)",
+                    fontSize:11.5, fontWeight:800, letterSpacing:"0.02em",
+                    transition:"background 0.15s, color 0.15s",
+                  }}>
+                    {qty>0 ? "Added" : "Add"}
                   </div>
                 </div>
 

@@ -1,20 +1,25 @@
 "use client";
 import { useState } from "react";
-import { ArrowLeft, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Info, X, Bell } from "lucide-react";
 
 const OPTIONS = [
   { id:"dine-in",  emoji:"🍽️", title:"Dine In",   desc:"Sit down & enjoy inside the restaurant." },
   { id:"takeaway", emoji:"🥡", title:"Take Away", desc:"Pick up your order from the counter." },
 ];
 
-const CustomerDiningSelection = ({ diningInfo, onInfoChange, onBack, onContinue }) => {
+const CustomerDiningSelection = ({ diningInfo, onInfoChange, onBack, onContinue, hasTableService = false }) => {
   const [errors, setErrors] = useState({});
+  const [knowMoreOpen, setKnowMoreOpen] = useState(false);
 
   const set = (field) => (e) => {
     onInfoChange(prev => ({ ...prev, [field]: e.target.value }));
     setErrors(prev => ({ ...prev, [field]: "" }));
   };
- 
+
+  // Phone field: digits only, hard-capped at 10 characters — strips
+  // anything typed or pasted that isn't 0-9 and truncates on every change,
+  // so it's impossible to end up with letters, symbols, or more than 10
+  // digits regardless of how the user enters it.
   const setPhone = (e) => {
     const digitsOnly = e.target.value.replace(/\D/g, "").slice(0, 10);
     onInfoChange(prev => ({ ...prev, phone: digitsOnly }));
@@ -99,10 +104,28 @@ const CustomerDiningSelection = ({ diningInfo, onInfoChange, onBack, onContinue 
         {/* Dine In fields */}
         {diningInfo.type === "dine-in" && (
           <div style={{ display:"flex", flexDirection:"column", gap:12, animation:"fadeIn 0.2s ease" }}>
-            <div>
-              {label("Table Number")}
-              <input style={inputStyle(false)} placeholder="e.g. Table 5" value={diningInfo.table} onChange={set("table")} />
-            </div>
+            {hasTableService ? (
+              <div>
+                {label("Table Number")}
+                <input style={inputStyle(false)} placeholder="e.g. Table 5" value={diningInfo.table} onChange={set("table")} />
+              </div>
+            ) : (
+              <div style={{ display:"flex", alignItems:"flex-start", gap:10, padding:"11px 13px", background:"var(--surface-2)", border:"1px solid var(--border)", borderRadius:"var(--radius-md)" }}>
+                <Bell size={16} color="var(--brand)" style={{ marginTop:1, flexShrink:0 }} />
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:12.5, fontWeight:700, color:"var(--text-primary)" }}>No table numbers here</div>
+                  <div style={{ fontSize:11.5, color:"var(--text-muted)", marginTop:2, lineHeight:1.5 }}>
+                    We'll call out your name or order number when it's ready — no need to enter a table.
+                  </div>
+                  <button
+                    onClick={() => setKnowMoreOpen(true)}
+                    style={{ display:"inline-flex", alignItems:"center", gap:4, background:"none", border:"none", color:"var(--brand)", fontWeight:700, fontSize:11.5, cursor:"pointer", padding:"6px 0 0" }}
+                  >
+                    <Info size={12} /> Know more
+                  </button>
+                </div>
+              </div>
+            )}
             <div>
               {label("Your Name")}
               <input style={inputStyle(false)} placeholder="Optional" value={diningInfo.name} onChange={set("name")} />
@@ -179,6 +202,32 @@ const CustomerDiningSelection = ({ diningInfo, onInfoChange, onBack, onContinue 
           Continue to Payment
         </button>
       </div>
+
+      {knowMoreOpen && (
+        <div onClick={() => setKnowMoreOpen(false)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", backdropFilter:"blur(4px)", zIndex:300, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background:"var(--surface, #fff)", borderRadius:18, width:"100%", maxWidth:380, boxShadow:"0 24px 60px rgba(0,0,0,0.25)" }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"18px 20px", borderBottom:"1px solid var(--border-light)" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:8, fontSize:15, fontWeight:800, color:"var(--text-primary)" }}>
+                <Bell size={17} color="var(--brand)" /> How you'll get your order
+              </div>
+              <button onClick={() => setKnowMoreOpen(false)} style={{ width:30, height:30, borderRadius:"50%", border:"none", background:"var(--surface-2)", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer" }}>
+                <X size={15} />
+              </button>
+            </div>
+            <div style={{ padding:"18px 20px", display:"flex", flexDirection:"column", gap:12, fontSize:13, color:"var(--text-secondary)", lineHeight:1.6 }}>
+              <div>This place doesn't use fixed table numbers, so there's nothing to fill in here — just place your order and:</div>
+              <ul style={{ margin:0, paddingLeft:18, display:"flex", flexDirection:"column", gap:6 }}>
+                <li>We'll announce your <strong>name</strong> (or your order number) when it's ready.</li>
+                <li>Head to the counter to collect it.</li>
+                <li>You can also track your order status live from the order confirmation screen.</li>
+              </ul>
+              <div style={{ background:"var(--brand-muted)", borderRadius:10, padding:"10px 12px", fontSize:12, color:"var(--text-primary)" }}>
+                💡 Tip: entering your name and phone number above helps us call you correctly and text you when it's ready.
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

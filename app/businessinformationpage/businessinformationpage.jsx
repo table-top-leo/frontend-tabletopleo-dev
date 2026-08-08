@@ -109,6 +109,7 @@ const EMPTY = {
   country: "", currencyCode: "", postalCode: "",
   openingTime: "09:00 AM", closingTime: "10:00 PM",
   workingDays: [], timezone: "(GMT+05:30) Asia/Kolkata", description: "",
+  hasTableService: false,
 };
 
 const BusinessInformation = () => {
@@ -163,6 +164,7 @@ const BusinessInformation = () => {
         workingDays:   b.workingDays ? b.workingDays.split(",").map(d => d.trim()) : [],
         timezone:      b.timezone      || "(GMT+05:30) Asia/Kolkata",
         description:   b.businessDescription || "",
+        hasTableService: Boolean(b.hasTableService),
       };
       setData(mapped);
       setDraft(mapped);
@@ -243,6 +245,7 @@ const BusinessInformation = () => {
         workingDays:         draft.workingDays.length > 0 ? draft.workingDays.join(",") : null,
         timezone:            draft.timezone,
         businessDescription: draft.description || null,
+        hasTableService:     draft.hasTableService,
       };
       await updateBusinessInformation(adminId, payload);
       setData({ ...draft });
@@ -667,6 +670,31 @@ const BusinessInformation = () => {
                   value={d.description} disabled={!editing}
                   onChange={e => handleFieldChange("description", e.target.value)}/>
                 {editing && <Pencil size={14} className="bi-textarea-icon"/>}
+              </div>
+            </div>
+          </div>
+
+          {/* ── Table Service toggle ── */}
+          <div className="bi-col-full">
+            <div className="bi-field-group">
+              <label className="bi-label">Table Service</label>
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"14px 16px", background: editing ? "#fff" : "#f9fafb", border:"1.5px solid #e4e4e7", borderRadius:10 }}>
+                <div style={{ paddingRight:16 }}>
+                  <div style={{ fontSize:13, fontWeight:700, color:"#18181b" }}>Do you have table numbers for Dine In?</div>
+                  <div style={{ fontSize:11.5, color:"#71717a", marginTop:3, lineHeight:1.5 }}>
+                    ON = customers sit at numbered tables, so the customer app asks for a table number.
+                    OFF = counter-service business (kirana store, juice bar, food stall, small cafe) with
+                    no fixed seating — the table number field is hidden for both Dine In and Take Away.
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  disabled={!editing}
+                  onClick={() => handleFieldChange("hasTableService", !draft.hasTableService)}
+                  style={{ width:46, height:26, borderRadius:999, background: d.hasTableService ? "#16a34a" : "#d1d5db", position:"relative", border:"none", cursor: editing ? "pointer" : "default", flexShrink:0, opacity: editing ? 1 : 0.7 }}
+                >
+                  <span style={{ position:"absolute", top:3, left: d.hasTableService ? 23 : 3, width:20, height:20, borderRadius:"50%", background:"#fff", transition:"left 0.15s" }} />
+                </button>
               </div>
             </div>
           </div>

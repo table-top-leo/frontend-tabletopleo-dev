@@ -87,6 +87,10 @@ export default function BusinessInformation({ onNext, onBack, initialData, busin
     workingDays: initialData?.workingDays || [],
     timezone: initialData?.timezone || "(GMT+05:30) Asia/Kolkata",
     description: initialData?.description || "",
+    // Optional — off by default. Businesses without fixed seating/tables
+    // (kirana stores, counter-service cafes, food stalls, juice bars) leave
+    // this off so the customer app never asks for a table number.
+    hasTableService: initialData?.hasTableService ?? false,
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -196,6 +200,7 @@ export default function BusinessInformation({ onNext, onBack, initialData, busin
         workingDays: workingDaysStr,
         timezone: form.timezone,
         businessDescription: form.description || null,
+        hasTableService: form.hasTableService,
       };
 
       const res = await setupBusiness(payload);
@@ -541,6 +546,27 @@ export default function BusinessInformation({ onNext, onBack, initialData, busin
             <textarea className="textarea-field" placeholder="Tell us about your business..."
               value={form.description}
               onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} />
+          </div>
+        </div>
+
+        <div className="form-group biz-col-full">
+          <label className="form-label">Table Service</label>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"14px 16px", background:"#f9fafb", border:"1.5px solid #e5e7eb", borderRadius:10 }}>
+            <div>
+              <div style={{ fontSize:13, fontWeight:700, color:"#18181b" }}>Do you have table numbers for Dine In?</div>
+              <div style={{ fontSize:11.5, color:"#71717a", marginTop:3, lineHeight:1.5 }}>
+                Turn this ON if customers sit at numbered tables. Leave it OFF if you're a counter-service
+                business (kirana store, juice bar, food stall, small cafe) with no fixed seating — customers
+                won't be asked for a table number, for both Dine In and Take Away.
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setForm((f) => ({ ...f, hasTableService: !f.hasTableService }))}
+              style={{ width:46, height:26, borderRadius:999, background: form.hasTableService ? "#16a34a" : "#d1d5db", position:"relative", border:"none", cursor:"pointer", flexShrink:0, marginLeft:16 }}
+            >
+              <span style={{ position:"absolute", top:3, left: form.hasTableService ? 23 : 3, width:20, height:20, borderRadius:"50%", background:"#fff", transition:"left 0.15s" }} />
+            </button>
           </div>
         </div>
       </div>

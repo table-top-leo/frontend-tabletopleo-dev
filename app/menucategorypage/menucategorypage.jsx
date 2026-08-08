@@ -217,7 +217,7 @@ const MenuCategory = () => {
         categoryStatus:   "ACTIVE",
       });
       setEditingCatId(null);
-      loadCategories();
+      fetchCategories();
       showToast("Category updated! ✓");
     } catch { showToast("Failed to update category", "error"); }
   };
