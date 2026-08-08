@@ -91,6 +91,11 @@ export default function BusinessInformation({ onNext, onBack, initialData, busin
     // (kirana stores, counter-service cafes, food stalls, juice bars) leave
     // this off so the customer app never asks for a table number.
     hasTableService: initialData?.hasTableService ?? false,
+    // Deliberately OFF by default — a brand new merchant hasn't told us
+    // anything about their order types yet, so we don't assume. They must
+    // explicitly turn on whichever ones apply to their business.
+    dineInEnabled: initialData?.dineInEnabled ?? false,
+    takeawayEnabled: initialData?.takeawayEnabled ?? false,
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -159,6 +164,9 @@ export default function BusinessInformation({ onNext, onBack, initialData, busin
     if (!form.state.trim()) e.state = "State is required.";
     if (!form.country) e.country = "Country is required.";
     if (!form.postalCode.trim()) e.postalCode = "Postal code is required.";
+    if (!form.dineInEnabled && !form.takeawayEnabled) {
+      e.orderTypes = "Enable at least one order type — Dine In or Take Away.";
+    }
     return e;
   };
 
@@ -201,6 +209,8 @@ export default function BusinessInformation({ onNext, onBack, initialData, busin
         timezone: form.timezone,
         businessDescription: form.description || null,
         hasTableService: form.hasTableService,
+        dineInEnabled: form.dineInEnabled,
+        takeawayEnabled: form.takeawayEnabled,
       };
 
       const res = await setupBusiness(payload);
@@ -567,6 +577,43 @@ export default function BusinessInformation({ onNext, onBack, initialData, busin
             >
               <span style={{ position:"absolute", top:3, left: form.hasTableService ? 23 : 3, width:20, height:20, borderRadius:"50%", background:"#fff", transition:"left 0.15s" }} />
             </button>
+          </div>
+        </div>
+
+        <div className="form-group biz-col-full">
+          <label className="form-label">Order Types Accepted <span className="req-star">*</span></label>
+          <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"14px 16px", background:"#f9fafb", border:"1.5px solid #e5e7eb", borderRadius:10 }}>
+              <div>
+                <div style={{ fontSize:13, fontWeight:700, color:"#18181b" }}>🍽️ Dine In</div>
+                <div style={{ fontSize:11.5, color:"#71717a", marginTop:3 }}>Customers can order to eat at your place.</div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setForm((f) => ({ ...f, dineInEnabled: !f.dineInEnabled }))}
+                style={{ width:46, height:26, borderRadius:999, background: form.dineInEnabled ? "#16a34a" : "#d1d5db", position:"relative", border:"none", cursor:"pointer", flexShrink:0, marginLeft:16 }}
+              >
+                <span style={{ position:"absolute", top:3, left: form.dineInEnabled ? 23 : 3, width:20, height:20, borderRadius:"50%", background:"#fff", transition:"left 0.15s" }} />
+              </button>
+            </div>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"14px 16px", background:"#f9fafb", border:"1.5px solid #e5e7eb", borderRadius:10 }}>
+              <div>
+                <div style={{ fontSize:13, fontWeight:700, color:"#18181b" }}>🥡 Take Away</div>
+                <div style={{ fontSize:11.5, color:"#71717a", marginTop:3 }}>Customers can order for pickup / to go.</div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setForm((f) => ({ ...f, takeawayEnabled: !f.takeawayEnabled }))}
+                style={{ width:46, height:26, borderRadius:999, background: form.takeawayEnabled ? "#16a34a" : "#d1d5db", position:"relative", border:"none", cursor:"pointer", flexShrink:0, marginLeft:16 }}
+              >
+                <span style={{ position:"absolute", top:3, left: form.takeawayEnabled ? 23 : 3, width:20, height:20, borderRadius:"50%", background:"#fff", transition:"left 0.15s" }} />
+              </button>
+            </div>
+            {!form.dineInEnabled && !form.takeawayEnabled && (
+              <div style={{ fontSize:11.5, color:"#dc2626", fontWeight:600, padding:"0 2px" }}>
+                ⚠ {errors.orderTypes || "At least one order type should be enabled, or customers won't be able to order."}
+              </div>
+            )}
           </div>
         </div>
       </div>

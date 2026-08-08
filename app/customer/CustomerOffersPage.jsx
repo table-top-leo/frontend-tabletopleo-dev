@@ -23,19 +23,21 @@ const scrollRowStyle = {
   scrollbarWidth: "none",
 };
 
-function pctOff(d) {
+function pctOff(d, currencyCode) {
   if (d.discountType === "PERCENTAGE") return `${Math.round(d.discountValue)}% OFF`;
-  if (d.discountType === "FLAT_AMOUNT") return `${formatCurrency(d.discountValue, "INR")} OFF`;
+  if (d.discountType === "FLAT_AMOUNT") return `${formatCurrency(d.discountValue, currencyCode)} OFF`;
   return "COMBO";
 }
 
 const CustomerOffersPage = ({
   business, businessId, items = [], activeDiscounts = [],
+  currencyCode,
   onDiscountsRefetched,
   cart = [], cartCount = 0, cartTotal = 0,
   onAddItem, onAddCombo, onItemClick,
   onBrowseMenu, onViewCart, onBack,
 }) => {
+  const _currCode = currencyCode || business?.currencyCode || "INR";
   const [liveDiscounts, setLiveDiscounts] = useState(activeDiscounts);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState("");
@@ -160,9 +162,9 @@ const CustomerOffersPage = ({
                         <div style={{ padding: "7px 8px 8px" }}>
                           <div style={{ fontSize: 11, fontWeight: 800, color: "var(--text-primary)", lineHeight: 1.25, overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", minHeight: 27 }}>{d.title}</div>
                           <div style={{ display: "flex", alignItems: "baseline", gap: 5, margin: "5px 0 7px" }}>
-                            <span style={{ fontSize: 13, fontWeight: 800, color: section.meta.color }}>{formatCurrency(d.discountValue, "INR")}</span>
+                            <span style={{ fontSize: 13, fontWeight: 800, color: section.meta.color }}>{formatCurrency(d.discountValue, _currCode)}</span>
                             {originalTotal > 0 && (
-                              <span style={{ fontSize: 9.5, color: "var(--text-muted)", textDecoration: "line-through" }}>{formatCurrency(originalTotal, "INR")}</span>
+                              <span style={{ fontSize: 9.5, color: "var(--text-muted)", textDecoration: "line-through" }}>{formatCurrency(originalTotal, _currCode)}</span>
                             )}
                           </div>
                           <button
@@ -185,12 +187,12 @@ const CustomerOffersPage = ({
                           ) : (
                             <section.meta.icon size={26} color={section.meta.color} />
                           )}
-                          <span style={{ position: "absolute", top: 5, left: 5, fontSize: 8.5, fontWeight: 800, color: "#fff", background: section.meta.color, padding: "2px 5px", borderRadius: 4 }}>{pctOff(d)}</span>
+                          <span style={{ position: "absolute", top: 5, left: 5, fontSize: 8.5, fontWeight: 800, color: "#fff", background: section.meta.color, padding: "2px 5px", borderRadius: 4 }}>{pctOff(d, _currCode)}</span>
                         </div>
                         <div style={{ padding: "7px 8px 8px" }}>
                           <div style={{ fontSize: 11, fontWeight: 800, color: "var(--text-primary)", lineHeight: 1.25, overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", minHeight: 27 }}>{d.title}</div>
                           <div style={{ fontSize: 9.5, color: "var(--text-muted)", marginTop: 5 }}>
-                            {d.minCartValue ? `Min order ${formatCurrency(d.minCartValue, "INR")}` : "On whole order"}
+                            {d.minCartValue ? `Min order ${formatCurrency(d.minCartValue, _currCode)}` : "On whole order"}
                           </div>
                         </div>
                       </div>
@@ -213,7 +215,7 @@ const CustomerOffersPage = ({
                     >
                       <div style={{ width: "100%", height: 78, background: "var(--surface-2)", position: "relative", borderRadius: "10px 10px 0 0", overflow: "hidden" }}>
                         {(d.imageUrl || first?.img) && <img src={d.imageUrl || first.img} alt={first ? first.name : d.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={(e) => { e.target.style.visibility = "hidden"; }} />}
-                        <span style={{ position: "absolute", top: 5, left: 5, fontSize: 8.5, fontWeight: 800, color: "#fff", background: section.meta.color, padding: "2px 5px", borderRadius: 4 }}>{pctOff(d)}</span>
+                        <span style={{ position: "absolute", top: 5, left: 5, fontSize: 8.5, fontWeight: 800, color: "#fff", background: section.meta.color, padding: "2px 5px", borderRadius: 4 }}>{pctOff(d, _currCode)}</span>
                       </div>
                       <div style={{ padding: "7px 8px 8px", position: "relative" }}>
                         <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -226,8 +228,8 @@ const CustomerOffersPage = ({
                           <span>
                             {first ? (
                               <>
-                                <span style={{ fontSize: 11.5, fontWeight: 800, color: "#dc2626" }}>{formatCurrency(discountedPrice, "INR")}</span>
-                                <span style={{ fontSize: 9, color: "var(--text-muted)", textDecoration: "line-through", marginLeft: 4 }}>{formatCurrency(first.price, "INR")}</span>
+                                <span style={{ fontSize: 11.5, fontWeight: 800, color: "#dc2626" }}>{formatCurrency(discountedPrice, _currCode)}</span>
+                                <span style={{ fontSize: 9, color: "var(--text-muted)", textDecoration: "line-through", marginLeft: 4 }}>{formatCurrency(first.price, _currCode)}</span>
                               </>
                             ) : (
                               <span style={{ fontSize: 10, color: "var(--text-muted)" }}>Tap to view</span>
@@ -265,7 +267,7 @@ const CustomerOffersPage = ({
               <span style={{ background: "rgba(255,255,255,0.25)", borderRadius: 999, width: 20, height: 20, fontSize: 11, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{cartCount}</span>
               View cart
             </span>
-            <span style={{ fontWeight: 800 }}>{formatCurrency(cartTotal, "INR")}</span>
+            <span style={{ fontWeight: 800 }}>{formatCurrency(cartTotal, _currCode)}</span>
           </button>
         </div>
       )}

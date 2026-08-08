@@ -85,6 +85,33 @@ const PaymentSetup =() =>{
   const [pacLoading,         setPacLoading]         = useState(false);
   const [pacMsg,             setPacMsg]             = useState("");
 
+  // Which gateways this business's country actually allows — fetched from
+  // the backend (never guessed in the frontend). null while loading, so we
+  // don't flash "unavailable" on every card before we know the real answer.
+  const [availableGateways, setAvailableGateways] = useState(null);
+  const [countryLabel,      setCountryLabel]      = useState("");
+
+  useEffect(() => {
+    const loadAvailability = async () => {
+      try {
+        const token = localStorage.getItem("ttl_token");
+        const res = await fetch(`http://localhost:6163/api/payment/available-methods`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        if (data?.success && data?.data) {
+          setAvailableGateways((data.data.availableGateways || []).map((g) => g.toLowerCase()));
+          setCountryLabel(data.data.countryCode || "");
+        }
+      } catch {
+        // If this fails, fall back to showing every card enabled rather
+        // than accidentally locking a merchant out of Payment Setup.
+        setAvailableGateways(["upi", "razorpay", "stripe", "mobilepay"]);
+      }
+    };
+    loadAvailability();
+  }, []);
+
   const payAtCounterDirty = payAtCounterDraft !== payAtCounterSaved;
 
   // Load the currently SAVED Pay at Counter status from the backend once,
@@ -154,6 +181,12 @@ const PaymentSetup =() =>{
         </div>
       </div>
 
+      {availableGateways && countryLabel && (
+        <div style={{ display:"flex", alignItems:"center", gap:8, background:"#eff6ff", border:"1px solid #bfdbfe", borderRadius:10, padding:"10px 14px", marginBottom:16, fontSize:12.5, color:"#1e40af", fontWeight:600 }}>
+          ℹ️ Showing gateways available for businesses in <strong>{countryLabel}</strong>.
+        </div>
+      )}
+
       <div className="ps-section-label">
         <span className="ps-section-dot" />
         Select Payment Methods
@@ -162,18 +195,20 @@ const PaymentSetup =() =>{
       <div className="ps-grid">
         {PAYMENT_METHODS.map((m) => {
           const enabled = enabledMethods.includes(m.id);
+          const isAvailable = !availableGateways || availableGateways.includes(m.id);
           return (
-            <div key={m.id} className={`ps-card ${enabled ? "ps-card--active" : ""}`}>
+            <div key={m.id} className={`ps-card ${enabled ? "ps-card--active" : ""}`} style={!isAvailable ? { opacity:0.45, filter:"grayscale(1)", pointerEvents:"none" } : undefined}>
               <div className="ps-card-top">
                 <div className="ps-card-icon">{m.icon}</div>
                 <div className="ps-card-meta">
                   <div className="ps-card-name">{m.name}</div>
-                  <span className="ps-card-badge">{m.badge}</span>
+                  <span className="ps-card-badge">{isAvailable ? m.badge : "Not available in your country"}</span>
                 </div>
                 <label className="ps-toggle">
                   <input
                     type="checkbox"
                     checked={enabled}
+                    disabled={!isAvailable}
                     onChange={() => toggleMethod(m.id)}
                   />
                   <span className="ps-toggle-track" />
@@ -193,9 +228,11 @@ const PaymentSetup =() =>{
               </ul>
               <button
                 className="ps-configure-btn"
-                onClick={() => setActivePage(m.id)}
+                onClick={() => isAvailable && setActivePage(m.id)}
+                disabled={!isAvailable}
+                style={!isAvailable ? { cursor:"not-allowed" } : undefined}
               >
-                Get Started
+                {isAvailable ? "Get Started" : "Unavailable"}
               </button>
             </div>
           );

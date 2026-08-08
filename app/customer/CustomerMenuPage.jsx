@@ -10,16 +10,16 @@ const CustomerMenuPage = ({
   categories = [],
   items = [],
   activeDiscounts = [],
+  currencyCode,
   cart: propCart = [],
   onItemClick,
   onViewCart,
   onViewOffers,
   onBack,
 }) => {
-  const _user = (typeof window !== "undefined")
-    ? (() => { try { return JSON.parse(localStorage.getItem("ttl_user") || "{}"); } catch { return {}; } })()
-    : {};
-  const _currCode = _user.currencyCode || "INR";
+  // Business currency is authoritative — never the admin's own login
+  // session (which a real customer's device never has anyway).
+  const _currCode = currencyCode || business?.currencyCode || "INR";
 
   const [activecat, setActivecat] = useState(0);
   const [search,    setSearch]    = useState("");

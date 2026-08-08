@@ -27,7 +27,8 @@ function fmtDate(d) {
     " · " + date.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
 }
 
-const CustomerMyOrdersPage = ({ businessId, phone, onBack, onBrowseMenu }) => {
+const CustomerMyOrdersPage = ({ businessId, phone, currencyCode, onBack, onBrowseMenu }) => {
+  const _currCode = currencyCode || "INR";
   const [orders, setOrders]   = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState("");
@@ -108,7 +109,7 @@ const CustomerMyOrdersPage = ({ businessId, phone, onBack, onBrowseMenu }) => {
                       <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>{fmtDate(o.createdAt)} · {(o.items || []).length} item{(o.items || []).length !== 1 ? "s" : ""}</div>
                     </div>
                     <div style={{ textAlign: "right", flexShrink: 0 }}>
-                      <div style={{ fontSize: 13.5, fontWeight: 800, color: "var(--text-primary)" }}>{formatCurrency(o.grandTotal, "INR")}</div>
+                      <div style={{ fontSize: 13.5, fontWeight: 800, color: "var(--text-primary)" }}>{formatCurrency(o.grandTotal, _currCode)}</div>
                       <div style={{ fontSize: 10, fontWeight: 800, color: statusColor, marginTop: 2 }}>{(o.orderStatus || "").replace("_", " ")}</div>
                     </div>
                     {isOpen ? <ChevronUp size={16} color="var(--text-muted)" /> : <ChevronDown size={16} color="var(--text-muted)" />}
@@ -137,28 +138,28 @@ const CustomerMyOrdersPage = ({ businessId, phone, onBack, onBrowseMenu }) => {
                                   </span>
                                 )}
                               </div>
-                              <div style={{ fontSize: 10.5, color: "var(--text-muted)" }}>Qty {it.quantity} × {formatCurrency(it.unitPrice, "INR")}</div>
+                              <div style={{ fontSize: 10.5, color: "var(--text-muted)" }}>Qty {it.quantity} × {formatCurrency(it.unitPrice, _currCode)}</div>
                               {it.offerTitle && (
                                 <div style={{ fontSize: 9.5, color: "#dc2626", marginTop: 1 }}>{it.offerTitle}</div>
                               )}
                             </div>
-                            <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)", flexShrink: 0 }}>{formatCurrency(it.lineTotal, "INR")}</div>
+                            <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)", flexShrink: 0 }}>{formatCurrency(it.lineTotal, _currCode)}</div>
                           </div>
                         ))}
                       </div>
 
                       {/* Bill breakdown */}
                       <div style={{ background: "var(--surface-2)", borderRadius: 10, padding: "10px 12px", fontSize: 12, color: "var(--text-secondary)", display: "flex", flexDirection: "column", gap: 5 }}>
-                        <Row label="Subtotal" value={formatCurrency(o.subtotal, "INR")} />
+                        <Row label="Subtotal" value={formatCurrency(o.subtotal, _currCode)} />
                         {Number(o.discountAmount) > 0 && (
                           <Row
                             label={<span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><Tag size={10} color="#16a34a" /> Offer discount</span>}
-                            value={`- ${formatCurrency(o.discountAmount, "INR")}`}
+                            value={`- ${formatCurrency(o.discountAmount, _currCode)}`}
                             valueColor="#16a34a"
                           />
                         )}
-                        <Row label="Tax / GST" value={formatCurrency(o.taxAmount, "INR")} />
-                        <Row label="Grand Total" value={formatCurrency(o.grandTotal, "INR")} bold />
+                        <Row label="Tax / GST" value={formatCurrency(o.taxAmount, _currCode)} />
+                        <Row label="Grand Total" value={formatCurrency(o.grandTotal, _currCode)} bold />
                       </div>
 
                       {/* Payment method dropdown-style pill */}

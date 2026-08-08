@@ -5,9 +5,8 @@ import { getItemDiscount, computeDiscountedPrice } from "../utils/discountHelper
 
 import { ArrowLeft, Trash2, Plus, Minus, ShoppingBag, Tag } from "lucide-react";
 
-const CustomerCartPage = ({ cart, subtotal, gst, total, activeDiscounts = [], onUpdateQty, onRemove, onBack, onProceed }) => {
-  const _user = (typeof window !== "undefined") ? (() => { try { return JSON.parse(localStorage.getItem("ttl_user") || "{}"); } catch { return {}; } })() : {};
-  const _currCode = _user.currencyCode || "INR";
+const CustomerCartPage = ({ cart, subtotal, gst, total, activeDiscounts = [], currencyCode, onUpdateQty, onRemove, onBack, onProceed }) => {
+  const _currCode = currencyCode || "INR";
 
   // Item/category-level savings preview only — combo and storewide offers
   // are computed authoritatively at checkout (via evaluate-cart) and may

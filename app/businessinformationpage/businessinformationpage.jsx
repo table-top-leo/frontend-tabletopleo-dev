@@ -110,6 +110,8 @@ const EMPTY = {
   openingTime: "09:00 AM", closingTime: "10:00 PM",
   workingDays: [], timezone: "(GMT+05:30) Asia/Kolkata", description: "",
   hasTableService: false,
+  dineInEnabled: true,
+  takeawayEnabled: true,
 };
 
 const BusinessInformation = () => {
@@ -165,6 +167,8 @@ const BusinessInformation = () => {
         timezone:      b.timezone      || "(GMT+05:30) Asia/Kolkata",
         description:   b.businessDescription || "",
         hasTableService: Boolean(b.hasTableService),
+        dineInEnabled: b.dineInEnabled === undefined || b.dineInEnabled === null ? true : Boolean(b.dineInEnabled),
+        takeawayEnabled: b.takeawayEnabled === undefined || b.takeawayEnabled === null ? true : Boolean(b.takeawayEnabled),
       };
       setData(mapped);
       setDraft(mapped);
@@ -212,6 +216,9 @@ const BusinessInformation = () => {
     if (!draft.state.trim())         e.state         = "State is required.";
     if (!draft.country)              e.country       = "Country is required.";
     if (!draft.postalCode.trim())    e.postalCode    = "Postal code is required.";
+    if (!draft.dineInEnabled && !draft.takeawayEnabled) {
+      e.orderTypes = "Enable at least one order type — Dine In or Take Away.";
+    }
     return e;
   };
 
@@ -246,6 +253,8 @@ const BusinessInformation = () => {
         timezone:            draft.timezone,
         businessDescription: draft.description || null,
         hasTableService:     draft.hasTableService,
+        dineInEnabled:       draft.dineInEnabled,
+        takeawayEnabled:     draft.takeawayEnabled,
       };
       await updateBusinessInformation(adminId, payload);
       setData({ ...draft });
@@ -695,6 +704,47 @@ const BusinessInformation = () => {
                 >
                   <span style={{ position:"absolute", top:3, left: d.hasTableService ? 23 : 3, width:20, height:20, borderRadius:"50%", background:"#fff", transition:"left 0.15s" }} />
                 </button>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Order Types toggle ── */}
+          <div className="bi-col-full">
+            <div className="bi-field-group">
+              <label className="bi-label">Order Types Accepted <span className="bi-req">*</span></label>
+              <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"14px 16px", background: editing ? "#fff" : "#f9fafb", border:"1.5px solid #e4e4e7", borderRadius:10 }}>
+                  <div>
+                    <div style={{ fontSize:13, fontWeight:700, color:"#18181b" }}>🍽️ Dine In</div>
+                    <div style={{ fontSize:11.5, color:"#71717a", marginTop:3 }}>Customers can order to eat at your place.</div>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={!editing}
+                    onClick={() => handleFieldChange("dineInEnabled", !draft.dineInEnabled)}
+                    style={{ width:46, height:26, borderRadius:999, background: d.dineInEnabled ? "#16a34a" : "#d1d5db", position:"relative", border:"none", cursor: editing ? "pointer" : "default", flexShrink:0, opacity: editing ? 1 : 0.7 }}
+                  >
+                    <span style={{ position:"absolute", top:3, left: d.dineInEnabled ? 23 : 3, width:20, height:20, borderRadius:"50%", background:"#fff", transition:"left 0.15s" }} />
+                  </button>
+                </div>
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"14px 16px", background: editing ? "#fff" : "#f9fafb", border:"1.5px solid #e4e4e7", borderRadius:10 }}>
+                  <div>
+                    <div style={{ fontSize:13, fontWeight:700, color:"#18181b" }}>🥡 Take Away</div>
+                    <div style={{ fontSize:11.5, color:"#71717a", marginTop:3 }}>Customers can order for pickup / to go.</div>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={!editing}
+                    onClick={() => handleFieldChange("takeawayEnabled", !draft.takeawayEnabled)}
+                    style={{ width:46, height:26, borderRadius:999, background: d.takeawayEnabled ? "#16a34a" : "#d1d5db", position:"relative", border:"none", cursor: editing ? "pointer" : "default", flexShrink:0, opacity: editing ? 1 : 0.7 }}
+                  >
+                    <span style={{ position:"absolute", top:3, left: d.takeawayEnabled ? 23 : 3, width:20, height:20, borderRadius:"50%", background:"#fff", transition:"left 0.15s" }} />
+                  </button>
+                </div>
+                {errors.orderTypes && <span className="bi-field-err">⚠ {errors.orderTypes}</span>}
+                {!d.dineInEnabled && !d.takeawayEnabled && !errors.orderTypes && (
+                  <span style={{ fontSize:11.5, color:"#dc2626", fontWeight:600 }}>⚠ At least one order type should be enabled, or customers won't be able to order.</span>
+                )}
               </div>
             </div>
           </div>

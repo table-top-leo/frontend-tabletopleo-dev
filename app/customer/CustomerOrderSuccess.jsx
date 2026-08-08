@@ -12,8 +12,7 @@ const STATUS_LABEL = { PAID:"Paid", PAY_AT_COUNTER:"Pay at Counter (Pending)", P
 const STATUS_COLOR = { PAID:"#16a34a", PAY_AT_COUNTER:"#b45309", PENDING:"#f59e0b" };
  
 const CustomerOrderSuccess = ({ confirmedData, business, cart = [], onTrack, onHome, diningPhone = "", businessId = "" }) => {
-  const _user = (typeof window !== "undefined") ? (() => { try { return JSON.parse(localStorage.getItem("ttl_user") || "{}"); } catch { return {}; } })() : {};
-  const _currCode = _user.currencyCode || "INR";
+  const _currCode = business?.currencyCode || "INR";
  
   const invoiceRef         = useRef(null);
   const [menu, setMenu]    = useState(false);

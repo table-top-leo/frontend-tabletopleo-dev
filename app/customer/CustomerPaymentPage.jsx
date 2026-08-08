@@ -2,11 +2,6 @@
 
 import { getCurrencySymbol, formatCurrency } from "../utils/currencyHelper";
 
-function getStoredCurrCode() {
-  try { return JSON.parse(localStorage.getItem("ttl_user") || "{}")?.currencyCode || "INR"; }
-  catch { return "INR"; }
-}
-
 import { useState, useEffect } from "react";
 import { ArrowLeft, CreditCard, Copy, X, CheckCircle, AlertCircle } from "lucide-react";
 import QRCode from "react-qr-code";
@@ -165,6 +160,19 @@ const MobilePayModal = ({ businessId, orderId, total, currencyCode, businessName
   // Initiate payment on mount
   useEffect(() => {
     initiatePayment();
+  }, []);
+
+  // Load the Razorpay checkout SDK imperatively (once) instead of a raw
+  // <script> tag in JSX — React never executes script tags it renders on
+  // the client, so that pattern silently failed to (re)load the SDK and
+  // also threw a console warning. This guards against loading it twice.
+  useEffect(() => {
+    if (window.Razorpay || document.getElementById("razorpay-checkout-js")) return;
+    const script = document.createElement("script");
+    script.id = "razorpay-checkout-js";
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    document.body.appendChild(script);
   }, []);
 
   // Poll for payment status
@@ -542,7 +550,16 @@ const METHODS = [
 ];
 
 const CustomerPaymentPage = ({ total, business, diningInfo, onBack, onInitiatePayment, onConfirmPayment, payAtCounterAvailable }) => {
-  const _currCode = getStoredCurrCode();
+  const _currCode = business?.currencyCode || "INR";
+
+  // Which of the 4 online gateways to actually show — driven by the
+  // BUSINESS's country (never the customer's own phone/location), per
+  // `business.availablePaymentMethods` from the public menu API. If that
+  // field is missing (older cached business object), fall back to showing
+  // everything rather than accidentally hiding a working payment option.
+  const visibleMethods = business?.availablePaymentMethods
+    ? METHODS.filter(m => business.availablePaymentMethods.map(x => x.toLowerCase()).includes(m.id))
+    : METHODS;
 
   const [selectedMethod, setSelectedMethod] = useState(null);
   const [paymentData,    setPaymentData]    = useState(null);
@@ -659,7 +676,7 @@ const CustomerPaymentPage = ({ total, business, diningInfo, onBack, onInitiatePa
     const options = {
       key:         paymentData.razorpayKeyId,
       amount:      Math.round(total * 100),
-      currency:    "INR",
+      currency:    business?.currencyCode || "INR",
       name:        business?.businessName || "TableTop Leo",
       description: "Order Payment",
       order_id:    paymentData.razorpayOrderId,
@@ -775,7 +792,7 @@ const CustomerPaymentPage = ({ total, business, diningInfo, onBack, onInitiatePa
         <div className="cx-section" style={{ paddingTop:0 }}>
           <div style={{ fontSize:13, fontWeight:700, color:"var(--text-primary)", marginBottom:10 }}>Select Payment Method</div>
 
-          {METHODS.map(m => (
+          {visibleMethods.map(m => (
             <div key={m.id} style={s.methodCard(selectedMethod===m.id)} onClick={() => handleSelectMethod(m.id)}>
               <div style={s.radio(selectedMethod===m.id)}>
                 {selectedMethod===m.id && <div style={{ width:9, height:9, borderRadius:"50%", background:"var(--brand)" }}/>}
@@ -867,7 +884,6 @@ const CustomerPaymentPage = ({ total, business, diningInfo, onBack, onInitiatePa
                 {confirming ? "Processing..." : `Pay ${formatCurrency(total, _currCode)} via Razorpay →`}
               </button>
             </div>
-            <script src="https://checkout.razorpay.com/v1/checkout.js" async/>
           </div>
         )}
 

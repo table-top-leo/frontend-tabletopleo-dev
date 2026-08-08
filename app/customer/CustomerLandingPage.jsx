@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { MapPin, Star, Clock, Search, ChevronRight, ImageOff, Flame, X, Menu } from "lucide-react";
+import { formatCurrency } from "../utils/currencyHelper";
 
 // ── Cover images per business type (high quality Unsplash) ──
 const COVER_BY_TYPE = {
@@ -102,7 +103,7 @@ function fmt12h(t) {
   return `${h12}:${String(m).padStart(2,"0")} ${ampm}`;
 }
 
-const CustomerLandingPage = ({ business, categories, items, activeDiscounts = [], onStart, onViewOffers, onItemClick, onOpenMenu }) => {
+const CustomerLandingPage = ({ business, categories, items, activeDiscounts = [], currencyCode, onStart, onViewOffers, onItemClick, onOpenMenu }) => {
   const [search,         setSearch]         = useState("");
   const [activeCategory, setActiveCategory] = useState(null);
 
@@ -408,7 +409,7 @@ const CustomerLandingPage = ({ business, categories, items, activeDiscounts = []
                       {item.name}
                     </div>
                     <div className="lp-item-price" style={{ fontSize:11.5, fontWeight:800, color:"var(--brand)", marginTop:3 }}>
-                      ₹{item.price}
+                      {formatCurrency(item.price, currencyCode || business?.currencyCode)}
                     </div>
                   </div>
                 </div>

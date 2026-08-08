@@ -5,9 +5,8 @@ import { getCurrencySymbol, formatCurrency } from "../utils/currencyHelper";
 import { useState } from "react";
 import { X, Star, Plus, Minus, ShoppingCart } from "lucide-react";
 
-const CustomerProductPopup = ({ item, onClose, onAddToCart }) => {
-  const _user = (typeof window !== "undefined") ? (() => { try { return JSON.parse(localStorage.getItem("ttl_user") || "{}"); } catch { return {}; } })() : {};
-  const _currCode = _user.currencyCode || "INR";
+const CustomerProductPopup = ({ item, currencyCode, onClose, onAddToCart }) => {
+  const _currCode = currencyCode || "INR";
 
   const [qty, setQty] = useState(1);
 
@@ -51,9 +50,3 @@ const CustomerProductPopup = ({ item, onClose, onAddToCart }) => {
 };
 
 export default CustomerProductPopup;
-
-
-
-
-
-

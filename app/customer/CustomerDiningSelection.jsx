@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ArrowLeft, CheckCircle2, Info, X, Bell } from "lucide-react";
 
 const OPTIONS = [
@@ -7,9 +7,27 @@ const OPTIONS = [
   { id:"takeaway", emoji:"🥡", title:"Take Away", desc:"Pick up your order from the counter." },
 ];
 
-const CustomerDiningSelection = ({ diningInfo, onInfoChange, onBack, onContinue, hasTableService = false }) => {
+const CustomerDiningSelection = ({ diningInfo, onInfoChange, onBack, onContinue, hasTableService = false, dineInEnabled = true, takeawayEnabled = true }) => {
   const [errors, setErrors] = useState({});
   const [knowMoreOpen, setKnowMoreOpen] = useState(false);
+
+  // Only show order types this business actually accepts. If (unexpectedly)
+  // neither is enabled, fall back to showing both rather than presenting
+  // the customer with an empty screen and no way to order.
+  const visibleOptions = OPTIONS.filter(opt =>
+    (opt.id === "dine-in" && dineInEnabled) || (opt.id === "takeaway" && takeawayEnabled)
+  );
+  const options = visibleOptions.length > 0 ? visibleOptions : OPTIONS;
+
+  // If the merchant only accepts one order type, skip the manual choice
+  // entirely — auto-select it so the customer isn't asked to tap the only
+  // available card.
+  useEffect(() => {
+    if (options.length === 1 && diningInfo.type !== options[0].id) {
+      onInfoChange(p => ({ ...p, type: options[0].id }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [options.length]);
 
   const set = (field) => (e) => {
     onInfoChange(prev => ({ ...prev, [field]: e.target.value }));
@@ -85,7 +103,7 @@ const CustomerDiningSelection = ({ diningInfo, onInfoChange, onBack, onContinue,
         </div>
 
         <div style={{ display:"flex", gap:12, marginBottom:20 }}>
-          {OPTIONS.map(opt => (
+          {options.map(opt => (
             <div key={opt.id} onClick={() => { onInfoChange(p => ({ ...p, type:opt.id })); setErrors(p=>({...p,type:""})); }}
               style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:10, padding:"20px 14px", borderRadius:20,
                 border:`2.5px solid ${diningInfo.type===opt.id?"var(--brand)":"var(--border)"}`,

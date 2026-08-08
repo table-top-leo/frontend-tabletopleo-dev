@@ -86,7 +86,7 @@ const MenuCategory = () => {
   const user       = getUser();
   const adminId    = user?.adminId    || "";
   const businessId = user?.businessId || "";
-  const { currencyCode } = useCurrency();
+  const { currencyCode, currencyReady } = useCurrency();
 
   const [businessType,       setBusinessType]       = useState("");
   const [editingCatId,       setEditingCatId]       = useState(null);
@@ -792,7 +792,7 @@ const MenuCategory = () => {
                   <div className="mc-form-group mc-fg-half">
                     <label className="mc-label">Item Price <span className="mc-req">*</span></label>
                     <div className={`mc-input-icon-wrap ${formErrors.price ? "mc-err" : ""}`}>
-                      <span className="mc-input-icon mc-rupee">{getCurrencySymbol(currencyCode)}</span>
+                      <span className="mc-input-icon mc-rupee">{currencyReady ? getCurrencySymbol(currencyCode) : "…"}</span>
                       <input className="mc-input-inner" type="number" min="0" step="0.01" placeholder="0.00"
                         value={form.price} onChange={e => handleFieldChange("price", e.target.value)} />
                     </div>
@@ -871,7 +871,7 @@ const MenuCategory = () => {
                           </div>
                         </td>
                         <td className="mc-td mc-td-desc">{item.itemDescription || "—"}</td>
-                        <td className="mc-td mc-td-price">{formatCurrency(Number(item.itemPrice), currencyCode)}</td>
+                        <td className="mc-td mc-td-price">{currencyReady ? formatCurrency(Number(item.itemPrice), currencyCode) : "…"}</td>
                         <td className="mc-td">
                           <span className={`mc-status-badge ${item.productStatus === "ACTIVE" ? "mc-status-active" : "mc-status-inactive"}`}>
                             <span className="mc-status-dot" />{item.productStatus === "ACTIVE" ? "Active" : "Inactive"}

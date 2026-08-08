@@ -277,7 +277,7 @@ const CustomerWrapper = ({ businessId }) => {
         setOrderData(orderRes.data);
 
         const payRes = await customerOrderService.initiatePayment(
-          orderRes.data.orderId, "pay_at_counter", "INR"
+          orderRes.data.orderId, "pay_at_counter", business?.currencyCode || "INR"
         );
         if (!payRes.success) throw new Error(payRes.message);
         setPaymentData(payRes.data);
@@ -316,7 +316,12 @@ const CustomerWrapper = ({ businessId }) => {
         currentOrderId = orderRes.data.orderId;
       }
 
-      const currency = ["stripe", "paypal"].includes(gatewayName) ? "USD" : "INR";
+      // The business's own configured currency is authoritative — never
+      // guess it from which gateway was picked. A gateway like Stripe can
+      // charge in any currency the business is actually set up for; "guess
+      // USD for stripe/paypal" was silently wrong for every non-USD Stripe
+      // merchant (e.g. a Danish business charging in DKK via Stripe).
+      const currency = business?.currencyCode || "INR";
       const payRes = await customerOrderService.initiatePayment(currentOrderId, gatewayName, currency);
       if (!payRes.success) throw new Error(payRes.message);
       setPaymentData(payRes.data);
@@ -417,6 +422,7 @@ const CustomerWrapper = ({ businessId }) => {
           <CustomerLandingPage
             business={business} categories={categories} items={items}
             activeDiscounts={activeDiscounts}
+            currencyCode={business?.currencyCode}
             onStart={() => setScreen(SCREENS.MENU)}
             onViewOffers={() => { setOffersOrigin(SCREENS.LANDING); setScreen(SCREENS.OFFERS); }}
             onItemClick={setPopupItem}
@@ -428,6 +434,7 @@ const CustomerWrapper = ({ businessId }) => {
           <CustomerOffersPage
             business={business} businessId={businessId} items={items}
             activeDiscounts={activeDiscounts}
+            currencyCode={business?.currencyCode}
             onDiscountsRefetched={setActiveDiscounts}
             cart={cart} cartCount={cartCount} cartTotal={total}
             onAddItem={addItemDirect}
@@ -443,6 +450,7 @@ const CustomerWrapper = ({ businessId }) => {
           <CustomerMenuPage
             business={business} categories={categories} items={items}
             activeDiscounts={activeDiscounts}
+            currencyCode={business?.currencyCode}
             cart={cart} cartCount={cartCount} cartTotal={total}
             onItemClick={setPopupItem}
             onViewOffers={() => { setOffersOrigin(SCREENS.MENU); setScreen(SCREENS.OFFERS); }}
@@ -455,6 +463,7 @@ const CustomerWrapper = ({ businessId }) => {
           <CustomerCartPage
             cart={cart} subtotal={subtotal} gst={gst} total={total}
             activeDiscounts={activeDiscounts}
+            currencyCode={business?.currencyCode}
             onUpdateQty={updateQty} onRemove={removeFromCart}
             onBack={() => setScreen(SCREENS.MENU)}
             onProceed={() => setScreen(SCREENS.DINING)}
@@ -468,6 +477,8 @@ const CustomerWrapper = ({ businessId }) => {
             onBack={() => setScreen(SCREENS.CART)}
             onContinue={handleDiningContinue}
             hasTableService={!!business?.hasTableService}
+            dineInEnabled={business?.dineInEnabled !== false}
+            takeawayEnabled={business?.takeawayEnabled !== false}
           />
         )}
 
@@ -508,6 +519,7 @@ const CustomerWrapper = ({ businessId }) => {
           <CustomerMyOrdersPage
             businessId={businessId}
             phone={identity?.phone || diningInfo?.phone || ""}
+            currencyCode={business?.currencyCode}
             onBack={() => setScreen(screenBeforeMyOrders)}
             onBrowseMenu={() => setScreen(SCREENS.MENU)}
           />
@@ -526,6 +538,7 @@ const CustomerWrapper = ({ businessId }) => {
         {popupItem && (
           <CustomerProductPopup
             item={popupItem}
+            currencyCode={business?.currencyCode}
             onClose={() => setPopupItem(null)}
             onAddToCart={addToCart}
           />
