@@ -3,7 +3,7 @@
 import { getCurrencySymbol, formatCurrency } from "../utils/currencyHelper";
 
 import { useEffect, useRef, useState } from "react";
-import { CheckCircle2, Download, FileImage, FileText, Star } from "lucide-react";
+import { CheckCircle2, Download, FileImage, FileText, Star, Mail } from "lucide-react";
 import CustomerRatingPopup from "../customer/customerratingpopup";
 import CustomerEmailInvoicePopup from "../customer/emailcustomerbillpopup";
 
@@ -30,8 +30,14 @@ const CustomerOrderSuccess = ({ confirmedData, business, cart = [], onTrack, onH
   const now                = new Date();
   const dateStr            = `${now.toLocaleDateString("en-IN")} ${now.toLocaleTimeString("en-IN", { hour:"2-digit", minute:"2-digit" })}`;
  
-  const subtotal = cart.reduce((s, c) => s + (Number(c.price)||0) * (Number(c.qty)||1), 0);
-  const gst      = Math.max(0, Number(confirmedData?.grandTotal||0) - subtotal);
+  const subtotal = Number(confirmedData?.subtotal ?? cart.reduce((s, c) => s + (Number(c.price)||0) * (Number(c.qty)||1), 0));
+  // Real tax amount + label from the order itself — never back-computed
+  // from grandTotal-subtotal (that silently mixed in discounts) and never
+  // a hardcoded "GST (5%)".
+  const gst        = Number(confirmedData?.taxAmount || 0);
+  const taxLabel   = confirmedData?.taxSystem || null;
+  const hasTax     = gst > 0 && !!taxLabel;
+  const discountAmt = Number(confirmedData?.discountAmount || 0);
   const bName    = business?.businessName || confirmedData?.businessName || "TableTop Leo";
   const bPhone   = business?.businessPhone || "";
   const bAddr    = business?.businessAddress || "";
@@ -144,20 +150,47 @@ const CustomerOrderSuccess = ({ confirmedData, business, cart = [], onTrack, onH
         <button className="cta-btn" onClick={onTrack}>Track Order Live</button>
 
         {hasRated ? (
-          <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:6, padding:"10px 0 2px" }}>
-            <CheckCircle2 size={14} color="#16a34a" />
-            <span style={{ fontSize:13, fontWeight:700, color:"#16a34a" }}>Thanks for rating us!</span>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:14, padding:"10px 0 2px" }}>
+            <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+              <CheckCircle2 size={14} color="#16a34a" />
+              <span style={{ fontSize:13, fontWeight:700, color:"#16a34a" }}>Thanks for rating us!</span>
+            </div>
+            <span style={{ width:1, height:14, background:"var(--border)" }} />
+            <button
+              onClick={() => setShowEmailInvoice(true)}
+              style={{ display:"flex", alignItems:"center", gap:6, background:"none", border:"none", padding:0, cursor:"pointer" }}
+            >
+              <Mail size={13} color="var(--brand)" />
+              <span style={{ fontSize:13.5, fontWeight:700, color:"var(--brand)", textDecoration:"underline", textUnderlineOffset:3 }}>
+                Email
+              </span>
+            </button>
           </div>
         ) : (
-          <button
-            onClick={() => setShowRating(true)}
-            style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:6, background:"none", border:"none", padding:"10px 0 2px", cursor:"pointer" }}
-          >
-            <Star size={13} fill="#F2701D" color="#F2701D" />
-            <span style={{ fontSize:13.5, fontWeight:700, color:"var(--brand)", textDecoration:"underline", textUnderlineOffset:3 }}>
-              Rate us here
-            </span>
-          </button>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:14, padding:"10px 0 2px" }}>
+            <button
+              onClick={() => setShowRating(true)}
+              style={{ display:"flex", alignItems:"center", gap:6, background:"none", border:"none", padding:0, cursor:"pointer" }}
+            >
+              <Star size={13} fill="#F2701D" color="#F2701D" />
+              <span style={{ fontSize:13.5, fontWeight:700, color:"var(--brand)", textDecoration:"underline", textUnderlineOffset:3 }}>
+                Rate us here
+              </span>
+            </button>
+            <span style={{ width:1, height:14, background:"var(--border)" }} />
+            {/* Manual re-open — the popup also auto-shows once, but if the
+                customer closes it (✕) with the cancel icon, this is the
+                only way back in to still request an emailed invoice. */}
+            <button
+              onClick={() => setShowEmailInvoice(true)}
+              style={{ display:"flex", alignItems:"center", gap:6, background:"none", border:"none", padding:0, cursor:"pointer" }}
+            >
+              <Mail size={13} color="var(--brand)" />
+              <span style={{ fontSize:13.5, fontWeight:700, color:"var(--brand)", textDecoration:"underline", textUnderlineOffset:3 }}>
+                Email
+              </span>
+            </button>
+          </div>
         )}
 
         <button onClick={onHome} style={{ background:"none", border:"none", color:"var(--text-muted)", fontSize:13, fontWeight:600, padding:"6px 0", cursor:"pointer" }}>
@@ -269,10 +302,18 @@ const CustomerOrderSuccess = ({ confirmedData, business, cart = [], onTrack, onH
                 <span style={{ fontSize:11, color:"#555" }}>Subtotal</span>
                 <span style={{ fontSize:11, color:"#333" }}>{formatCurrency(subtotal.toFixed(2), _currCode)}</span>
               </div>
-              <div style={{ display:"flex", justifyContent:"space-between", padding:"5px 0", borderBottom:"1px solid #eee" }}>
-                <span style={{ fontSize:11, color:"#555" }}>GST (5%)</span>
-                <span style={{ fontSize:11, color:"#333" }}>{formatCurrency(gst.toFixed(2), _currCode)}</span>
-              </div>
+              {discountAmt > 0 && (
+                <div style={{ display:"flex", justifyContent:"space-between", padding:"5px 0", borderBottom:"1px solid #eee" }}>
+                  <span style={{ fontSize:11, color:"#16a34a" }}>Offer Discount</span>
+                  <span style={{ fontSize:11, color:"#16a34a" }}>- {formatCurrency(discountAmt.toFixed(2), _currCode)}</span>
+                </div>
+              )}
+              {hasTax && (
+                <div style={{ display:"flex", justifyContent:"space-between", padding:"5px 0", borderBottom:"1px solid #eee" }}>
+                  <span style={{ fontSize:11, color:"#555" }}>{taxLabel}</span>
+                  <span style={{ fontSize:11, color:"#333" }}>{formatCurrency(gst.toFixed(2), _currCode)}</span>
+                </div>
+              )}
               <div style={{ display:"flex", justifyContent:"space-between", padding:"8px 0", borderTop:"2px solid #111", marginTop:2 }}>
                 <span style={{ fontSize:13, fontWeight:800, color:"#111" }}>TOTAL</span>
                 <span style={{ fontSize:14, fontWeight:900, color:"#111" }}>{formatCurrency(Number(confirmedData?.grandTotal||0).toFixed(2), _currCode)}</span>

@@ -29,6 +29,7 @@ import { formatCurrency }       from '../utils/currencyHelper';
 import DashboardMainSetup from '../ApplicationMainLayout/dashboardsetup'
 import AdminBilling from '../adminbillingcomponent/AdminBilling'
 import InventoryPage from '../inventorypage/InventoryPage'
+import TaxBillingSetup from '../taxbillingcomponent/taxbillingsetup'
 
 
 
@@ -45,6 +46,7 @@ const MENU_ITEMS = [
       { id:'business-info', label:'Business Information', icon:Building2 },
       { id:'menu-category', label:'Menu & Category',      icon:UtensilsCrossed },
       { id:'payment-setup', label:'Payment Setup',        icon:Wallet },
+      { id:'tax-billing',   label:'Tax & Billing',        icon:FileText },
   ]},
   { id:'inventory', label:'Inventory', icon:Package },
   { id:'help-desk', label:'Help Desk', icon:HelpCircle },
@@ -187,7 +189,7 @@ const AdminDashboardNew = () => {
     if (activeMenu === 'notifications') {
       return <div data-afd-theme={dark?'dark':'light'}><NotificationTableTopLeo dark={dark}/></div>;
     }
-    const PAGE_MAP = { 'menu-category':MenuCategory, 'business-info':BusinessInformation, 'settings':SettingsPage, 'help-desk':HelpDeskPage, 'payment-setup':PaymentSetup,'home':DashboardMainSetup,'payments':AdminPayments,'billing':AdminBilling,'inventory':InventoryPage,'discount-management':AdminDiscountManagement };
+    const PAGE_MAP = { 'menu-category':MenuCategory, 'business-info':BusinessInformation, 'settings':SettingsPage, 'help-desk':HelpDeskPage, 'payment-setup':PaymentSetup,'home':DashboardMainSetup,'payments':AdminPayments,'billing':AdminBilling,'inventory':InventoryPage,'discount-management':AdminDiscountManagement,'tax-billing':TaxBillingSetup };
     const ActivePage = PAGE_MAP[activeMenu];
     if (ActivePage) return <div data-afd-theme={dark?'dark':'light'}><ActivePage/></div>;
     if (activeMenu === 'admin-setup') return null;

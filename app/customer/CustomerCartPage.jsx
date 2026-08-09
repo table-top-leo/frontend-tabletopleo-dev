@@ -5,12 +5,8 @@ import { getItemDiscount, computeDiscountedPrice } from "../utils/discountHelper
 
 import { ArrowLeft, Trash2, Plus, Minus, ShoppingBag, Tag } from "lucide-react";
 
-const CustomerCartPage = ({ cart, subtotal, gst, total, activeDiscounts = [], currencyCode, onUpdateQty, onRemove, onBack, onProceed }) => {
+const CustomerCartPage = ({ cart, subtotal, gst, total, activeDiscounts = [], currencyCode, taxEnabled = false, taxLabel, onUpdateQty, onRemove, onBack, onProceed }) => {
   const _currCode = currencyCode || "INR";
-
-  // Item/category-level savings preview only — combo and storewide offers
-  // are computed authoritatively at checkout (via evaluate-cart) and may
-  // add further savings beyond what's shown here.
   const cartWithDiscounts = cart.map(item => {
     const discount = getItemDiscount(item, activeDiscounts);
     const discountedPrice = discount ? computeDiscountedPrice(item.price, discount) : item.price;
@@ -101,10 +97,12 @@ const CustomerCartPage = ({ cart, subtotal, gst, total, activeDiscounts = [], cu
                 <span className="totals-value" style={{ color: "#dc2626", fontWeight: 700 }}>−{formatCurrency(itemLevelSavings, _currCode)}</span>
               </div>
             )}
-            <div className="totals-row">
-              <span className="totals-label">GST (5%)</span>
-              <span className="totals-value">{formatCurrency(gst, _currCode)}</span>
-            </div>
+            {taxEnabled && (
+              <div className="totals-row">
+                <span className="totals-label">{taxLabel || "Tax"}</span>
+                <span className="totals-value">{formatCurrency(gst, _currCode)}</span>
+              </div>
+            )}
             <div className="totals-row total">
               <span>Total</span>
               <span style={{ color: "var(--brand)" }}>{formatCurrency(subtotal - itemLevelSavings + gst, _currCode)}</span>

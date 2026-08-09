@@ -69,7 +69,17 @@ const CustomerWrapper = ({ businessId }) => {
     return count;
   }, [cart]);
   const subtotal  = cart.reduce((s, c) => s + c.price * c.qty, 0);
-  const gst       = Math.round(subtotal * 0.05);
+  // Preview only — mirrors the business's real Tax & Billing configuration
+  // (never a hardcoded rate), so the cart shows an honest estimate before
+  // checkout. The backend recalculates this authoritatively at order
+  // placement regardless of what's shown here — this is UX only, never
+  // the source of truth for what the customer actually gets charged.
+  const taxEnabled = !!business?.taxEnabled;
+  const taxRatePct = taxEnabled ? Number(business?.taxRate || 0) : 0;
+  const gst = !taxEnabled ? 0
+    : business?.taxInclusive
+      ? Math.round(subtotal - subtotal / (1 + taxRatePct / 100))
+      : Math.round(subtotal * taxRatePct / 100);
   const total     = subtotal + gst;
 
   // Real-time offers: the moment the merchant activates/edits/removes a
@@ -464,6 +474,8 @@ const CustomerWrapper = ({ businessId }) => {
             cart={cart} subtotal={subtotal} gst={gst} total={total}
             activeDiscounts={activeDiscounts}
             currencyCode={business?.currencyCode}
+            taxEnabled={taxEnabled}
+            taxLabel={business?.taxSystem}
             onUpdateQty={updateQty} onRemove={removeFromCart}
             onBack={() => setScreen(SCREENS.MENU)}
             onProceed={() => setScreen(SCREENS.DINING)}
