@@ -1,0 +1,246 @@
+.ttlKioskFalconShell {
+  /* ---- palette (ported 1:1 from tabesto-kiosk/tailwind.config.js) ---- */
+  --kiosk-ink: #0d0c0b;
+  --kiosk-ink-2: #171512;
+  --kiosk-ember: #e0973f;
+  --kiosk-ember-deep: #b5652a;
+  --kiosk-ember-light: #f4c988;
+  --kiosk-cream: #faf6ee;
+  --kiosk-sand: #f0e9d8;
+  --kiosk-charcoal: #26221d;
+  --kiosk-muted: #95897a;
+  --kiosk-moss: #5c7a52;
+  --kiosk-moss-2: #3f5c39;
+  --kiosk-claret: #a13d3d;
+  --kiosk-shadow-soft: 0 8px 24px -8px rgba(13, 12, 11, 0.18);
+  --kiosk-shadow-lift: 0 16px 40px -12px rgba(13, 12, 11, 0.35);
+  --kiosk-font-display: "Fredoka", "Poppins", "Segoe UI", sans-serif;
+  --kiosk-font-sans: "Inter", "Poppins", "Segoe UI", system-ui, sans-serif;
+
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  background: #f6f7f6;
+  overflow: hidden;
+  font-family: var(--kiosk-font-sans);
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  box-sizing: border-box;
+  z-index: 0;
+}
+.ttlKioskFalconShell *,
+.ttlKioskFalconShell *::before,
+.ttlKioskFalconShell *::after {
+  box-sizing: border-box;
+}
+.ttlKioskFalconShell button {
+  font-family: inherit;
+  cursor: pointer;
+}
+.ttlKioskFalconShell input,
+.ttlKioskFalconShell textarea {
+  font-family: inherit;
+}
+
+.ttlKioskNoScroll {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.ttlKioskNoScroll::-webkit-scrollbar { display: none; }
+
+/* ---- generic screen frame every kiosk stage sits inside ---- */
+.ttlKioskScreenDark {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: var(--kiosk-ink);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.ttlKioskScreenLight {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: var(--kiosk-sand);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.ttlKioskGlowTop {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 0%, rgba(224, 151, 63, 0.16), transparent 55%);
+  pointer-events: none;
+}
+
+/* ---- floating bubbles (WelcomeScreen, OrderType, Processing, Confirmed) ---- */
+@keyframes ttlKioskFloatUp {
+  0% { transform: translateY(0) translateX(0) scale(1); opacity: 0; }
+  8% { opacity: var(--bubble-opacity, 0.5); }
+  85% { opacity: var(--bubble-opacity, 0.5); }
+  100% { transform: translateY(-620px) translateX(var(--bubble-drift, 20px)) scale(1.2); opacity: 0; }
+}
+.ttlKioskEmberBubble {
+  position: absolute;
+  bottom: -60px;
+  border-radius: 9999px;
+  background: radial-gradient(circle at 32% 28%, rgba(244, 201, 136, 0.55), rgba(244, 201, 136, 0.04) 70%);
+  animation-name: ttlKioskFloatUp;
+  animation-timing-function: ease-in;
+  animation-iteration-count: infinite;
+  pointer-events: none;
+}
+
+/* ---- confetti (order confirmed) ---- */
+@keyframes ttlKioskConfettiFall {
+  0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(420px) rotate(540deg); opacity: 0; }
+}
+.ttlKioskConfettiPiece {
+  position: absolute;
+  top: 0;
+  width: 8px;
+  height: 14px;
+  animation-name: ttlKioskConfettiFall;
+  animation-timing-function: cubic-bezier(0.35, 0, 0.65, 1);
+  animation-iteration-count: 1;
+  pointer-events: none;
+}
+
+@keyframes ttlKioskPopIn {
+  0% { transform: scale(0.85); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.ttlKioskPopIn { animation: ttlKioskPopIn 0.22s ease-out; }
+
+@keyframes ttlKioskSpin { to { transform: rotate(360deg); } }
+@keyframes ttlKioskPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+@keyframes ttlKioskFadeSlide { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes ttlKioskPing {
+  75%, 100% { transform: scale(2); opacity: 0; }
+}
+.ttlKioskSpinner {
+  border-radius: 50%;
+  border: 3px solid rgba(224, 151, 63, 0.18);
+  border-top-color: var(--kiosk-ember);
+  animation: ttlKioskSpin 0.8s linear infinite;
+}
+
+/* ---- Logo / lion mark ---- */
+.ttlKioskLeoMark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, var(--kiosk-ember), var(--kiosk-ember-deep));
+  color: var(--kiosk-ink);
+  flex-shrink: 0;
+  box-shadow: 0 0 0 2px rgba(244, 201, 136, 0.4);
+}
+.ttlKioskLogoRow { display: flex; align-items: center; gap: 10px; }
+.ttlKioskLogoRow.ttlKioskLogoStacked { flex-direction: column; text-align: center; }
+.ttlKioskLogoText { font-family: var(--kiosk-font-display); font-weight: 600; letter-spacing: 0.02em; margin: 0; }
+.ttlKioskLogoText.ttlKioskLogoLight { color: var(--kiosk-cream); }
+.ttlKioskLogoText.ttlKioskLogoDark { color: var(--kiosk-charcoal); }
+.ttlKioskLogoSub.ttlKioskLogoLight { color: var(--kiosk-ember-light); }
+.ttlKioskLogoSub.ttlKioskLogoDark { color: var(--kiosk-ember-deep); }
+
+/* ---- shared pill buttons ---- */
+.ttlKioskPillBtn {
+  width: 100%;
+  border-radius: 9999px;
+  padding: 14px;
+  font-size: 14px;
+  font-weight: 700;
+  border: none;
+  transition: background 0.15s, opacity 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.ttlKioskPillBtnPrimary { background: var(--kiosk-ember); color: var(--kiosk-ink); }
+.ttlKioskPillBtnPrimary:active:not(:disabled) { background: var(--kiosk-ember-deep); }
+.ttlKioskPillBtnPrimary:disabled { background: rgba(38, 34, 29, 0.1); color: rgba(38, 34, 29, 0.3); cursor: not-allowed; }
+.ttlKioskPillBtnGhost {
+  background: transparent;
+  border: 1.5px solid rgba(255, 255, 255, 0.15);
+  color: rgba(250, 246, 238, 0.75);
+}
+.ttlKioskBackLink {
+  background: none;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.ttlKioskBackLink.ttlKioskLogoLight { color: rgba(250, 246, 238, 0.5); }
+.ttlKioskBackLink.ttlKioskLogoDark { color: rgba(38, 34, 29, 0.5); }
+
+/* ---- top bars ---- */
+.ttlKioskTopbarLight {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: var(--kiosk-cream);
+  border-bottom: 1px solid rgba(38, 34, 29, 0.08);
+  flex-shrink: 0;
+}
+.ttlKioskTopbarTranslucent {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: rgba(250, 246, 238, 0.95);
+  backdrop-filter: blur(6px);
+  border-bottom: 1px solid rgba(38, 34, 29, 0.08);
+  flex-shrink: 0;
+}
+
+/* ---- error / loading states ---- */
+.ttlKioskCenterState {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 24px;
+  text-align: center;
+}
+.ttlKioskErrorBanner {
+  margin: 0 16px;
+  background: rgba(161, 61, 61, 0.08);
+  border: 1px solid rgba(161, 61, 61, 0.3);
+  border-radius: 12px;
+  padding: 10px 14px;
+  color: var(--kiosk-claret);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+/* ---- idle-timeout overlay ---- */
+.ttlKioskIdleOverlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(13, 12, 11, 0.72);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+}
+.ttlKioskIdleCard {
+  background: var(--kiosk-cream);
+  border-radius: 20px;
+  padding: 28px 24px;
+  width: 100%;
+  max-width: 300px;
+  text-align: center;
+  box-shadow: var(--kiosk-shadow-lift);
+}

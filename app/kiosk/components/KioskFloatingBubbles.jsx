@@ -1,6 +1,7 @@
+"use client";
 import React, { useMemo } from "react";
 
-export default function FloatingBubbles({ count = 14 }) {
+export default function KioskFloatingBubbles({ count = 14 }) {
   const bubbles = useMemo(
     () =>
       Array.from({ length: count }, (_, i) => ({
@@ -16,11 +17,11 @@ export default function FloatingBubbles({ count = 14 }) {
   );
 
   return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+    <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none" }}>
       {bubbles.map((b) => (
         <span
           key={b.id}
-          className="bubble"
+          className="ttlKioskEmberBubble"
           style={{
             left: `${b.left}%`,
             width: b.size,
