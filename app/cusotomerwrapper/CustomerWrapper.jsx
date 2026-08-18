@@ -1,9 +1,11 @@
 "use client";
 import { useState, useEffect, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import "../designcustomerflow/customer-common.css";
 import "../designcustomerflow/customer-layout.css";
 import "../designcustomerflow/customer-components.css";
 
+import { CustomerLanguageProvider } from "../context/CustomerLanguageProvider";
 import CustomerSplashScreen     from "../customer/splashscreenpage";
 import CustomerLandingPage      from "../customer/CustomerLandingPage";
 import CustomerOffersPage       from "../customer/CustomerOffersPage";
@@ -32,7 +34,8 @@ const SCREENS = {
 // one restaurant leaking into another's sidebar.
 const identityKey = (businessId) => `ttl_customer_identity_${businessId}`;
 
-const CustomerWrapper = ({ businessId }) => {
+const CustomerWrapperInner = ({ businessId }) => {
+  const { t } = useTranslation();
   const [screen,        setScreen]        = useState(SCREENS.SPLASH);
   const [offersOrigin,  setOffersOrigin]   = useState(SCREENS.LANDING);
   const [business,      setBusiness]      = useState(null);
@@ -400,7 +403,7 @@ const CustomerWrapper = ({ businessId }) => {
     <div className="cw-root">
       <div className="cw-phone" style={{ alignItems:"center", justifyContent:"center", gap:16 }}>
         <div style={{ width:44, height:44, border:"3px solid var(--brand-muted)", borderTop:"3px solid var(--brand)", borderRadius:"50%", animation:"spin 0.8s linear infinite" }} />
-        <p style={{ color:"var(--text-muted)", fontSize:14, margin:0 }}>Loading menu...</p>
+        <p style={{ color:"var(--text-muted)", fontSize:14, margin:0 }}>{t("landing.loadingMenu")}</p>
         <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       </div>
     </div>
@@ -410,9 +413,9 @@ const CustomerWrapper = ({ businessId }) => {
     <div className="cw-root">
       <div className="cw-phone" style={{ alignItems:"center", justifyContent:"center", gap:12, padding:24, textAlign:"center" }}>
         <div style={{ fontSize:48 }}>😕</div>
-        <p style={{ color:"var(--text-primary)", fontSize:16, fontWeight:700, margin:0 }}>Menu Unavailable</p>
+        <p style={{ color:"var(--text-primary)", fontSize:16, fontWeight:700, margin:0 }}>{t("landing.menuUnavailable")}</p>
         <p style={{ color:"var(--text-muted)", fontSize:13, margin:0 }}>{error}</p>
-        <button className="cta-btn" style={{ width:"auto", padding:"12px 28px" }} onClick={loadMenu}>Try Again</button>
+        <button className="cta-btn" style={{ width:"auto", padding:"12px 28px" }} onClick={loadMenu}>{t("common.tryAgain")}</button>
       </div>
     </div>
   );
@@ -560,4 +563,10 @@ const CustomerWrapper = ({ businessId }) => {
   );
 };
 
-export default CustomerWrapper;
+export default function CustomerWrapper({ businessId }) {
+  return (
+    <CustomerLanguageProvider businessId={businessId}>
+      <CustomerWrapperInner businessId={businessId} />
+    </CustomerLanguageProvider>
+  );
+}

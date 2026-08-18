@@ -3,60 +3,27 @@ import { useState, useEffect, useRef } from "react";
 import { ArrowLeft, CheckCircle2, Phone, HelpCircle, Clock } from "lucide-react";
 import customerOrderService from "../services/customerOrderService";
 import useWebSocket from "../hooks/useWebSocket";
+import { useCustomerLanguage } from "../context/CustomerLanguageProvider";
 
 const STATUS_TIMELINE = ["PLACED","ACCEPTED","PREPARING","READY","COMPLETED"];
 
-const STATUS_CONFIG = {
-  PLACED: {
-    label:    "Order Placed",
-    emoji:    "📋",
-    message:  "Your order has been received.",
-    color:    "#635bff",
-    bg:       "rgba(99,91,255,0.12)",
-  },
-  ACCEPTED: {
-    label:    "Order Accepted",
-    emoji:    "✅",
-    message:  "Your order has been accepted by the restaurant.",
-    color:    "#0ea5e9",
-    bg:       "rgba(14,165,233,0.12)",
-  },
-  PREPARING: {
-    label:    "Preparing",
-    emoji:    "👨‍🍳",
-    message:  "Our chef is now preparing your order.",
-    color:    "#f59e0b",
-    bg:       "rgba(245,158,11,0.12)",
-  },
-  READY: {
-    label:    "Ready for Pickup",
-    emoji:    "🍽️",
-    message:  "Your order is ready! Please pick it up.",
-    color:    "#f97316",
-    bg:       "rgba(249,115,22,0.12)",
-  },
-  COMPLETED: {
-    label:    "Completed",
-    emoji:    "🎉",
-    message:  "Thank you for ordering with us. Enjoy your meal!",
-    color:    "#16a34a",
-    bg:       "rgba(22,163,74,0.12)",
-  },
-  CANCELLED: {
-    label:    "Cancelled",
-    emoji:    "❌",
-    message:  "Your order has been cancelled.",
-    color:    "#ef4444",
-    bg:       "rgba(239,68,68,0.12)",
-  },
-};
+function useStatusConfig(t) {
+  return {
+    PLACED:    { label: t("tracking.placedLabel"), emoji: "📋", message: t("tracking.placedMsg"), color: "#635bff", bg: "rgba(99,91,255,0.12)" },
+    ACCEPTED:  { label: t("tracking.acceptedLabel"), emoji: "✅", message: t("tracking.acceptedMsg"), color: "#0ea5e9", bg: "rgba(14,165,233,0.12)" },
+    PREPARING: { label: t("tracking.preparingLabel"), emoji: "👨‍🍳", message: t("tracking.preparingMsg"), color: "#f59e0b", bg: "rgba(245,158,11,0.12)" },
+    READY:     { label: t("tracking.readyLabel"), emoji: "🍽️", message: t("tracking.readyMsg"), color: "#f97316", bg: "rgba(249,115,22,0.12)" },
+    COMPLETED: { label: t("tracking.completedLabel"), emoji: "🎉", message: t("tracking.completedMsg"), color: "#16a34a", bg: "rgba(22,163,74,0.12)" },
+    CANCELLED: { label: t("tracking.cancelledLabel"), emoji: "❌", message: t("tracking.cancelledMsg"), color: "#ef4444", bg: "rgba(239,68,68,0.12)" },
+  };
+}
 
 // ── In-App Toast Notification ──────────────────────────────────
-const StatusToast = ({ event, onDismiss }) => {
-  const cfg = STATUS_CONFIG[event?.orderStatus] || STATUS_CONFIG.PLACED;
+const StatusToast = ({ event, onDismiss, statusConfig, t }) => {
+  const cfg = statusConfig[event?.orderStatus] || statusConfig.PLACED;
   useEffect(() => {
-    const t = setTimeout(onDismiss, 4000);
-    return () => clearTimeout(t);
+    const timer = setTimeout(onDismiss, 4000);
+    return () => clearTimeout(timer);
   }, []);
   return (
     <div style={{
@@ -72,7 +39,7 @@ const StatusToast = ({ event, onDismiss }) => {
       <span style={{ fontSize:22, flexShrink:0 }}>{cfg.emoji}</span>
       <div style={{ flex:1, minWidth:0 }}>
         <div style={{ fontSize:12, fontWeight:700, color: cfg.color, marginBottom:2 }}>
-          🔔 Status Updated
+          🔔 {t("tracking.statusUpdated")}
         </div>
         <div style={{ fontSize:12.5, color:"#e2e8f0", lineHeight:1.4 }}>
           {event?.statusMessage || cfg.message}
@@ -87,11 +54,11 @@ const StatusToast = ({ event, onDismiss }) => {
 };
 
 // ── Timeline Step ──────────────────────────────────────────────
-const TimelineStep = ({ step, idx, currentIdx, isNew }) => {
+const TimelineStep = ({ step, idx, currentIdx, isNew, statusConfig, t }) => {
   const done    = idx <= currentIdx;
   const active  = idx === currentIdx;
   const pending = idx > currentIdx;
-  const cfg     = STATUS_CONFIG[step] || STATUS_CONFIG.PLACED;
+  const cfg     = statusConfig[step] || statusConfig.PLACED;
 
   return (
     <div style={{ display:"flex", gap:16, position:"relative" }}>
@@ -146,7 +113,7 @@ const TimelineStep = ({ step, idx, currentIdx, isNew }) => {
               width:7, height:7, borderRadius:"50%", background:cfg.color,
               animation:"pulseDot 1.4s ease infinite",
             }}/>
-            <span style={{ fontSize:11, fontWeight:600, color:cfg.color }}>In Progress</span>
+            <span style={{ fontSize:11, fontWeight:600, color:cfg.color }}>{t("tracking.inProgress")}</span>
           </div>
         )}
       </div>
@@ -156,6 +123,8 @@ const TimelineStep = ({ step, idx, currentIdx, isNew }) => {
 
 // ── MAIN COMPONENT ─────────────────────────────────────────────
 const CustomerLiveTracking = ({ orderId, orderNumber, business, onBack }) => {
+  const { t } = useCustomerLanguage();
+  const STATUS_CONFIG = useStatusConfig(t);
   const [statusData,  setStatusData]  = useState(null);
   const [toast,       setToast]       = useState(null);
   const [newStep,     setNewStep]     = useState(null);
@@ -214,12 +183,12 @@ const CustomerLiveTracking = ({ orderId, orderNumber, business, onBack }) => {
       `}</style>
 
       {/* Toast notification */}
-      {toast && <StatusToast event={toast} onDismiss={() => setToast(null)} />}
+      {toast && <StatusToast event={toast} onDismiss={() => setToast(null)} statusConfig={STATUS_CONFIG} t={t} />}
 
       {/* Topbar */}
       <div className="cx-topbar">
         <button className="back-btn cx-topbar-action" onClick={onBack}><ArrowLeft size={20}/></button>
-        <span className="cx-topbar-title">Track Order</span>
+        <span className="cx-topbar-title">{t("tracking.trackOrderTitle")}</span>
         <div style={{ width:32 }}/>
       </div>
 
@@ -235,7 +204,7 @@ const CustomerLiveTracking = ({ orderId, orderNumber, business, onBack }) => {
         }}>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8 }}>
             <div>
-              <div style={{ fontSize:11, fontWeight:600, color:"var(--text-muted)", marginBottom:4 }}>Order</div>
+              <div style={{ fontSize:11, fontWeight:600, color:"var(--text-muted)", marginBottom:4 }}>{t("tracking.orderLabel")}</div>
               <div style={{ fontSize:18, fontWeight:900, color:"var(--text-primary)" }}>
                 {orderNumber || orderId}
               </div>
@@ -257,13 +226,13 @@ const CustomerLiveTracking = ({ orderId, orderNumber, business, onBack }) => {
             <div style={{ display:"flex", alignItems:"center", gap:6, marginTop:10 }}>
               <Clock size={13} color="var(--text-muted)"/>
               <span style={{ fontSize:12, color:"var(--text-muted)" }}>
-                Estimated: <strong style={{ color:"var(--text-primary)" }}>
-                  {statusData?.estimatedMinutes || 20} mins
+                {t("tracking.estimatedLabel")} <strong style={{ color:"var(--text-primary)" }}>
+                  {statusData?.estimatedMinutes || 20} {t("tracking.minsLabel")}
                 </strong>
               </span>
               <div style={{ marginLeft:"auto", display:"flex", alignItems:"center", gap:5 }}>
                 <div style={{ width:6,height:6,borderRadius:"50%",background:cfg.color,animation:"pulseDot 1.4s ease infinite" }}/>
-                <span style={{ fontSize:11, color:cfg.color, fontWeight:600 }}>Live</span>
+                <span style={{ fontSize:11, color:cfg.color, fontWeight:600 }}>{t("tracking.liveLabel")}</span>
               </div>
             </div>
           )}
@@ -272,7 +241,7 @@ const CustomerLiveTracking = ({ orderId, orderNumber, business, onBack }) => {
         {/* Timeline */}
         <div style={{ padding:"8px 20px 4px" }}>
           <div style={{ fontSize:11, fontWeight:700, color:"var(--text-muted)", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:16 }}>
-            Order Progress
+            {t("tracking.orderProgress")}
           </div>
           {isCancelled ? (
             <div style={{
@@ -281,9 +250,9 @@ const CustomerLiveTracking = ({ orderId, orderNumber, business, onBack }) => {
               textAlign:"center",
             }}>
               <div style={{ fontSize:36, marginBottom:10 }}>❌</div>
-              <div style={{ fontSize:15, fontWeight:700, color:"#ef4444" }}>Order Cancelled</div>
+              <div style={{ fontSize:15, fontWeight:700, color:"#ef4444" }}>{t("tracking.orderCancelledTitle")}</div>
               <div style={{ fontSize:12, color:"var(--text-muted)", marginTop:6 }}>
-                This order has been cancelled. Please contact the restaurant if you have questions.
+                {t("tracking.orderCancelledDesc")}
               </div>
             </div>
           ) : (
@@ -294,6 +263,8 @@ const CustomerLiveTracking = ({ orderId, orderNumber, business, onBack }) => {
                 idx={idx}
                 currentIdx={currentIdx}
                 isNew={newStep === step}
+                statusConfig={STATUS_CONFIG}
+                t={t}
               />
             ))
           )}
@@ -302,8 +273,8 @@ const CustomerLiveTracking = ({ orderId, orderNumber, business, onBack }) => {
         {/* Help section */}
         <div style={{ padding:"4px 16px 0" }}>
           {[
-            { emoji:"📞", title:"Call Restaurant", sub: business?.businessPhone || "Contact for help" },
-            { emoji:"❓", title:"Need Help?",       sub: "Contact our support team" },
+            { emoji:"📞", title:t("tracking.callRestaurant"), sub: business?.businessPhone || t("tracking.contactForHelp") },
+            { emoji:"❓", title:t("tracking.needHelp"),       sub: t("tracking.contactSupportTeam") },
           ].map(h => (
             <div key={h.title} style={{
               display:"flex", alignItems:"center", gap:12,

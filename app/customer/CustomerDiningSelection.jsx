@@ -1,13 +1,14 @@
 "use client";
 import { useState, useEffect } from "react";
 import { ArrowLeft, CheckCircle2, Info, X, Bell } from "lucide-react";
-
-const OPTIONS = [
-  { id:"dine-in",  emoji:"🍽️", title:"Dine In",   desc:"Sit down & enjoy inside the restaurant." },
-  { id:"takeaway", emoji:"🥡", title:"Take Away", desc:"Pick up your order from the counter." },
-];
+import { useCustomerLanguage } from "../context/CustomerLanguageProvider";
 
 const CustomerDiningSelection = ({ diningInfo, onInfoChange, onBack, onContinue, hasTableService = false, dineInEnabled = true, takeawayEnabled = true }) => {
+  const { t } = useCustomerLanguage();
+  const OPTIONS = [
+    { id:"dine-in",  emoji:"🍽️", title:t("dining.dineIn"),   desc:t("dining.dineInDesc") },
+    { id:"takeaway", emoji:"🥡", title:t("dining.takeAway"), desc:t("dining.takeAwayDesc") },
+  ];
   const [errors, setErrors] = useState({});
   const [knowMoreOpen, setKnowMoreOpen] = useState(false);
 
@@ -46,20 +47,20 @@ const CustomerDiningSelection = ({ diningInfo, onInfoChange, onBack, onContinue,
 
   const validate = () => {
     const errs = {};
-    if (!diningInfo.type) errs.type = "Please select an order type.";
+    if (!diningInfo.type) errs.type = t("errors.pleaseSelectOrderType");
 
     // Phone: required for Take Away, optional for Dine In — but whenever
     // it's provided, it must be a valid 10-digit number, no more, no less.
     const phone = (diningInfo.phone || "").trim();
     if (diningInfo.type === "takeaway") {
-      if (!phone) errs.phone = "Phone number is required for Take Away.";
-      else if (!/^\d{10}$/.test(phone)) errs.phone = "Enter a valid 10-digit phone number.";
+      if (!phone) errs.phone = t("errors.phoneRequiredTakeaway");
+      else if (!/^\d{10}$/.test(phone)) errs.phone = t("errors.invalidPhone");
     } else if (phone && !/^\d{10}$/.test(phone)) {
-      errs.phone = "Enter a valid 10-digit phone number.";
+      errs.phone = t("errors.invalidPhone");
     }
 
     if (diningInfo.type === "takeaway") {
-      if (!diningInfo.name.trim())  errs.name  = "Name is required for Take Away.";
+      if (!diningInfo.name.trim())  errs.name  = t("errors.nameRequiredTakeaway");
     }
     return errs;
   };
@@ -92,14 +93,14 @@ const CustomerDiningSelection = ({ diningInfo, onInfoChange, onBack, onContinue,
     <div className="cw-screen">
       <div className="cx-topbar">
         <button className="back-btn cx-topbar-action" onClick={onBack}><ArrowLeft size={20}/></button>
-        <span className="cx-topbar-title">Order Type</span>
+        <span className="cx-topbar-title">{t("dining.title")}</span>
         <div style={{ width:32 }}/>
       </div>
 
       <div style={{ flex:1, padding:"18px 16px", overflowY:"auto" }}>
         <div style={{ textAlign:"center", marginBottom:20 }}>
-          <div style={{ fontSize:15, fontWeight:700, color:"var(--text-primary)" }}>How would you like your order?</div>
-          <div style={{ fontSize:13, color:"var(--text-muted)", marginTop:4 }}>Select your preference to continue</div>
+          <div style={{ fontSize:15, fontWeight:700, color:"var(--text-primary)" }}>{t("dining.howWouldYouLikeOrder")}</div>
+          <div style={{ fontSize:13, color:"var(--text-muted)", marginTop:4 }}>{t("dining.selectPreference")}</div>
         </div>
 
         <div style={{ display:"flex", gap:12, marginBottom:20 }}>
@@ -124,35 +125,35 @@ const CustomerDiningSelection = ({ diningInfo, onInfoChange, onBack, onContinue,
           <div style={{ display:"flex", flexDirection:"column", gap:12, animation:"fadeIn 0.2s ease" }}>
             {hasTableService ? (
               <div>
-                {label("Table Number")}
-                <input style={inputStyle(false)} placeholder="e.g. Table 5" value={diningInfo.table} onChange={set("table")} />
+                {label(t("dining.tableNumber"))}
+                <input style={inputStyle(false)} placeholder={t("dining.tableNumberPlaceholder")} value={diningInfo.table} onChange={set("table")} />
               </div>
             ) : (
               <div style={{ display:"flex", alignItems:"flex-start", gap:10, padding:"11px 13px", background:"var(--surface-2)", border:"1px solid var(--border)", borderRadius:"var(--radius-md)" }}>
                 <Bell size={16} color="var(--brand)" style={{ marginTop:1, flexShrink:0 }} />
                 <div style={{ flex:1 }}>
-                  <div style={{ fontSize:12.5, fontWeight:700, color:"var(--text-primary)" }}>No table numbers here</div>
+                  <div style={{ fontSize:12.5, fontWeight:700, color:"var(--text-primary)" }}>{t("dining.noTableHeading")}</div>
                   <div style={{ fontSize:11.5, color:"var(--text-muted)", marginTop:2, lineHeight:1.5 }}>
-                    We'll call out your name or order number when it's ready — no need to enter a table.
+                    {t("dining.noTableDesc")}
                   </div>
                   <button
                     onClick={() => setKnowMoreOpen(true)}
                     style={{ display:"inline-flex", alignItems:"center", gap:4, background:"none", border:"none", color:"var(--brand)", fontWeight:700, fontSize:11.5, cursor:"pointer", padding:"6px 0 0" }}
                   >
-                    <Info size={12} /> Know more
+                    <Info size={12} /> {t("dining.knowMore")}
                   </button>
                 </div>
               </div>
             )}
             <div>
-              {label("Your Name")}
-              <input style={inputStyle(false)} placeholder="Optional" value={diningInfo.name} onChange={set("name")} />
+              {label(t("dining.yourName"))}
+              <input style={inputStyle(false)} placeholder={t("common.optional")} value={diningInfo.name} onChange={set("name")} />
             </div>
             <div>
-              {label("Phone Number")}
+              {label(t("dining.phoneNumber"))}
               <input
                 style={inputStyle(!!errors.phone)}
-                placeholder="10-digit number (optional)"
+                placeholder={`${t("dining.phoneNumberPlaceholder")} (${t("common.optional")})`}
                 value={diningInfo.phone}
                 onChange={setPhone}
                 type="tel"
@@ -161,7 +162,7 @@ const CustomerDiningSelection = ({ diningInfo, onInfoChange, onBack, onContinue,
                 maxLength={10}
               />
               {diningInfo.phone && !errors.phone && (
-                <div style={{ fontSize:11, color:"var(--text-muted)", marginTop:4 }}>{diningInfo.phone.length}/10 digits</div>
+                <div style={{ fontSize:11, color:"var(--text-muted)", marginTop:4 }}>{diningInfo.phone.length}/10 {t("dining.digitsSuffix")}</div>
               )}
               {errMsg(errors.phone)}
             </div>
@@ -172,15 +173,15 @@ const CustomerDiningSelection = ({ diningInfo, onInfoChange, onBack, onContinue,
         {diningInfo.type === "takeaway" && (
           <div style={{ display:"flex", flexDirection:"column", gap:12, animation:"fadeIn 0.2s ease" }}>
             <div>
-              {label("Your Name", true)}
-              <input style={inputStyle(!!errors.name)} placeholder="Enter your name" value={diningInfo.name} onChange={set("name")} />
+              {label(t("dining.yourName"), true)}
+              <input style={inputStyle(!!errors.name)} placeholder={t("dining.guestNamePlaceholder")} value={diningInfo.name} onChange={set("name")} />
               {errMsg(errors.name)}
             </div>
             <div>
-              {label("Phone Number", true)}
+              {label(t("dining.phoneNumber"), true)}
               <input
                 style={inputStyle(!!errors.phone)}
-                placeholder="10-digit number"
+                placeholder={t("dining.phoneNumberPlaceholder")}
                 value={diningInfo.phone}
                 onChange={setPhone}
                 type="tel"
@@ -189,13 +190,13 @@ const CustomerDiningSelection = ({ diningInfo, onInfoChange, onBack, onContinue,
                 maxLength={10}
               />
               {diningInfo.phone && !errors.phone && (
-                <div style={{ fontSize:11, color:"var(--text-muted)", marginTop:4 }}>{diningInfo.phone.length}/10 digits</div>
+                <div style={{ fontSize:11, color:"var(--text-muted)", marginTop:4 }}>{diningInfo.phone.length}/10 {t("dining.digitsSuffix")}</div>
               )}
               {errMsg(errors.phone)}
             </div>
             <div>
-              {label("Email")}
-              <input style={inputStyle(false)} placeholder="Optional — for e-receipt" value={diningInfo.email} onChange={set("email")} type="email" />
+              {label(t("dining.email"))}
+              <input style={inputStyle(false)} placeholder={t("dining.emailHint")} value={diningInfo.email} onChange={set("email")} type="email" />
             </div>
           </div>
         )}
@@ -203,13 +204,13 @@ const CustomerDiningSelection = ({ diningInfo, onInfoChange, onBack, onContinue,
         {/* Customer Note — show for both */}
         {diningInfo.type && (
           <div style={{ marginTop:14, animation:"fadeIn 0.2s ease" }}>
-            {label("Any Special Instructions?")}
+            {label(t("dining.specialInstructions"))}
             <textarea
               style={{ ...inputStyle(false), minHeight:70, resize:"vertical", fontFamily:"inherit", lineHeight:1.5 }}
-              placeholder="e.g. Less spicy, no onion, extra sauce..."
+              placeholder={t("dining.specialInstructionsPlaceholder")}
               value={diningInfo.note} onChange={set("note")}
             />
-            <div style={{ fontSize:11.5, color:"var(--text-muted)", marginTop:4 }}>This note will be shared with the kitchen.</div>
+            <div style={{ fontSize:11.5, color:"var(--text-muted)", marginTop:4 }}>{t("dining.specialInstructionsNote")}</div>
           </div>
         )}
       </div>
@@ -217,7 +218,7 @@ const CustomerDiningSelection = ({ diningInfo, onInfoChange, onBack, onContinue,
       <div className="cx-sticky-bottom">
         <button className="cta-btn" disabled={!diningInfo.type} onClick={handleContinue}
           style={{ opacity: diningInfo.type ? 1 : 0.5 }}>
-          Continue to Payment
+          {t("dining.continueToPayment")}
         </button>
       </div>
 

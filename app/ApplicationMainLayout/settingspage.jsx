@@ -16,15 +16,17 @@ import { SupportModal, DeleteModal } from "../ApplicationMainLayout/modalsetting
 import LanguageSection from "../ApplicationMainLayout/languagesettingspage";
 import UpgradePlanPage from "../ApplicationMainLayout/UpgradePlanPage";
 
-const NAV_SECTIONS = [
-  { id:"profile",  icon:User,           label:"Profile" },
-  { id:"account",  icon:Shield,         label:"Account & Security" },
-  { id:"qr",       icon:QrCode,         label:"QR Code" },
-  { id:"language", icon:Globe,          label:"Language" },
-  { id:"plan",     icon:Crown,          label:"Upgrade Plan" },
-  { id:"support",  icon:HeadphonesIcon, label:"Support" },
-  { id:"danger",   icon:AlertCircle,    label:"Danger Zone" },
-];
+function buildNavSections(t) {
+  return [
+    { id:"profile",  icon:User,           label:t("profile") },
+    { id:"account",  icon:Shield,         label:t("account") },
+    { id:"qr",       icon:QrCode,         label:t("qr") },
+    { id:"language", icon:Globe,          label:t("language") },
+    { id:"plan",     icon:Crown,          label:t("plan") },
+    { id:"support",  icon:HeadphonesIcon, label:t("support") },
+    { id:"danger",   icon:AlertCircle,    label:t("danger") },
+  ];
+}
 
 function getUser() {
   try { const s = localStorage.getItem("ttl_user"); return s ? JSON.parse(s) : null; }
@@ -48,6 +50,7 @@ export default function SettingsPage() {
   const { languageCode, languageName, setLanguage, t, languages, loadingLangs } = useLanguage();
   const { currencyCode } = useCurrency();
   const sym = getCurrencySymbol(currencyCode);
+  const NAV_SECTIONS = buildNavSections(t);
 
   const [active,          setActive]          = useState("profile");
   const [copied,          setCopied]          = useState(false);
@@ -104,12 +107,12 @@ export default function SettingsPage() {
 
   const validatePassword = () => {
     const e = {};
-    if (!passwords.current) e.current = "Current password is required.";
-    if (!passwords.new) e.new = "New password is required.";
+    if (!passwords.current) e.current = t("enter_current_password");
+    if (!passwords.new) e.new = t("min_8_chars");
     else if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(passwords.new))
-      e.new = "Min 8 chars with uppercase, lowercase, digit & special char.";
-    if (!passwords.confirm) e.confirm = "Please confirm your new password.";
-    else if (passwords.new !== passwords.confirm) e.confirm = "Passwords do not match.";
+      e.new = t("min_8_chars");
+    if (!passwords.confirm) e.confirm = t("re_enter_password");
+    else if (passwords.new !== passwords.confirm) e.confirm = t("re_enter_password");
     return e;
   };
 
@@ -120,9 +123,9 @@ export default function SettingsPage() {
     try {
       await changePassword(adminId, passwords.current, passwords.new, passwords.confirm);
       setPasswords({ current:"", new:"", confirm:"" });
-      showToast("Password changed successfully! ✓");
+      showToast(`${t("update_password")} ✓`);
     } catch (err) {
-      const msg = err.response?.data?.message || "Failed to change password.";
+      const msg = err.response?.data?.message || t("update_password");
       if (msg.toLowerCase().includes("current")) setPwErrors({ current:msg });
       else showToast(msg, "error");
     } finally { setPwLoading(false); }
@@ -130,7 +133,7 @@ export default function SettingsPage() {
 
   const handleDeleteAccount = async ({ reason, comment }) => {
     if (!reason) {
-      setDeleteError("Please select a reason before continuing.");
+      setDeleteError(t("delete_warning"));
       return;
     }
     setDeleteLoading(true);
@@ -146,12 +149,12 @@ export default function SettingsPage() {
       });
       const json = await res.json();
       if (!res.ok || json.success === false) {
-        throw new Error(json.message || "Failed to submit your deletion request.");
+        throw new Error(json.message || t("delete_warning"));
       }
       setShowDeleteModal(false);
       showToast(json.message || "Account deletion request submitted. Check your email for details.");
     } catch (err) {
-      setDeleteError(err.message || "Failed to submit your deletion request. Please try again.");
+      setDeleteError(err.message || t("delete_warning"));
     } finally {
       setDeleteLoading(false);
     }
@@ -162,12 +165,12 @@ export default function SettingsPage() {
       <div className="stg-plan-banner-l">
         <div className="stg-plan-banner-icon"><Zap size={13}/></div>
         <div>
-          <div className="stg-plan-banner-title">You're on the <strong>Free Starter</strong> plan</div>
-          <div className="stg-plan-banner-sub">Unlock unlimited orders, analytics &amp; custom branding</div>
+          <div className="stg-plan-banner-title">{t("on_free_plan")} <strong>{t("free_starter_short")}</strong> plan</div>
+          <div className="stg-plan-banner-sub">{t("unlock_features")}</div>
         </div>
       </div>
       <button className="stg-plan-banner-btn" onClick={()=>setShowUpgrade(true)}>
-        <Sparkles size={12}/> Upgrade Now
+        <Sparkles size={12}/> {t("upgrade_now")}
       </button>
     </div>
   );
@@ -179,7 +182,7 @@ export default function SettingsPage() {
         <div className="stg-sec-wrap">
           <PlanBanner/>
           <div className="stg-card">
-            <div className="stg-card-head"><User size={14}/><span>Profile</span></div>
+            <div className="stg-card-head"><User size={14}/><span>{t("profile")}</span></div>
             <div className="stg-profile-hero">
               <div className="stg-av-area">
                 <div className="stg-av-ring">
@@ -201,18 +204,18 @@ export default function SettingsPage() {
                 </div>
               </div>
               <button className="stg-btn-outline stg-ml-auto" onClick={()=>avatarRef.current?.click()}>
-                <Upload size={12}/> Change Photo
+                <Upload size={12}/> {t("change_photo")}
               </button>
             </div>
           </div>
           <div className="stg-card">
-            <div className="stg-card-head"><span>Account Details</span></div>
+            <div className="stg-card-head"><span>{t("account_details")}</span></div>
             {[
-              { label:"Full Name",   val:fullName },
-              { label:"Email Address", val:email },
-              { label:"Admin ID",    val:adminId,    mono:true },
-              { label:"Business ID", val:businessId||"Not set up yet", mono:true },
-              { label:"Plan",        val:"Free Starter", badge:true, bCls:"stg-bg" },
+              { label:t("full_name"),   val:fullName },
+              { label:t("email_address"), val:email },
+              { label:t("admin_id"),    val:adminId,    mono:true },
+              { label:t("business_id_label"), val:businessId||"—", mono:true },
+              { label:t("plan_label"),        val:t("free_starter_short"), badge:true, bCls:"stg-bg" },
             ].map(({ label, val, mono, badge, bCls }) => (
               <div key={label} className="stg-field-row stg-row-border">
                 <span className="stg-field-label">{label}</span>
@@ -221,7 +224,7 @@ export default function SettingsPage() {
                   : <span className={`stg-field-val ${mono?"stg-mono":""}`}>{val}</span>}
               </div>
             ))}
-            <div className="stg-field-note">To update details, go to Business Information or contact support.</div>
+            <div className="stg-field-note">{t("profile_update_note")}</div>
           </div>
         </div>
       );
@@ -229,11 +232,11 @@ export default function SettingsPage() {
       case "account": return (
         <div className="stg-sec-wrap">
           <div className="stg-card">
-            <div className="stg-card-head"><Lock size={14}/><span>Change Password</span></div>
+            <div className="stg-card-head"><Lock size={14}/><span>{t("change_password")}</span></div>
             {[
-              { label:"Current Password", key:"current", ph:"Enter current password" },
-              { label:"New Password",      key:"new",     ph:"Min 8 chars, special char" },
-              { label:"Confirm Password",  key:"confirm", ph:"Re-enter new password" },
+              { label:t("current_password"), key:"current", ph:t("enter_current_password") },
+              { label:t("new_password"),      key:"new",     ph:t("min_8_chars") },
+              { label:t("confirm_new_password"),  key:"confirm", ph:t("re_enter_password") },
             ].map(({ label, key, ph }, i, arr) => (
               <div key={key} className={`stg-field-row ${i<arr.length-1?"stg-row-border":""}`}>
                 <span className="stg-field-label">{label}</span>
@@ -254,28 +257,28 @@ export default function SettingsPage() {
             ))}
             <div className="stg-field-row" style={{justifyContent:"flex-end",padding:"14px 20px"}}>
               <button className="stg-btn-primary" onClick={handleChangePassword} disabled={pwLoading}>
-                {pwLoading?<><Loader2 size={13} style={{animation:"spin .7s linear infinite"}}/> Updating...</>
-                          :<><Key size={13}/> Update Password</>}
+                {pwLoading?<><Loader2 size={13} style={{animation:"spin .7s linear infinite"}}/> {t("updating")}</>
+                          :<><Key size={13}/> {t("update_password")}</>}
               </button>
             </div>
           </div>
           <div className="stg-card">
-            <div className="stg-card-head"><Shield size={14}/><span>Security</span></div>
+            <div className="stg-card-head"><Shield size={14}/><span>{t("security")}</span></div>
             <div className="stg-field-row stg-row-border">
               <div className="stg-row-icon"><Shield size={14} style={{color:"#7c3aed"}}/></div>
               <div style={{flex:1}}>
-                <div className="stg-row-title">Two-Factor Authentication</div>
-                <div className="stg-row-sub">{twoFA?"2FA is enabled":"Add an extra layer of security"}</div>
+                <div className="stg-row-title">{t("two_factor")}</div>
+                <div className="stg-row-sub">{twoFA?t("two_factor_on"):t("two_factor_off")}</div>
               </div>
               <Toggle checked={twoFA} onChange={setTwoFA}/>
             </div>
             <div className="stg-field-row stg-row-border">
               <div className="stg-row-icon"><Smartphone size={14} style={{color:"#a1a1aa"}}/></div>
               <div style={{flex:1}}>
-                <div className="stg-row-title">Trusted Devices</div>
-                <div className="stg-row-sub">Manage devices with account access</div>
+                <div className="stg-row-title">{t("trusted_devices")}</div>
+                <div className="stg-row-sub">{t("trusted_devices_desc")}</div>
               </div>
-              <button className="stg-btn-ghost">Manage</button>
+              <button className="stg-btn-ghost">{t("manage_btn")}</button>
             </div>
             {[
               {device:"Chrome · Desktop",loc:"Hyderabad, IN",time:"Now",   cur:true},
@@ -288,8 +291,8 @@ export default function SettingsPage() {
                   <div className="stg-row-sub">{s.loc} · {s.time}</div>
                 </div>
                 {s.cur
-                  ? <span className="stg-badge stg-bg">Current</span>
-                  : <button className="stg-btn-danger-sm">Revoke</button>}
+                  ? <span className="stg-badge stg-bg">{t("current")}</span>
+                  : <button className="stg-btn-danger-sm">{t("revoke_btn")}</button>}
               </div>
             ))}
           </div>
@@ -299,7 +302,7 @@ export default function SettingsPage() {
       case "qr": return (
         <div className="stg-sec-wrap">
           <div className="stg-card">
-            <div className="stg-card-head"><QrCode size={14}/><span>Your Order QR Code</span></div>
+            <div className="stg-card-head"><QrCode size={14}/><span>{t("qr_title")}</span></div>
             <div className="stg-qr-center">
               <div className="stg-qr-frame">
                 <div className="stg-qr-inner"><QRCode value={QR_DATA} size={190} fgColor="#18181b"/></div>
@@ -311,19 +314,19 @@ export default function SettingsPage() {
               </div>
               <div className="stg-qr-actions">
                 <button className={`stg-btn-outline ${copied?"stg-copied":""}`} onClick={copyQR}>
-                  {copied?<><CheckCircle2 size={13}/> Copied!</>:<><Copy size={13}/> Copy Link</>}
+                  {copied?<><CheckCircle2 size={13}/> {t("copied")}</>:<><Copy size={13}/> {t("copy_link")}</>}
                 </button>
-                <button className="stg-btn-outline"><Download size={13}/> Download</button>
-                <button className="stg-btn-primary"><RefreshCw size={13}/> Regenerate</button>
+                <button className="stg-btn-outline"><Download size={13}/> {t("download_btn")}</button>
+                <button className="stg-btn-primary"><RefreshCw size={13}/> {t("regenerate_btn")}</button>
               </div>
             </div>
           </div>
           <div className="stg-card">
-            <div className="stg-card-head"><span>QR Settings</span></div>
+            <div className="stg-card-head"><span>{t("qr_settings")}</span></div>
             {[
-              {label:"Track QR Scans",  sub:"Analytics for scan count and location", action:<Toggle checked={true} onChange={()=>{}}/>},
-              {label:"Add Logo to QR",  sub:"Embed restaurant logo inside QR",        action:<span className="stg-badge stg-bv">Pro</span>},
-              {label:"Custom QR Color", sub:"Customize QR colors for branding",        action:<span className="stg-badge stg-bv">Pro</span>},
+              {label:t("track_qr_scans"),  sub:t("track_qr_scans_desc"), action:<Toggle checked={true} onChange={()=>{}}/>},
+              {label:t("add_logo_qr"),  sub:t("add_logo_qr_desc"),        action:<span className="stg-badge stg-bv">{t("pro_badge")}</span>},
+              {label:t("custom_qr_color"), sub:t("custom_qr_color_desc"),        action:<span className="stg-badge stg-bv">{t("pro_badge")}</span>},
             ].map(({label,sub,action},i,arr)=>(
               <div key={label} className={`stg-field-row ${i<arr.length-1?"stg-row-border":""}`}>
                 <div style={{flex:1}}>
@@ -353,20 +356,20 @@ export default function SettingsPage() {
             <div style={{display:"flex",alignItems:"center",gap:14}}>
               <div className="stg-cpc-icon"><Star size={20}/></div>
               <div>
-                <div className="stg-cpc-title">Free Starter Plan</div>
+                <div className="stg-cpc-title">{t("free_starter_plan")}</div>
                 
               </div>
             </div>
             <button className="stg-upgrade-cta" onClick={()=>setShowUpgrade(true)}>
-              <Sparkles size={14}/> Upgrade Plan
+              <Sparkles size={14}/> {t("plan")}
             </button>
           </div>
 
           <div className="stg-plan-cards-row">
             {[
-              {name:"Starter",price:"Free",         color:"#64748b",tag:"Current",  current:true},
-              {name:"Pro",    price:`${sym}999/mo`,  color:"#7c3aed",tag:"Popular",  popular:true},
-              {name:"Elite",  price:`${sym}2,499/mo`,color:"#f59e0b",tag:"Best Value"},
+              {name:"Starter",price:t("free_starter_short"),         color:"#64748b",tag:t("current_plan_tag"),  current:true},
+              {name:"Pro",    price:`${sym}999/mo`,  color:"#7c3aed",tag:t("most_popular_tag"),  popular:true},
+              {name:"Elite",  price:`${sym}2,499/mo`,color:"#f59e0b",tag:t("best_value_tag")},
             ].map(p=>(
               <div key={p.name} className={`stg-plan-mini ${p.current?"stg-pmc":""} ${p.popular?"stg-pmp":""}`}>
                 <div className="stg-plan-mini-tag" style={{background:p.color}}>{p.tag}</div>
@@ -375,7 +378,7 @@ export default function SettingsPage() {
                 <button className="stg-plan-mini-btn"
                   style={{background:p.current?"#f4f4f5":p.color,color:p.current?"#a1a1aa":"#fff"}}
                   disabled={p.current} onClick={()=>!p.current&&setShowUpgrade(true)}>
-                  {p.current?"Current Plan":"Upgrade →"}
+                  {p.current?t("current_plan_btn"):t("upgrade_arrow")}
                 </button>
               </div>
             ))}
@@ -391,10 +394,10 @@ export default function SettingsPage() {
       case "support": return (
         <div className="stg-sec-wrap">
           <div className="stg-card">
-            <div className="stg-card-head"><HeadphonesIcon size={14}/><span>Get Help</span></div>
+            <div className="stg-card-head"><HeadphonesIcon size={14}/><span>{t("get_help")}</span></div>
             {[
-              {icon:BookOpen,label:"Documentation",   sub:"Step-by-step guides and tutorials", color:"#3b82f6",onClick:null},
-              {icon:Mail,    label:"Email Support",    sub:"Submit a support ticket",           color:"#7c3aed",onClick:()=>setShowSupportModal(true)},
+              {icon:BookOpen,label:t("documentation"),   sub:t("step_by_step_guides"), color:"#3b82f6",onClick:null},
+              {icon:Mail,    label:t("email_support"),    sub:t("submit_ticket"),           color:"#7c3aed",onClick:()=>setShowSupportModal(true)},
             ].map(({icon:Icon,label,sub,color,onClick},i,arr)=>(
               <button key={label} type="button" onClick={onClick||undefined}
                 className={`stg-support-row ${i<arr.length-1?"stg-row-border":""}`}>
@@ -410,7 +413,7 @@ export default function SettingsPage() {
             ))}
           </div>
           <div className="stg-card">
-            <div className="stg-card-head"><span>System Status</span></div>
+            <div className="stg-card-head"><span>{t("system_status")}</span></div>
             {[
               {service:"Order API",       ok:true},
               {service:"Payment Gateway", ok:true},
@@ -420,17 +423,17 @@ export default function SettingsPage() {
               <div key={service} className={`stg-field-row ${i<arr.length-1?"stg-row-border":""}`}>
                 <span style={{flex:1,fontSize:13,fontWeight:500,color:"#3f3f46"}}>{service}</span>
                 <span className={`stg-status-pill ${ok?"stg-ok":"stg-warn"}`}>
-                  <span className="stg-dot"/>{ok?"Operational":"Degraded"}
+                  <span className="stg-dot"/>{ok?t("operational"):t("degraded")}
                 </span>
               </div>
             ))}
           </div>
           <div className="stg-card">
-            <div className="stg-card-head"><span>Send Feedback</span></div>
+            <div className="stg-card-head"><span>{t("send_feedback")}</span></div>
             <div style={{padding:"14px 20px 18px"}}>
-              <textarea rows={3} placeholder="Share thoughts, report bugs or suggest features..." className="stg-textarea"/>
+              <textarea rows={3} placeholder={t("feedback_placeholder")} className="stg-textarea"/>
               <div style={{marginTop:10,display:"flex",justifyContent:"flex-end"}}>
-                <button className="stg-btn-primary"><SendIcon size={12}/> Send</button>
+                <button className="stg-btn-primary"><SendIcon size={12}/> {t("send_btn")}</button>
               </div>
             </div>
           </div>
@@ -440,12 +443,12 @@ export default function SettingsPage() {
 
       case "danger": return (
         <div className="stg-sec-wrap">
-          <div className="stg-danger-alert"><AlertCircle size={15}/> These actions are irreversible. Proceed with extreme caution.</div>
+          <div className="stg-danger-alert"><AlertCircle size={15}/> {t("danger_actions_warning")}</div>
           <div className="stg-card">
-            <div className="stg-card-head"><AlertCircle size={14} style={{color:"#ef4444"}}/><span>Danger Zone</span></div>
+            <div className="stg-card-head"><AlertCircle size={14} style={{color:"#ef4444"}}/><span>{t("danger_zone")}</span></div>
             {[
-              {icon:RefreshCw,label:"Reset All Settings",    sub:"Restore all settings to defaults",          btnLabel:"Reset",        btnCls:"stg-da"},
-              {icon:LogOut,   label:"Sign Out All Devices",   sub:"Revoke all active sessions everywhere",     btnLabel:"Sign Out All", btnCls:"stg-do"},
+              {icon:RefreshCw,label:t("reset_all_settings"),    sub:t("reset_all_settings_desc"),          btnLabel:t("reset_btn"),        btnCls:"stg-da"},
+              {icon:LogOut,   label:t("sign_out_all"),   sub:t("sign_out_all_desc"),     btnLabel:t("sign_out_all"), btnCls:"stg-do"},
             ].map(({icon:Icon,label,sub,btnLabel,btnCls})=>(
               <div key={label} className="stg-field-row stg-row-border">
                 <div className="stg-row-icon-red"><Icon size={14} style={{color:"#ef4444"}}/></div>
@@ -459,10 +462,10 @@ export default function SettingsPage() {
             <div className="stg-field-row">
               <div className="stg-row-icon-red"><Trash2 size={14} style={{color:"#ef4444"}}/></div>
               <div style={{flex:1}}>
-                <div className="stg-row-title">Delete Account</div>
-                <div className="stg-row-sub">Remove login credentials only. Business data is not affected.</div>
+                <div className="stg-row-title">{t("delete_account")}</div>
+                <div className="stg-row-sub">{t("delete_account_note")}</div>
               </div>
-              <button className="stg-danger-btn stg-dr" onClick={()=>setShowDeleteModal(true)}>Delete Account</button>
+              <button className="stg-danger-btn stg-dr" onClick={()=>setShowDeleteModal(true)}>{t("delete_account")}</button>
             </div>
           </div>
         </div>
@@ -494,8 +497,8 @@ export default function SettingsPage() {
 
       <div className="stg-page-header">
         <div>
-          <h1 className="stg-page-title">Settings</h1>
-          <p className="stg-page-sub">Manage your account, preferences and integrations{fullName && <span className="stg-page-user"> — {fullName}</span>}</p>
+          <h1 className="stg-page-title">{t("settings")}</h1>
+          <p className="stg-page-sub">{t("account_info_desc")}{fullName && <span className="stg-page-user"> — {fullName}</span>}</p>
         </div>
         <div className="stg-header-user">
           <div className="stg-header-av">
@@ -515,11 +518,11 @@ export default function SettingsPage() {
           <div className="stg-sidebar-plan-box">
             <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8}}>
               <div className="stg-sp-icon"><Zap size={11}/></div>
-              <span style={{fontSize:11,fontWeight:700,color:"#7c3aed"}}>Free Starter</span>
+              <span style={{fontSize:11,fontWeight:700,color:"#7c3aed"}}>{t("free_starter_short")}</span>
             </div>
              
             <button className="stg-sidebar-upgrade-btn" onClick={()=>setShowUpgrade(true)}>
-              <Sparkles size={11}/> Upgrade Plan
+              <Sparkles size={11}/> {t("plan")}
             </button>
           </div>
           {NAV_SECTIONS.map(({id,icon:Icon,label})=>(

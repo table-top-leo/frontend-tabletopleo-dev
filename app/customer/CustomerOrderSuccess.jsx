@@ -6,13 +6,15 @@ import { useEffect, useRef, useState } from "react";
 import { CheckCircle2, Download, FileImage, FileText, Star, Mail } from "lucide-react";
 import CustomerRatingPopup from "../customer/customerratingpopup";
 import CustomerEmailInvoicePopup from "../customer/emailcustomerbillpopup";
+import { useCustomerLanguage } from "../context/CustomerLanguageProvider";
 
-const METHOD_LABEL = { upi:"UPI", razorpay:"Cards / Net Banking", stripe:"International Card", paypal:"PayPal", pay_at_counter:"Pay at Counter" };
-const STATUS_LABEL = { PAID:"Paid", PAY_AT_COUNTER:"Pay at Counter (Pending)", PENDING:"Pending" };
-const STATUS_COLOR = { PAID:"#16a34a", PAY_AT_COUNTER:"#b45309", PENDING:"#f59e0b" };
- 
 const CustomerOrderSuccess = ({ confirmedData, business, cart = [], onTrack, onHome, diningPhone = "", businessId = "" }) => {
+  const { t } = useCustomerLanguage();
   const _currCode = business?.currencyCode || "INR";
+
+  const METHOD_LABEL = { upi:"UPI", razorpay:t("tracking.cardsNetBanking"), stripe:t("tracking.internationalCard"), paypal:"PayPal", pay_at_counter:t("payment.payAtCounterTitle") };
+  const STATUS_LABEL = { PAID:t("tracking.paidStatus"), PAY_AT_COUNTER:t("tracking.payAtCounterPending"), PENDING:t("tracking.pendingStatus") };
+  const STATUS_COLOR = { PAID:"#16a34a", PAY_AT_COUNTER:"#b45309", PENDING:"#f59e0b" };
  
   const invoiceRef         = useRef(null);
   const [menu, setMenu]    = useState(false);
@@ -83,18 +85,18 @@ const CustomerOrderSuccess = ({ confirmedData, business, cart = [], onTrack, onH
             disabled={loading}
             style={{ display:"flex", alignItems:"center", gap:5, padding:"5px 10px", background:"#fff", border:"1px solid #d1d5db", borderRadius:7, cursor:"pointer", fontSize:11, fontWeight:600, color:"#374151", boxShadow:"0 1px 4px rgba(0,0,0,0.08)" }}
           >
-            <Download size={12} strokeWidth={2}/> {loading ? "..." : "Invoice"}
+            <Download size={12} strokeWidth={2}/> {loading ? "..." : t("invoice.downloadLabel")}
           </button>
  
           {menu && (
             <div style={{ position:"absolute", top:"calc(100% + 4px)", right:0, background:"#fff", border:"1px solid #e5e7eb", borderRadius:9, boxShadow:"0 6px 20px rgba(0,0,0,0.12)", overflow:"hidden", minWidth:140, zIndex:20, animation:"fadeUp 0.12s ease" }}>
               <button onClick={downloadJPG} style={{ display:"flex", alignItems:"center", gap:8, width:"100%", padding:"9px 12px", border:"none", background:"#fff", fontSize:12, fontWeight:600, color:"#374151", cursor:"pointer", textAlign:"left", borderBottom:"1px solid #f3f4f6" }}
                 onMouseOver={e=>e.currentTarget.style.background="#f9fafb"} onMouseOut={e=>e.currentTarget.style.background="#fff"}>
-                <FileImage size={13} color="#6b7280"/> Download JPG
+                <FileImage size={13} color="#6b7280"/> {t("invoice.downloadJpg")}
               </button>
               <button onClick={downloadPDF} style={{ display:"flex", alignItems:"center", gap:8, width:"100%", padding:"9px 12px", border:"none", background:"#fff", fontSize:12, fontWeight:600, color:"#374151", cursor:"pointer", textAlign:"left" }}
                 onMouseOver={e=>e.currentTarget.style.background="#f9fafb"} onMouseOut={e=>e.currentTarget.style.background="#fff"}>
-                <FileText size={13} color="#6b7280"/> Download PDF
+                <FileText size={13} color="#6b7280"/> {t("invoice.downloadPdf")}
               </button>
             </div>
           )}
@@ -115,30 +117,30 @@ const CustomerOrderSuccess = ({ confirmedData, business, cart = [], onTrack, onH
  
         {/* ── heading — unchanged ── */}
         <div style={{ textAlign:"center" }}>
-          <div style={{ fontSize:24, fontWeight:900, color:"var(--text-primary)", marginBottom:8 }}>Order Confirmed! 🎉</div>
+          <div style={{ fontSize:24, fontWeight:900, color:"var(--text-primary)", marginBottom:8 }}>{t("tracking.orderConfirmedTitle")}</div>
           <div style={{ fontSize:13.5, color:"var(--text-muted)", lineHeight:1.6, maxWidth:260 }}>
-            Your order has been placed.
+            {t("tracking.orderPlacedSub")}
           </div>
         </div>
  
         {/* ── order detail card — unchanged ── */}
         <div style={{ background:"var(--surface-2)", border:"1px solid var(--border-light)", borderRadius:"var(--radius-lg)", padding:14, width:"100%", display:"flex", flexDirection:"column", gap:8 }}>
           {[
-            ["Order Number", confirmedData?.orderNumber || "—"],
-            ["Order ID",     confirmedData?.orderId     || "—"],
-            ["Amount Paid",  `${getCurrencySymbol(_currCode)}${confirmedData?.grandTotal || "—"}`],
-            ["Payment",      METHOD_LABEL[confirmedData?.gatewayName] || confirmedData?.gatewayName || "—"],
-            ["Status",       STATUS_LABEL[confirmedData?.paymentStatus] || confirmedData?.paymentStatus || "PAID"],
-            ["Date & Time",  dateStr],
+            [t("tracking.orderNumber"), confirmedData?.orderNumber || "—"],
+            [t("tracking.orderIdLabel"), confirmedData?.orderId || "—"],
+            [t("tracking.amountPaidLabel"), `${getCurrencySymbol(_currCode)}${confirmedData?.grandTotal || "—"}`],
+            [t("tracking.paymentLabel"), METHOD_LABEL[confirmedData?.gatewayName] || confirmedData?.gatewayName || "—"],
+            [t("tracking.statusLabel"), STATUS_LABEL[confirmedData?.paymentStatus] || confirmedData?.paymentStatus || "PAID"],
+            [t("tracking.dateTimeLabel"), dateStr],
           ].map(([l,v]) => (
             <div key={l} style={{ display:"flex", justifyContent:"space-between", fontSize:13.5 }}>
               <span style={{ color:"var(--text-muted)" }}>{l}</span>
-              <span style={{ fontWeight:700, color: l==="Amount Paid"?"var(--brand)":l==="Status"?STATUS_COLOR[confirmedData?.paymentStatus]||"#16a34a":"var(--text-primary)", fontFamily:l==="Order ID"?"monospace":"inherit", fontSize:l==="Order ID"?11:13.5 }}>{v}</span>
+              <span style={{ fontWeight:700, color: l===t("tracking.amountPaidLabel")?"var(--brand)":l===t("tracking.statusLabel")?STATUS_COLOR[confirmedData?.paymentStatus]||"#16a34a":"var(--text-primary)", fontFamily:l===t("tracking.orderIdLabel")?"monospace":"inherit", fontSize:l===t("tracking.orderIdLabel")?11:13.5 }}>{v}</span>
             </div>
           ))}
           {confirmedData?.customerName && (
             <div style={{ display:"flex", justifyContent:"space-between", fontSize:13.5 }}>
-              <span style={{ color:"var(--text-muted)" }}>Name</span>
+              <span style={{ color:"var(--text-muted)" }}>{t("tracking.nameLabel")}</span>
               <span style={{ fontWeight:700, color:"var(--text-primary)" }}>{confirmedData.customerName}</span>
             </div>
           )}
@@ -147,13 +149,13 @@ const CustomerOrderSuccess = ({ confirmedData, business, cart = [], onTrack, onH
  
       {/* ── sticky bottom ── */}
       <div className="cx-sticky-bottom" style={{ display:"flex", flexDirection:"column", gap:4 }}>
-        <button className="cta-btn" onClick={onTrack}>Track Order Live</button>
+        <button className="cta-btn" onClick={onTrack}>{t("tracking.trackOrderLive")}</button>
 
         {hasRated ? (
           <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:14, padding:"10px 0 2px" }}>
             <div style={{ display:"flex", alignItems:"center", gap:6 }}>
               <CheckCircle2 size={14} color="#16a34a" />
-              <span style={{ fontSize:13, fontWeight:700, color:"#16a34a" }}>Thanks for rating us!</span>
+              <span style={{ fontSize:13, fontWeight:700, color:"#16a34a" }}>{t("tracking.thanksForRating")}</span>
             </div>
             <span style={{ width:1, height:14, background:"var(--border)" }} />
             <button
@@ -162,7 +164,7 @@ const CustomerOrderSuccess = ({ confirmedData, business, cart = [], onTrack, onH
             >
               <Mail size={13} color="var(--brand)" />
               <span style={{ fontSize:13.5, fontWeight:700, color:"var(--brand)", textDecoration:"underline", textUnderlineOffset:3 }}>
-                Email
+                {t("tracking.emailLabel")}
               </span>
             </button>
           </div>
@@ -174,7 +176,7 @@ const CustomerOrderSuccess = ({ confirmedData, business, cart = [], onTrack, onH
             >
               <Star size={13} fill="#F2701D" color="#F2701D" />
               <span style={{ fontSize:13.5, fontWeight:700, color:"var(--brand)", textDecoration:"underline", textUnderlineOffset:3 }}>
-                Rate us here
+                {t("tracking.rateUsHere")}
               </span>
             </button>
             <span style={{ width:1, height:14, background:"var(--border)" }} />
@@ -187,14 +189,14 @@ const CustomerOrderSuccess = ({ confirmedData, business, cart = [], onTrack, onH
             >
               <Mail size={13} color="var(--brand)" />
               <span style={{ fontSize:13.5, fontWeight:700, color:"var(--brand)", textDecoration:"underline", textUnderlineOffset:3 }}>
-                Email
+                {t("tracking.emailLabel")}
               </span>
             </button>
           </div>
         )}
 
         <button onClick={onHome} style={{ background:"none", border:"none", color:"var(--text-muted)", fontSize:13, fontWeight:600, padding:"6px 0", cursor:"pointer" }}>
-          Back to Home
+          {t("tracking.backToHome")}
         </button>
       </div>
  

@@ -2,6 +2,8 @@
 import { useState } from "react";
 import { MapPin, Star, Clock, Search, ChevronRight, ImageOff, Flame, X, Menu } from "lucide-react";
 import { formatCurrency } from "../utils/currencyHelper";
+import { useCustomerLanguage } from "../context/CustomerLanguageProvider";
+import CustomerLanguageSelector from "./components/CustomerLanguageSelector";
 
 // ── Cover images per business type (high quality Unsplash) ──
 const COVER_BY_TYPE = {
@@ -104,6 +106,7 @@ function fmt12h(t) {
 }
 
 const CustomerLandingPage = ({ business, categories, items, activeDiscounts = [], currencyCode, onStart, onViewOffers, onItemClick, onOpenMenu }) => {
+  const { t } = useCustomerLanguage();
   const [search,         setSearch]         = useState("");
   const [activeCategory, setActiveCategory] = useState(null);
 
@@ -138,9 +141,9 @@ const CustomerLandingPage = ({ business, categories, items, activeDiscounts = []
 
   // Compute open/closed from DB data
   const openStatus  = isBusinessOpen(business?.openingTime, business?.closingTime, business?.workingDays);
-  const openLabel   = openStatus === true  ? "Open Now"
-                    : openStatus === false ? "Closed"
-                    : "Hours Unknown";
+  const openLabel   = openStatus === true  ? t("landing.openNow")
+                    : openStatus === false ? t("landing.closed")
+                    : t("landing.hoursUnknown");
   const openColor   = openStatus === true  ? "#16a34a"
                     : openStatus === false ? "#ef4444"
                     : "#f59e0b";
@@ -224,7 +227,7 @@ const CustomerLandingPage = ({ business, categories, items, activeDiscounts = []
           {/* Hamburger menu — opens the customer sidebar (profile / My Orders) */}
           <button
             onClick={onOpenMenu}
-            aria-label="Menu"
+            aria-label={t("landing.openMenuAria")}
             style={{
               position:"absolute", top:12, left:12, width:38, height:38, borderRadius:11,
               background:"rgba(0,0,0,0.38)", backdropFilter:"blur(4px)", border:"1px solid rgba(255,255,255,0.25)",
@@ -233,6 +236,12 @@ const CustomerLandingPage = ({ business, categories, items, activeDiscounts = []
           >
             <Menu size={19} color="#fff" />
           </button>
+          {/* Language selector — top of the landing page, defaults to
+              English, instantly re-renders the whole customer flow in the
+              chosen language with no page reload (see CustomerLanguageProvider) */}
+          <div style={{ position:"absolute", top:12, right:12 }}>
+            <CustomerLanguageSelector variant="dark" />
+          </div>
           <div style={{ position:"absolute", bottom:0, left:0, right:0, padding:"10px 14px", display:"flex", alignItems:"flex-end", gap:10 }}>
             <div style={{ width:46, height:46, borderRadius:11, overflow:"hidden", border:"2.5px solid #fff", flexShrink:0, background:"#fff" }}>
               {(business.logoUrl || business.logo) ? (
@@ -276,7 +285,7 @@ const CustomerLandingPage = ({ business, categories, items, activeDiscounts = []
           <div style={{ display:"flex", alignItems:"center", gap:8, background:"var(--surface-2)", border:"1.5px solid var(--border-light)", borderRadius:9999, padding:"7px 12px", position:"relative" }}>
             <Search size={13} color="var(--text-muted)" style={{ flexShrink:0 }}/>
             <input
-              placeholder="Search dishes..."
+              placeholder={t("landing.searchPlaceholder")}
               value={search}
               onChange={e => setSearch(e.target.value)}
               style={{ flex:1, border:"none", outline:"none", background:"transparent", fontSize:13, color:"var(--text-primary)", minWidth:0 }}
@@ -303,7 +312,7 @@ const CustomerLandingPage = ({ business, categories, items, activeDiscounts = []
           >
             <Flame size={15} color="#fff" style={{ flexShrink:0 }}/>
             <span style={{ flex:1, textAlign:"left", fontSize:12.5, fontWeight:800, color:"#fff" }}>
-              Offers &amp; deals
+              {t("landing.offersAndDeals")}
             </span>
             {activeDiscounts.length > 0 && (
               <span style={{ background:"#fff", color:"#dc2626", fontSize:11, fontWeight:800, borderRadius:"9999px", minWidth:20, height:20, display:"flex", alignItems:"center", justifyContent:"center", padding:"0 6px", flexShrink:0 }}>
@@ -317,7 +326,7 @@ const CustomerLandingPage = ({ business, categories, items, activeDiscounts = []
         {/* Categories */}
         <div style={{ background:"var(--surface)", borderBottom:"1px solid var(--border-light)", paddingBottom:8 }}>
           <div style={{ padding:"7px 14px 5px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-            <span style={{ fontSize:10.5, fontWeight:700, color:"var(--text-muted)", textTransform:"uppercase", letterSpacing:"0.07em" }}>Categories</span>
+            <span style={{ fontSize:10.5, fontWeight:700, color:"var(--text-muted)", textTransform:"uppercase", letterSpacing:"0.07em" }}>{t("landing.categories")}</span>
             <span style={{ fontSize:10.5, color:"var(--brand)", fontWeight:600 }}>{categories.length}</span>
           </div>
           <div className="lp-cats" onMouseDown={handleDragStart} style={{ display:"flex", gap:6, overflowX:"auto", padding:"0 14px", WebkitOverflowScrolling:"touch" }}>
@@ -326,7 +335,7 @@ const CustomerLandingPage = ({ business, categories, items, activeDiscounts = []
               className="lp-cat-pill"
               onClick={() => setActiveCategory(null)}
               style={{ flexShrink:0, padding:"4px 13px", borderRadius:9999, border:`1.5px solid ${!activeCategory?"var(--brand)":"var(--border)"}`, background:!activeCategory?"var(--brand)":"transparent", color:!activeCategory?"#fff":"var(--text-secondary)", fontSize:11.5, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap", touchAction:"manipulation" }}
-            >All</button>
+            >{t("common.all")}</button>
 
             {categories.map(cat => {
               const isActive = activeCategory === cat.categoryId;
@@ -360,17 +369,17 @@ const CustomerLandingPage = ({ business, categories, items, activeDiscounts = []
               <Flame size={13} color="#f97316"/>
               <span style={{ fontSize:10.5, fontWeight:700, color:"var(--text-muted)", textTransform:"uppercase", letterSpacing:"0.07em" }}>
                 {activeCategory
-                  ? categories.find(c => c.categoryId === activeCategory)?.categoryName || "Items"
-                  : search.trim() ? `"${search}"` : "Popular Items"}
+                  ? categories.find(c => c.categoryId === activeCategory)?.categoryName || t("common.items")
+                  : search.trim() ? `"${search}"` : t("landing.popularItems")}
               </span>
             </div>
-            <span style={{ fontSize:10.5, color:"var(--text-muted)" }}>{filteredItems.length} items</span>
+            <span style={{ fontSize:10.5, color:"var(--text-muted)" }}>{filteredItems.length} {t("common.items")}</span>
           </div>
 
           {filteredItems.length === 0 ? (
             <div style={{ padding:"24px", textAlign:"center", color:"var(--text-muted)", fontSize:13 }}>
               <div style={{ fontSize:32, marginBottom:8 }}>🔍</div>
-              No items found
+              {t("landing.noItemsFound")}
             </div>
           ) : itemRows.map((row, rowIdx) => (
             /* Each row = horizontal scroll strip of 5 */
@@ -422,7 +431,7 @@ const CustomerLandingPage = ({ business, categories, items, activeDiscounts = []
       {/* Sticky CTA */}
       <div className="cx-sticky-bottom">
         <button className="cta-btn" onClick={onStart} style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:6, fontSize:15, fontWeight:800 }}>
-          Start Ordering <ChevronRight size={18}/>
+          {t("landing.startOrdering")} <ChevronRight size={18}/>
         </button>
       </div>
     </div>

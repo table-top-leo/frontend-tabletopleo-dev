@@ -5,13 +5,14 @@ import { formatCurrency } from "../utils/currencyHelper";
 import { computeDiscountedPrice } from "../utils/discountHelper";
 import discountService from "../services/discountService";
 import useWebSocket from "../hooks/useWebSocket";
+import { useCustomerLanguage } from "../context/CustomerLanguageProvider";
 
-const CATEGORY_META = {
-  FESTIVAL:    { icon: PartyPopper, color: "#e11d48", label: "Festival offers" },
-  COMBO:       { icon: Gift,        color: "#0284c7", label: "Combo deals" },
-  HAPPY_HOUR:  { icon: Sun,         color: "#d97706", label: "Happy hour" },
-  PROMOTIONAL: { icon: Sparkles,    color: "#7c3aed", label: "Promotions" },
-  GENERAL:     { icon: Tag,         color: "#16a34a", label: "More offers" },
+const CATEGORY_KEYS = {
+  FESTIVAL:    { icon: PartyPopper, color: "#e11d48", labelKey: "offers.festivalOffers" },
+  COMBO:       { icon: Gift,        color: "#0284c7", labelKey: "offers.comboDeals" },
+  HAPPY_HOUR:  { icon: Sun,         color: "#d97706", labelKey: "offers.happyHour" },
+  PROMOTIONAL: { icon: Sparkles,    color: "#7c3aed", labelKey: "offers.promotions" },
+  GENERAL:     { icon: Tag,         color: "#16a34a", labelKey: "offers.moreOffers" },
 };
 const CATEGORY_ORDER = ["FESTIVAL", "COMBO", "HAPPY_HOUR", "PROMOTIONAL", "GENERAL"];
 
@@ -38,6 +39,7 @@ const CustomerOffersPage = ({
   onBrowseMenu, onViewCart, onBack,
 }) => {
   const _currCode = currencyCode || business?.currencyCode || "INR";
+  const { t } = useCustomerLanguage();
   const [liveDiscounts, setLiveDiscounts] = useState(activeDiscounts);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState("");
@@ -53,12 +55,12 @@ const CustomerOffersPage = ({
           onDiscountsRefetched?.(res.data || []);
         } else {
           console.error("[Offers page] API responded but success=false:", res.message);
-          setFetchError(res.message || "Failed to load offers");
+          setFetchError(res.message || t("offers.couldNotLoad"));
         }
       })
       .catch((err) => {
         console.error("[Offers page] Failed to fetch offers:", err);
-        setFetchError("Couldn't reach the offers service. Check your connection and try again.");
+        setFetchError(t("offers.checkConnection"));
       })
       .finally(() => setLoading(false));
   }, [businessId]);
@@ -80,7 +82,7 @@ const CustomerOffersPage = ({
 
   const grouped = CATEGORY_ORDER.map((key) => ({
     key,
-    meta: CATEGORY_META[key],
+    meta: CATEGORY_KEYS[key],
     discounts: liveDiscounts.filter((d) => d.offerCategory === key),
   })).filter((g) => g.discounts.length > 0);
 
@@ -93,7 +95,7 @@ const CustomerOffersPage = ({
         <button className="back-btn cx-topbar-action" onClick={onBack} style={{ touchAction: "manipulation" }}>
           <ArrowLeft size={19} />
         </button>
-        <span className="cx-topbar-title" style={{ fontSize: 14.5 }}>Offers &amp; deals</span>
+        <span className="cx-topbar-title" style={{ fontSize: 14.5 }}>{t("offers.title")}</span>
         <button className="cx-topbar-action" onClick={onViewCart} style={{ position: "relative", touchAction: "manipulation" }}>
           <ShoppingCart size={17} />
           {cartCount > 0 && (
@@ -113,16 +115,16 @@ const CustomerOffersPage = ({
         ) : fetchError ? (
           <div style={{ padding: "60px 20px", textAlign: "center" }}>
             <Tag size={30} color="#dc2626" strokeWidth={1.5} />
-            <div style={{ fontSize: 13.5, fontWeight: 700, color: "#dc2626", marginTop: 10 }}>Couldn't load offers</div>
+            <div style={{ fontSize: 13.5, fontWeight: 700, color: "#dc2626", marginTop: 10 }}>{t("offers.couldNotLoad")}</div>
             <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 4 }}>{fetchError}</div>
-            <button className="cta-btn" style={{ width: "auto", padding: "10px 24px", marginTop: 16 }} onClick={onBrowseMenu}>Browse menu</button>
+            <button className="cta-btn" style={{ width: "auto", padding: "10px 24px", marginTop: 16 }} onClick={onBrowseMenu}>{t("offers.browseMenu")}</button>
           </div>
         ) : grouped.length === 0 ? (
           <div style={{ padding: "60px 20px", textAlign: "center" }}>
             <Tag size={30} color="var(--text-muted)" strokeWidth={1.5} />
-            <div style={{ fontSize: 13.5, fontWeight: 700, color: "var(--text-secondary)", marginTop: 10 }}>No offers right now</div>
-            <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 4 }}>Check back soon, or browse the full menu.</div>
-            <button className="cta-btn" style={{ width: "auto", padding: "10px 24px", marginTop: 16 }} onClick={onBrowseMenu}>Browse menu</button>
+            <div style={{ fontSize: 13.5, fontWeight: 700, color: "var(--text-secondary)", marginTop: 10 }}>{t("offers.noOffers")}</div>
+            <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 4 }}>{t("offers.checkBackSoon")}</div>
+            <button className="cta-btn" style={{ width: "auto", padding: "10px 24px", marginTop: 16 }} onClick={onBrowseMenu}>{t("offers.browseMenu")}</button>
           </div>
         ) : (
           grouped.map((section) => (
@@ -132,7 +134,7 @@ const CustomerOffersPage = ({
                 <div style={{ width: 20, height: 20, borderRadius: 6, background: `${section.meta.color}15`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                   <section.meta.icon size={11.5} color={section.meta.color} />
                 </div>
-                <span style={{ fontSize: 13, fontWeight: 800, color: "var(--text-primary)" }}>{section.meta.label}</span>
+                <span style={{ fontSize: 13, fontWeight: 800, color: "var(--text-primary)" }}>{t(section.meta.labelKey)}</span>
                 <span style={{ fontSize: 10.5, color: "var(--text-muted)", fontWeight: 600 }}>{section.discounts.length}</span>
               </div>
 
@@ -156,7 +158,7 @@ const CustomerOffersPage = ({
                             </div>
                           )}
                           <span style={{ position: "absolute", top: 5, left: 5, display: "flex", alignItems: "center", gap: 2, fontSize: 8.5, fontWeight: 800, color: "#fff", background: section.meta.color, padding: "2px 5px 2px 4px", borderRadius: 4 }}>
-                            <Percent size={8} /> COMBO
+                            <Percent size={8} /> {t("menu.combo").toUpperCase()}
                           </span>
                         </div>
                         <div style={{ padding: "7px 8px 8px" }}>
@@ -171,7 +173,7 @@ const CustomerOffersPage = ({
                             onClick={() => comboItems.length > 0 ? onAddCombo(comboItems, d) : onBrowseMenu()}
                             style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 4, background: "#fff", color: section.meta.color, border: `1.3px solid ${section.meta.color}`, borderRadius: 7, padding: "6px 0", fontSize: 10.5, fontWeight: 800, touchAction: "manipulation", letterSpacing: 0.2 }}
                           >
-                            {comboItems.length > 0 ? "ADD COMBO" : "VIEW MENU"}
+                            {comboItems.length > 0 ? t("offers.addCombo").toUpperCase() : t("offers.browseMenu").toUpperCase()}
                           </button>
                         </div>
                       </div>
@@ -192,7 +194,7 @@ const CustomerOffersPage = ({
                         <div style={{ padding: "7px 8px 8px" }}>
                           <div style={{ fontSize: 11, fontWeight: 800, color: "var(--text-primary)", lineHeight: 1.25, overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", minHeight: 27 }}>{d.title}</div>
                           <div style={{ fontSize: 9.5, color: "var(--text-muted)", marginTop: 5 }}>
-                            {d.minCartValue ? `Min order ${formatCurrency(d.minCartValue, _currCode)}` : "On whole order"}
+                            {d.minCartValue ? t("offers.minOrder", { amount: formatCurrency(d.minCartValue, _currCode) }) : t("offers.onWholeOrder")}
                           </div>
                         </div>
                       </div>
@@ -222,7 +224,7 @@ const CustomerOffersPage = ({
                           {first ? first.name : d.title}
                         </div>
                         {matchedItems.length > 1 && (
-                          <div style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 1 }}>+{matchedItems.length - 1} more</div>
+                          <div style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 1 }}>{t("offers.moreCount", { count: matchedItems.length - 1 })}</div>
                         )}
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 5 }}>
                           <span>
@@ -232,7 +234,7 @@ const CustomerOffersPage = ({
                                 <span style={{ fontSize: 9, color: "var(--text-muted)", textDecoration: "line-through", marginLeft: 4 }}>{formatCurrency(first.price, _currCode)}</span>
                               </>
                             ) : (
-                              <span style={{ fontSize: 10, color: "var(--text-muted)" }}>Tap to view</span>
+                              <span style={{ fontSize: 10, color: "var(--text-muted)" }}>{t("offers.tapToView")}</span>
                             )}
                           </span>
                         </div>
@@ -241,7 +243,7 @@ const CustomerOffersPage = ({
                             onClick={(e) => { e.stopPropagation(); onAddItem({ ...first }); }}
                             style={{ position: "absolute", right: 7, bottom: -11, width: 40, height: 22, borderRadius: 7, border: "1.3px solid var(--brand)", display: "flex", alignItems: "center", justifyContent: "center", background: qty > 0 ? "var(--brand)" : "#fff", boxShadow: "0 2px 5px rgba(0,0,0,0.12)", touchAction: "manipulation" }}
                           >
-                            {qty > 0 ? <Check size={12} color="#fff" /> : <span style={{ fontSize: 9.5, fontWeight: 800, color: "var(--brand)" }}>ADD</span>}
+                            {qty > 0 ? <Check size={12} color="#fff" /> : <span style={{ fontSize: 9.5, fontWeight: 800, color: "var(--brand)" }}>{t("menu.add").toUpperCase()}</span>}
                           </button>
                         )}
                       </div>
@@ -255,7 +257,7 @@ const CustomerOffersPage = ({
 
         {grouped.length > 0 && (
           <div style={{ padding: "10px 12px 0" }}>
-            <button className="cta-btn" style={{ width: "100%" }} onClick={onBrowseMenu}>Browse full menu</button>
+            <button className="cta-btn" style={{ width: "100%" }} onClick={onBrowseMenu}>{t("offers.browseFullMenu")}</button>
           </div>
         )}
       </div>
@@ -265,7 +267,7 @@ const CustomerOffersPage = ({
           <button className="cta-btn" onClick={onViewCart} style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "13px 18px" }}>
             <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span style={{ background: "rgba(255,255,255,0.25)", borderRadius: 999, width: 20, height: 20, fontSize: 11, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{cartCount}</span>
-              View cart
+              {t("offers.viewCart")}
             </span>
             <span style={{ fontWeight: 800 }}>{formatCurrency(cartTotal, _currCode)}</span>
           </button>

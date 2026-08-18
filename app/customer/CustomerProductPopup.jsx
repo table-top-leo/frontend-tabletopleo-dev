@@ -1,11 +1,13 @@
 "use client";
 
 import { getCurrencySymbol, formatCurrency } from "../utils/currencyHelper";
+import { useCustomerLanguage } from "../context/CustomerLanguageProvider";
 
 import { useState } from "react";
 import { X, Star, Plus, Minus, ShoppingCart } from "lucide-react";
 
 const CustomerProductPopup = ({ item, currencyCode, onClose, onAddToCart }) => {
+  const { t } = useCustomerLanguage();
   const _currCode = currencyCode || "INR";
 
   const [qty, setQty] = useState(1);
@@ -24,24 +26,24 @@ const CustomerProductPopup = ({ item, currencyCode, onClose, onAddToCart }) => {
           <div className="popup-rating">
             <Star size={14} fill="#F0A500" color="#F0A500" />
             <span>{item.rating}</span>
-            <span style={{ color: "var(--text-muted)", fontWeight: 400 }}>({item.reviews}+ Reviews)</span>
+            <span style={{ color: "var(--text-muted)", fontWeight: 400 }}>({item.reviews}+ {t("product.reviewsSuffix")})</span>
           </div>
           <div className="popup-price">{formatCurrency(item.price, _currCode)}</div>
-          <div className="popup-desc-label">Description</div>
-          <div className="popup-desc">{item.desc}. Made with the finest ingredients for an unforgettable experience.</div>
-          <div className="popup-qty-label">Quantity</div>
+          <div className="popup-desc-label">{t("product.description")}</div>
+          <div className="popup-desc">{item.desc}. {t("product.tagline")}</div>
+          <div className="popup-qty-label">{t("product.quantity")}</div>
           <div className="popup-qty-row">
-            <button className="popup-qty-btn" onClick={() => setQty(q => Math.max(1, q - 1))}>
+            <button className="popup-qty-btn" onClick={() => setQty(q => Math.max(1, q - 1))} aria-label={t("cart.decreaseQty")}>
               <Minus size={16} />
             </button>
             <span className="popup-qty-count">{qty}</span>
-            <button className="popup-qty-btn" onClick={() => setQty(q => q + 1)}>
+            <button className="popup-qty-btn" onClick={() => setQty(q => q + 1)} aria-label={t("cart.increaseQty")}>
               <Plus size={16} />
             </button>
           </div>
           <button className="cta-btn" onClick={handleAdd}>
             <ShoppingCart size={18} />
-            Add to Cart — {formatCurrency(item.price * qty, _currCode)}
+            {t("menu.addToCart")} — {formatCurrency(item.price * qty, _currCode)}
           </button>
         </div>
       </div>

@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import { X, Mail, MailCheck, Send, ShieldCheck, CheckCircle2, Loader2 } from "lucide-react";
+import { useCustomerLanguage } from "../context/CustomerLanguageProvider";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:6163";
 
 const CustomerEmailInvoicePopup = ({ onClose, orderNumber, orderId }) => {
+  const { t } = useCustomerLanguage();
   const [email,   setEmail]   = useState("");
   const [touched, setTouched] = useState(false);
   const [sending, setSending] = useState(false);
@@ -18,7 +20,7 @@ const CustomerEmailInvoicePopup = ({ onClose, orderNumber, orderId }) => {
   const handleSend = async () => {
     setTouched(true);
     if (!isValid) return;
-    if (!orderId) { setError("Order ID not found. Please try downloading the invoice instead."); return; }
+    if (!orderId) { setError(t("invoice.orderIdMissing")); return; }
 
     setSending(true);
     setError("");
@@ -32,12 +34,12 @@ const CustomerEmailInvoicePopup = ({ onClose, orderNumber, orderId }) => {
       if (res.ok && data.data?.emailSent === true) {
         setSent(true);
       } else if (res.ok && data.data?.emailSent === false) {
-        setError("Email saved but invoice not sent yet. Please wait a moment and try again.");
+        setError(t("invoice.emailSavedNotSent"));
       } else {
-        setError(data.message || "Failed to send invoice. Please try again.");
+        setError(data.message || t("errors.somethingWentWrong"));
       }
     } catch {
-      setError("Network error. Please check your connection and try again.");
+      setError(t("errors.networkError"));
     } finally {
       setSending(false);
     }
@@ -60,7 +62,6 @@ const CustomerEmailInvoicePopup = ({ onClose, orderNumber, orderId }) => {
           animation: "eiPopIn 0.22s cubic-bezier(0.34,1.56,0.64,1)",
         }}
       >
-        {/* close */}
         <button
           onClick={onClose}
           style={{
@@ -88,22 +89,21 @@ const CustomerEmailInvoicePopup = ({ onClose, orderNumber, orderId }) => {
               <CheckCircle2 size={44} color="#16a34a" strokeWidth={2} />
             </div>
             <div style={{ fontSize: 20, fontWeight: 800, color: "#1a1008" }}>
-              Bill Sent Successfully! ✅
+              {t("invoice.billSentTitle")}
             </div>
             <div style={{ fontSize: 13.5, color: "#6b7280", lineHeight: 1.6, maxWidth: 270 }}>
-              We've emailed the invoice to <strong style={{ color: "#1a1008" }}>{email}</strong>. Please check your inbox (and spam folder, just in case).
+              {t("invoice.billSentBody")} <strong style={{ color: "#1a1008" }}>{email}</strong>. {t("invoice.checkInbox")}
             </div>
             <button
               onClick={onClose}
               style={{ marginTop: 8, padding: "10px 28px", borderRadius: 12, border: "none", background: "#16a34a", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}
             >
-              Done
+              {t("invoice.done")}
             </button>
           </div>
         ) : (
           <div style={{ padding: "28px 20px 22px", display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
 
-            {/* icon */}
             <div style={{
               width: 84, height: 84, borderRadius: "50%", background: "#EAF7EC",
               display: "flex", alignItems: "center", justifyContent: "center", position: "relative",
@@ -118,19 +118,17 @@ const CustomerEmailInvoicePopup = ({ onClose, orderNumber, orderId }) => {
               </div>
             </div>
 
-            {/* heading */}
             <div style={{ textAlign: "center" }}>
               <div style={{ fontSize: 20, fontWeight: 800, color: "#1a1008", marginBottom: 6 }}>
-                Order Confirmed! 🎉
+                {t("invoice.orderConfirmedTitle")}
               </div>
               <div style={{ fontSize: 13.5, color: "#6b7280" }}>
-                {orderNumber ? `Order #${orderNumber} placed successfully.` : "Your order has been placed successfully."}
+                {orderNumber ? t("invoice.orderNumberPlaced", { number: orderNumber }) : t("invoice.orderPlacedGeneric")}
               </div>
             </div>
 
             <div style={{ width: "100%", borderTop: "1px solid #eee", margin: "2px 0" }} />
 
-            {/* send invoice row */}
             <div style={{ width: "100%", display: "flex", alignItems: "flex-start", gap: 12 }}>
               <div style={{
                 width: 42, height: 42, borderRadius: 12, background: "#FDECE3", flexShrink: 0,
@@ -140,15 +138,14 @@ const CustomerEmailInvoicePopup = ({ onClose, orderNumber, orderId }) => {
               </div>
               <div>
                 <div style={{ fontSize: 14.5, fontWeight: 700, color: "#1a1008" }}>
-                  Send invoice to your email
+                  {t("invoice.sendToEmail")}
                 </div>
                 <div style={{ fontSize: 12.5, color: "#6b7280", marginTop: 2 }}>
-                  Enter your email and we'll send the invoice instantly.
+                  {t("invoice.sendToEmailDesc")}
                 </div>
               </div>
             </div>
 
-            {/* email input */}
             <div style={{ width: "100%" }}>
               <div style={{
                 display: "flex", alignItems: "center", gap: 10, width: "100%", boxSizing: "border-box",
@@ -162,13 +159,13 @@ const CustomerEmailInvoicePopup = ({ onClose, orderNumber, orderId }) => {
                   onChange={(e) => { setEmail(e.target.value); setError(""); }}
                   onBlur={() => setTouched(true)}
                   onKeyDown={(e) => e.key === "Enter" && handleSend()}
-                  placeholder="Enter your email address"
+                  placeholder={t("dining.emailPlaceholder")}
                   style={{ flex: 1, border: "none", outline: "none", fontSize: 13.5, color: "#1a1008", background: "transparent" }}
                 />
               </div>
               {touched && !isValid && !error && (
                 <span style={{ fontSize: 11.5, color: "#ef4444", marginTop: 5, display: "block" }}>
-                  Please enter a valid email address.
+                  {t("invoice.invalidEmail")}
                 </span>
               )}
               {error && (
@@ -178,7 +175,6 @@ const CustomerEmailInvoicePopup = ({ onClose, orderNumber, orderId }) => {
               )}
             </div>
 
-            {/* send button */}
             <button
               onClick={handleSend}
               disabled={sending}
@@ -192,19 +188,18 @@ const CustomerEmailInvoicePopup = ({ onClose, orderNumber, orderId }) => {
                 opacity: sending ? 0.85 : 1,
               }}
             >
-              {sending ? <><Loader2 size={16} style={{ animation: "spin .7s linear infinite" }} /> Sending...</> : <><Send size={16} /> Send Invoice</>}
+              {sending ? <><Loader2 size={16} style={{ animation: "spin .7s linear infinite" }} /> {t("invoice.sending")}</> : <><Send size={16} /> {t("invoice.sendInvoice")}</>}
             </button>
 
-            {/* skip */}
             <button
               onClick={onClose}
               style={{ background: "none", border: "none", color: "#9CA3AF", fontSize: 13, fontWeight: 600, cursor: "pointer", padding: "4px 0" }}
             >
-              Skip for now
+              {t("invoice.skipForNow")}
             </button>
 
             <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "#6b7280" }}>
-              <ShieldCheck size={14} color="#16a34a" /> Your email is safe with us.
+              <ShieldCheck size={14} color="#16a34a" /> {t("invoice.emailSafe")}
             </div>
           </div>
         )}

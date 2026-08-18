@@ -4,6 +4,7 @@ import { getCurrencySymbol, formatCurrency } from "../utils/currencyHelper";
 import { getItemDiscount, computeDiscountedPrice } from "../utils/discountHelper";
 import { useState, useRef } from "react";
 import { ArrowLeft, Search, ShoppingCart, X, Plus, ImageOff, Tag } from "lucide-react";
+import { useCustomerLanguage } from "../context/CustomerLanguageProvider";
 
 const CustomerMenuPage = ({
   business,
@@ -17,6 +18,7 @@ const CustomerMenuPage = ({
   onViewOffers,
   onBack,
 }) => {
+  const { t } = useCustomerLanguage();
   // Business currency is authoritative — never the admin's own login
   // session (which a real customer's device never has anyway).
   const _currCode = currencyCode || business?.currencyCode || "INR";
@@ -26,7 +28,7 @@ const CustomerMenuPage = ({
   const searchRef  = useRef(null);
 
   const allCats = [
-    { id: 0, name: "All", imageUrl: null },
+    { id: 0, name: t("menu.allItems"), imageUrl: null },
     ...categories.map(c => ({
       id:       c.categoryId || c.id,
       name:     c.categoryName || c.name,
@@ -47,8 +49,8 @@ const CustomerMenuPage = ({
   const getCartQty = (id) => propCart.find(c => c.id === id)?.qty || 0;
 
   const activeCatName = activecat === 0
-    ? "All Items"
-    : allCats.find(c => c.id === activecat)?.name || "Items";
+    ? t("menu.allItems")
+    : allCats.find(c => c.id === activecat)?.name || t("common.items");
 
   // Mouse click-and-drag horizontal scroll for desktop — mobile already
   // scrolls fine via native touch-swipe.
@@ -140,10 +142,10 @@ const CustomerMenuPage = ({
             <ArrowLeft size={20}/>
           </button>
           <span className="cx-topbar-title" style={{ fontSize:15 }}>
-            {business?.businessName || "Menu"}
+            {business?.businessName || t("menu.title")}
           </span>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <button onClick={onViewOffers} className="cx-topbar-action" style={{ position: "relative", touchAction: "manipulation" }} aria-label="Offers">
+            <button onClick={onViewOffers} className="cx-topbar-action" style={{ position: "relative", touchAction: "manipulation" }} aria-label={t("menu.offersAria")}>
               <Tag size={18} />
               {activeDiscounts.length > 0 && (
                 <span style={{ position:"absolute", top:-4, right:-4, background:"#dc2626", color:"#fff", fontSize:10, fontWeight:700, borderRadius:"9999px", minWidth:16, height:16, display:"flex", alignItems:"center", justifyContent:"center", padding:"0 3px", lineHeight:1 }}>
@@ -169,7 +171,7 @@ const CustomerMenuPage = ({
             <Search size={13} color="var(--text-muted)" style={{ flexShrink:0 }}/>
             <input
               ref={searchRef}
-              placeholder="Search items, categories..."
+              placeholder={t("menu.searchItemsCategories")}
               value={search}
               onChange={e => setSearch(e.target.value)}
               style={{ flex:1, border:"none", outline:"none", background:"transparent", fontSize:13, color:"var(--text-primary)", minWidth:0 }}
@@ -229,7 +231,7 @@ const CustomerMenuPage = ({
             {search.trim() ? `"${search}"` : activeCatName}
           </span>
           <span style={{ fontSize:10.5, color:"var(--text-muted)" }}>
-            {filtered.length} {filtered.length === 1 ? "item" : "items"}
+            {filtered.length} {filtered.length === 1 ? t("common.item") : t("common.items")}
           </span>
         </div>
       </div>
@@ -240,12 +242,12 @@ const CustomerMenuPage = ({
           <div style={{ padding:"40px 20px", textAlign:"center" }}>
             <div style={{ fontSize:34, marginBottom:10 }}>🔍</div>
             <div style={{ fontSize:14, fontWeight:700, color:"var(--text-secondary)", marginBottom:4 }}>
-              {search ? `No results for "${search}"` : "No items here"}
+              {search ? t("menu.noResultsFor", { search }) : t("menu.noItemsHere")}
             </div>
             {search && (
               <button onClick={() => setSearch("")}
                 style={{ fontSize:13, color:"var(--brand)", background:"none", border:"none", cursor:"pointer", fontWeight:600, marginTop:6, touchAction:"manipulation" }}>
-                Clear search
+                {t("menu.clearSearch")}
               </button>
             )}
           </div>
@@ -320,7 +322,7 @@ const CustomerMenuPage = ({
                     fontSize:11.5, fontWeight:800, letterSpacing:"0.02em",
                     transition:"background 0.15s, color 0.15s",
                   }}>
-                    {qty>0 ? "Added" : "Add"}
+                    {qty>0 ? t("menu.added") : t("menu.add")}
                   </div>
                 </div>
 
@@ -338,7 +340,7 @@ const CustomerMenuPage = ({
                   </span>
                   {qty > 0 && (
                     <span style={{ fontSize:10, fontWeight:700, color:"var(--brand)" }}>
-                      {qty} in cart
+                      {t("menu.inCart", { count: qty })}
                     </span>
                   )}
                 </div>

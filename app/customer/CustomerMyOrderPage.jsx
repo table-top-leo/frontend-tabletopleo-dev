@@ -6,14 +6,7 @@ import {
 } from "lucide-react";
 import { formatCurrency } from "../utils/currencyHelper";
 import customerOrderService from "../services/customerOrderService";
-
-const PAYMENT_META = {
-  upi:             { label: "UPI",               icon: Wallet },
-  razorpay:        { label: "Razorpay",          icon: CreditCard },
-  stripe:          { label: "Card (Stripe)",     icon: CreditCard },
-  paypal:          { label: "PayPal",            icon: Landmark },
-  pay_at_counter:  { label: "Pay at Counter",    icon: Banknote },
-};
+import { useCustomerLanguage } from "../context/CustomerLanguageProvider";
 
 const STATUS_COLOR = {
   PLACED: "#0ea5e9", ACCEPTED: "#0ea5e9", PREPARING: "#f59e0b",
@@ -28,6 +21,14 @@ function fmtDate(d) {
 }
 
 const CustomerMyOrdersPage = ({ businessId, phone, currencyCode, onBack, onBrowseMenu }) => {
+  const { t } = useCustomerLanguage();
+  const PAYMENT_META = {
+    upi:             { label: t("payment.upi"),               icon: Wallet },
+    razorpay:        { label: t("payment.razorpay"),          icon: CreditCard },
+    stripe:          { label: t("payment.internationalCards"),icon: CreditCard },
+    paypal:          { label: "PayPal",                       icon: Landmark },
+    pay_at_counter:  { label: t("payment.payAtCounterTitle"), icon: Banknote },
+  };
   const _currCode = currencyCode || "INR";
   const [orders, setOrders]   = useState([]);
   const [loading, setLoading] = useState(true);
@@ -41,9 +42,9 @@ const CustomerMyOrdersPage = ({ businessId, phone, currencyCode, onBack, onBrows
     customerOrderService.getMyOrders(businessId, phone)
       .then((res) => {
         if (res.success) setOrders(res.data || []);
-        else setError(res.message || "Failed to load your orders");
+        else setError(res.message || t("myOrders.failedToLoad"));
       })
-      .catch((err) => setError(err.response?.data?.message || "Couldn't load your orders"))
+      .catch((err) => setError(err.response?.data?.message || t("myOrders.couldNotLoad")))
       .finally(() => setLoading(false));
   }, [businessId, phone]);
 
@@ -53,7 +54,7 @@ const CustomerMyOrdersPage = ({ businessId, phone, currencyCode, onBack, onBrows
         <button className="back-btn cx-topbar-action" onClick={onBack} style={{ touchAction: "manipulation" }}>
           <ArrowLeft size={20} />
         </button>
-        <span className="cx-topbar-title" style={{ fontSize: 15 }}>My Orders</span>
+        <span className="cx-topbar-title" style={{ fontSize: 15 }}>{t("myOrders.title")}</span>
         <span style={{ width: 34 }} />
       </div>
 
@@ -65,21 +66,23 @@ const CustomerMyOrdersPage = ({ businessId, phone, currencyCode, onBack, onBrows
           </div>
         ) : !phone ? (
           <EmptyState
-            title="No orders yet"
-            subtitle="Make your first order to see it here."
+            title={t("myOrders.noOrders")}
+            subtitle={t("myOrders.firstOrderHint")}
             onBrowseMenu={onBrowseMenu}
+            btnLabel={t("myOrders.makeFirstOrder")}
           />
         ) : error ? (
           <div style={{ padding: "60px 20px", textAlign: "center" }}>
             <PackageSearch size={34} color="#dc2626" strokeWidth={1.5} />
-            <div style={{ fontSize: 14, fontWeight: 700, color: "#dc2626", marginTop: 10 }}>Couldn't load your orders</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "#dc2626", marginTop: 10 }}>{t("myOrders.couldNotLoad")}</div>
             <div style={{ fontSize: 12.5, color: "var(--text-muted)", marginTop: 4 }}>{error}</div>
           </div>
         ) : orders.length === 0 ? (
           <EmptyState
-            title="No orders yet"
-            subtitle="Make your first order — it'll show up here with your bill and tracking."
+            title={t("myOrders.noOrders")}
+            subtitle={t("myOrders.firstOrderHint2")}
             onBrowseMenu={onBrowseMenu}
+            btnLabel={t("myOrders.makeFirstOrder")}
           />
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -102,11 +105,11 @@ const CustomerMyOrdersPage = ({ businessId, phone, currencyCode, onBack, onBrows
                         <span style={{ fontSize: 13, fontWeight: 800, color: "var(--text-primary)" }}>{o.orderNumber}</span>
                         {o.hasOffer && (
                           <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 9, fontWeight: 800, color: "#dc2626", background: "#fef2f2", border: "1px solid #fecaca", padding: "1.5px 6px", borderRadius: 999, flexShrink: 0 }}>
-                            <Tag size={8.5} /> OFFER
+                            <Tag size={8.5} /> {t("myOrders.offer")}
                           </span>
                         )}
                       </div>
-                      <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>{fmtDate(o.createdAt)} · {(o.items || []).length} item{(o.items || []).length !== 1 ? "s" : ""}</div>
+                      <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>{fmtDate(o.createdAt)} · {(o.items || []).length} {(o.items || []).length === 1 ? t("common.item") : t("common.items")}</div>
                     </div>
                     <div style={{ textAlign: "right", flexShrink: 0 }}>
                       <div style={{ fontSize: 13.5, fontWeight: 800, color: "var(--text-primary)" }}>{formatCurrency(o.grandTotal, _currCode)}</div>
@@ -134,11 +137,11 @@ const CustomerMyOrdersPage = ({ businessId, phone, currencyCode, onBack, onBrows
                                 <span style={{ fontSize: 12.5, fontWeight: 700, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.productName}</span>
                                 {it.offerTitle && (
                                   <span title={it.offerTitle} style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 8.5, fontWeight: 800, color: "#dc2626", background: "#fef2f2", border: "1px solid #fecaca", padding: "1px 5px", borderRadius: 999, flexShrink: 0 }}>
-                                    <Tag size={7.5} /> OFFER
+                                    <Tag size={7.5} /> {t("myOrders.offer")}
                                   </span>
                                 )}
                               </div>
-                              <div style={{ fontSize: 10.5, color: "var(--text-muted)" }}>Qty {it.quantity} × {formatCurrency(it.unitPrice, _currCode)}</div>
+                              <div style={{ fontSize: 10.5, color: "var(--text-muted)" }}>{it.quantity} × {formatCurrency(it.unitPrice, _currCode)}</div>
                               {it.offerTitle && (
                                 <div style={{ fontSize: 9.5, color: "#dc2626", marginTop: 1 }}>{it.offerTitle}</div>
                               )}
@@ -150,16 +153,16 @@ const CustomerMyOrdersPage = ({ businessId, phone, currencyCode, onBack, onBrows
 
                       {/* Bill breakdown */}
                       <div style={{ background: "var(--surface-2)", borderRadius: 10, padding: "10px 12px", fontSize: 12, color: "var(--text-secondary)", display: "flex", flexDirection: "column", gap: 5 }}>
-                        <Row label="Subtotal" value={formatCurrency(o.subtotal, _currCode)} />
+                        <Row label={t("myOrders.subtotal")} value={formatCurrency(o.subtotal, _currCode)} />
                         {Number(o.discountAmount) > 0 && (
                           <Row
-                            label={<span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><Tag size={10} color="#16a34a" /> Offer discount</span>}
+                            label={<span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><Tag size={10} color="#16a34a" /> {t("myOrders.offerDiscount")}</span>}
                             value={`- ${formatCurrency(o.discountAmount, _currCode)}`}
                             valueColor="#16a34a"
                           />
                         )}
-                        <Row label="Tax / GST" value={formatCurrency(o.taxAmount, _currCode)} />
-                        <Row label="Grand Total" value={formatCurrency(o.grandTotal, _currCode)} bold />
+                        <Row label={t("myOrders.taxGst")} value={formatCurrency(o.taxAmount, _currCode)} />
+                        <Row label={t("myOrders.grandTotal")} value={formatCurrency(o.grandTotal, _currCode)} bold />
                       </div>
 
                       {/* Payment method dropdown-style pill */}
@@ -175,7 +178,7 @@ const CustomerMyOrdersPage = ({ businessId, phone, currencyCode, onBack, onBrows
 
                       {o.orderType && (
                         <div style={{ marginTop: 8, fontSize: 11, color: "var(--text-muted)" }}>
-                          {o.orderType === "DINE_IN" ? `Dine-in${o.tableNumber ? ` · Table ${o.tableNumber}` : ""}` : "Takeaway"}
+                          {o.orderType === "DINE_IN" ? `${t("myOrders.dineIn")}${o.tableNumber ? ` · ${t("dining.tableNumber")} ${o.tableNumber}` : ""}` : t("myOrders.takeaway")}
                         </div>
                       )}
                     </div>
@@ -199,14 +202,14 @@ function Row({ label, value, bold, valueColor }) {
   );
 }
 
-function EmptyState({ title, subtitle, onBrowseMenu }) {
+function EmptyState({ title, subtitle, onBrowseMenu, btnLabel }) {
   return (
     <div style={{ padding: "70px 20px", textAlign: "center" }}>
       <PackageSearch size={38} color="var(--text-muted)" strokeWidth={1.4} />
       <div style={{ fontSize: 15, fontWeight: 800, color: "var(--text-secondary)", marginTop: 12 }}>{title}</div>
       <div style={{ fontSize: 12.5, color: "var(--text-muted)", marginTop: 5, lineHeight: 1.5 }}>{subtitle}</div>
       <button className="cta-btn" style={{ width: "auto", padding: "11px 28px", marginTop: 20 }} onClick={onBrowseMenu}>
-        Make your first order
+        {btnLabel}
       </button>
     </div>
   );
