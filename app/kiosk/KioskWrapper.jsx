@@ -1,5 +1,16 @@
 "use client";
+// app/kiosk/KioskWrapper.jsx
+//
+// Kiosk equivalent of app/cusotomerwrapper/CustomerWrapper.jsx.
+// Same real TableTop Leo services, same order/payment/discount/tax rules —
+// only the screens and stage machine are kiosk-shaped (tabesto-kiosk
+// design). Nothing here talks to a mock/dummy API; every screen is fed by
+// the same qrService / customerOrderService / discountService calls the
+// phone customer flow uses, so a merchant's menu, offers, payment methods,
+// and orders are always the same real data in both experiences.
+
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import "./styles/kiosk-theme.css";
 import "./styles/kiosk-screens.css";
 
@@ -7,7 +18,7 @@ import qrService from "../services/qrService";
 import customerOrderService from "../services/customerOrderService";
 import discountService from "../services/discountService";
 import useWebSocket from "../hooks/useWebSocket";
-import { mapCategories, mapItems, itemsForCategory, gridLayoutForCategory } from "./lib/kioskMenuAdapter";
+import { mapCategories, mapItems, itemsForCategory } from "./lib/kioskMenuAdapter";
 import useKioskIdleTimeout from "./lib/useKioskIdleTimeout";
 
 import KioskWelcomeScreen from "./components/KioskWelcomeScreen";
@@ -15,8 +26,8 @@ import KioskOrderTypeScreen from "./components/KioskOrderTypeScreen";
 import KioskTableSelectScreen from "./components/KioskTableSelectScreen";
 import KioskSidebar from "./components/KioskSidebar";
 import KioskTopBar from "./components/KioskTopBar";
-import KioskHomeGrid from "./components/KioskHomeGrid";
 import KioskProductGrid from "./components/KioskProductGrid";
+import KioskMenuIntro from "./components/KioskMenuIntro";
 import KioskOffersView from "./components/KioskOffersView";
 import KioskCartBar from "./components/KioskCartBar";
 import KioskCartModal from "./components/KioskCartModal";
@@ -45,7 +56,7 @@ const STAGE = {
 function freshFlowState() {
   return {
     stage: STAGE.WELCOME,
-    view: "home", // "home" | categoryId | "offers"
+    view: null, // categoryId | "offers" (set once categories load)
     cart: [],
     cartOpen: false,
     confirmingCancel: false,
@@ -63,6 +74,7 @@ function freshFlowState() {
 }
 
 const KioskWrapper = ({ businessId }) => {
+  const router = useRouter();
   const [f, setF] = useState(freshFlowState());
   const patch = (obj) => setF((prev) => ({ ...prev, ...obj }));
 
@@ -177,7 +189,7 @@ const KioskWrapper = ({ businessId }) => {
   const removeFromCart = (id) => setF((prev) => ({ ...prev, cart: prev.cart.filter((i) => i.id !== id) }));
 
   const requestCancelOrder = () => { if (f.cart.length > 0) patch({ confirmingCancel: true }); };
-  const confirmCancelOrder = () => patch({ cart: [], cartOpen: false, confirmingCancel: false, view: "home" });
+  const confirmCancelOrder = () => patch({ cart: [], cartOpen: false, confirmingCancel: false, view: null });
 
   // Resolves REAL discounted unit prices (combo + storewide) right before
   // checkout — identical helper contract to CustomerWrapper.buildDiscountedItems,
@@ -219,12 +231,12 @@ const KioskWrapper = ({ businessId }) => {
     if (type === "dine-in" && business?.hasTableService) {
       patch({ orderType: type, stage: STAGE.TABLE_SELECT });
     } else {
-      patch({ orderType: type, tableNumber: "", stage: STAGE.MENU });
+      patch({ orderType: type, tableNumber: "", stage: STAGE.MENU, view: null });
     }
   };
-  const confirmTable = () => patch({ stage: STAGE.MENU });
+  const confirmTable = () => patch({ stage: STAGE.MENU, view: null });
   const selectCategory = (id) => patch({ view: id, cartOpen: false });
-  const goHome = () => patch({ view: "home" });
+  const goHome = () => router.push(`/menu/${businessId}`);
   const goToOffers = () => patch({ view: "offers", cartOpen: false });
   const goToGuestDetails = () => patch({ cartOpen: false, stage: STAGE.GUEST_DETAILS });
 
@@ -387,7 +399,7 @@ const KioskWrapper = ({ businessId }) => {
   }
 
   const activeCategoryMeta = categories.find((c) => c.id === f.view);
-  const categoryItems = f.view !== "home" && f.view !== "offers" ? itemsForCategory(items, f.view) : [];
+  const categoryItems = f.view && f.view !== "offers" ? itemsForCategory(items, f.view) : [];
 
   return (
     <div className="ttlKioskFalconShell">
@@ -408,13 +420,16 @@ const KioskWrapper = ({ businessId }) => {
           onSelect={(n) => patch({ tableNumber: n })}
           onContinue={confirmTable}
           onBack={() => patch({ stage: STAGE.ORDER_TYPE })}
+          businessName={business?.businessName}
         />
       )}
 
       {f.stage === STAGE.MENU && (
         <div className="ttlKioskMenuLayout">
           <KioskSidebar
+            business={business}
             categories={categories}
+            items={items}
             activeCategory={f.view}
             onSelectCategory={selectCategory}
             onHome={goHome}
@@ -428,9 +443,10 @@ const KioskWrapper = ({ businessId }) => {
               hasItems={f.cart.length > 0}
               orderType={f.orderType}
               tableNumber={f.tableNumber}
+              onLogoClick={() => patch({ view: null, cartOpen: false })}
             />
             <div className="ttlKioskFalconScroll ttlKioskNoScroll">
-              {f.view === "home" && <KioskHomeGrid categories={categories} onSelectCategory={selectCategory} />}
+              {!f.view && <KioskMenuIntro business={business} />}
               {f.view === "offers" && (
                 <KioskOffersView
                   businessId={businessId}
@@ -441,13 +457,12 @@ const KioskWrapper = ({ businessId }) => {
                   onAddItem={addToCart}
                   onAddCombo={addComboToCart}
                   onDiscountsRefetched={setActiveDiscounts}
-                  onBrowseMenu={goHome}
+                  onBrowseMenu={() => patch({ view: null })}
                 />
               )}
-              {f.view !== "home" && f.view !== "offers" && (
+              {f.view && f.view !== "offers" && (
                 <KioskProductGrid
                   categoryName={activeCategoryMeta?.name}
-                  layout={gridLayoutForCategory(categoryItems)}
                   products={categoryItems}
                   currencyCode={currencyCode}
                   onAdd={addToCart}

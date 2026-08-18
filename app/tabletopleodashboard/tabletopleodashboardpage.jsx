@@ -30,6 +30,7 @@ import DashboardMainSetup from '../ApplicationMainLayout/dashboardsetup'
 import AdminBilling from '../adminbillingcomponent/AdminBilling'
 import InventoryPage from '../inventorypage/InventoryPage'
 import TaxBillingSetup from '../taxbillingcomponent/taxbillingsetup'
+import { useLanguage } from '../context/LanguageContext'
 
 
 
@@ -39,30 +40,37 @@ const PAY_COLOR = { upi:'#7c3aed', razorpay:'#3395ff', stripe:'#635bff', paypal:
 function getInitials(name) { if(!name) return 'AD'; return name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2); }
 function getGreeting() { const h=new Date().getHours(); return h<12?'Good Morning':h<17?'Good Afternoon':'Good Evening'; }
 
-const MENU_ITEMS = [
-  { id:'home',    label:'Home',    icon:Home },
-  { id:'orders',  label:'Orders',  icon:ShoppingCart },
-  { id:'admin-setup', label:'Admin Setup', icon:Settings2, children:[
-      { id:'business-info', label:'Business Information', icon:Building2 },
-      { id:'menu-category', label:'Menu & Category',      icon:UtensilsCrossed },
-      { id:'payment-setup', label:'Payment Setup',        icon:Wallet },
-      { id:'tax-billing',   label:'Tax & Billing',        icon:FileText },
-  ]},
-  { id:'inventory', label:'Inventory', icon:Package },
-  { id:'help-desk', label:'Help Desk', icon:HelpCircle },
-  { id:'discount-management', label:'Discounts & Offers', icon:HelpCircle },
-];
-const PRODUCT_ITEMS = [
-  { id:'payments',  label:'Payments',  icon:CreditCard },
-  { id:'billing',   label:'Billing',   icon:FileText },
-  { id:'reporting', label:'Reporting', icon:BarChart2 },
-  { id:'apps',      label:'Apps',      icon:Grid },
-  { id:'more',      label:'More',      icon:MoreHorizontal },
-];
+function buildMenuItems(t) {
+  return [
+    { id:'home',    label:t('nav_home'),    icon:Home },
+    { id:'orders',  label:t('nav_orders'),  icon:ShoppingCart },
+    { id:'admin-setup', label:t('nav_admin_setup'), icon:Settings2, children:[
+        { id:'business-info', label:t('nav_business_info'), icon:Building2 },
+        { id:'menu-category', label:t('nav_menu_category'),      icon:UtensilsCrossed },
+        { id:'payment-setup', label:t('nav_payment_setup'),        icon:Wallet },
+        { id:'tax-billing',   label:t('nav_tax_billing'),        icon:FileText },
+    ]},
+    { id:'inventory', label:t('nav_inventory'), icon:Package },
+    { id:'help-desk', label:t('nav_help_desk'), icon:HelpCircle },
+    { id:'discount-management', label:t('nav_discounts'), icon:HelpCircle },
+  ];
+}
+function buildProductItems(t) {
+  return [
+    { id:'payments',  label:t('nav_payments'),  icon:CreditCard },
+    { id:'billing',   label:t('nav_billing'),   icon:FileText },
+    { id:'reporting', label:t('nav_reporting'), icon:BarChart2 },
+    { id:'apps',      label:t('nav_apps'),      icon:Grid },
+    { id:'more',      label:t('nav_more'),      icon:MoreHorizontal },
+  ];
+}
 
 const AdminDashboardNew = () => {
   const router = useRouter();
   const { currencyCode } = useCurrency();
+  const { t } = useLanguage();
+  const MENU_ITEMS = buildMenuItems(t);
+  const PRODUCT_ITEMS = buildProductItems(t);
 
   const [collapsed,      setCollapsed]      = useState(false);
   const [dark,           setDark]           = useState(false);
@@ -199,47 +207,47 @@ const AdminDashboardNew = () => {
         <h1 className="afd-page-title">{greeting}, <span style={{color:'#635bff',fontWeight:800}}>{firstName}</span> 👋</h1>
         <div className="afd-chart-card">
           <div className="afd-metrics-row">
-            <div><div className="afd-metric__label">Gross volume <ChevronDown size={12}/></div><div className="afd-metric__value">0.00kr</div><div className="afd-metric__time">11:33 PM</div></div>
-            <div><div className="afd-metric__label">Yesterday <ChevronDown size={12}/></div><div className="afd-metric__value">0.00kr</div></div>
+            <div><div className="afd-metric__label">{t("home_gross_volume")} <ChevronDown size={12}/></div><div className="afd-metric__value">0.00kr</div><div className="afd-metric__time">11:33 PM</div></div>
+            <div><div className="afd-metric__label">{t("home_yesterday")} <ChevronDown size={12}/></div><div className="afd-metric__value">0.00kr</div></div>
           </div>
           <div className="afd-chart-wrap"><svg viewBox="0 0 1000 100" preserveAspectRatio="none"><path d="M0 88 L1000 88" stroke="#635bff" strokeWidth="2.5" fill="none" strokeLinecap="round"/><circle cx="1000" cy="88" r="5" fill="#635bff"/></svg></div>
           <div className="afd-chart-times"><span>12:00 AM</span><span>12:00 AM</span></div>
           <div className="afd-balance-row">
-            <div className="afd-balance-col"><div className="afd-balance-hd"><span className="afd-balance-label">DKK balance</span><button className="afd-balance-link">View</button></div><div className="afd-balance-amount">0.00kr</div></div>
-            <div className="afd-balance-col"><div className="afd-balance-hd"><span className="afd-balance-label">Payouts</span><button className="afd-balance-link">View</button></div><div className="afd-balance-dash">—</div></div>
+            <div className="afd-balance-col"><div className="afd-balance-hd"><span className="afd-balance-label">{t("home_dkk_balance")}</span><button className="afd-balance-link">{t("home_view")}</button></div><div className="afd-balance-amount">0.00kr</div></div>
+            <div className="afd-balance-col"><div className="afd-balance-hd"><span className="afd-balance-label">{t("home_payouts")}</span><button className="afd-balance-link">{t("home_view")}</button></div><div className="afd-balance-dash">—</div></div>
           </div>
         </div>
         <div className="afd-grid">
           <div className="afd-overview-card">
-            <h2>Your overview</h2>
+            <h2>{t("home_your_overview")}</h2>
             <div className="afd-overview-controls">
               <div className="afd-overview-filters">
-                <button className="afd-btn-pill">Date range</button>
-                <button className="afd-btn-pill">Last 7 days <ChevronDown size={10}/></button>
-                <button className="afd-btn-pill">Daily <ChevronDown size={10}/></button>
-                <button className="afd-btn-pill"><RotateCcw size={12}/> Compare</button>
-                <button className="afd-btn-pill">Previous period <ChevronDown size={10}/></button>
+                <button className="afd-btn-pill">{t("home_date_range")}</button>
+                <button className="afd-btn-pill">{t("home_last_7_days")} <ChevronDown size={10}/></button>
+                <button className="afd-btn-pill">{t("home_daily")} <ChevronDown size={10}/></button>
+                <button className="afd-btn-pill"><RotateCcw size={12}/> {t("home_compare")}</button>
+                <button className="afd-btn-pill">{t("home_previous_period")} <ChevronDown size={10}/></button>
               </div>
               <div className="afd-overview-actions">
-                <button className="afd-btn-pill"><PlusCircle size={12}/> Add</button>
-                <button className="afd-btn-pill"><Pencil size={12}/> Edit</button>
+                <button className="afd-btn-pill"><PlusCircle size={12}/> {t("home_add")}</button>
+                <button className="afd-btn-pill"><Pencil size={12}/> {t("home_edit")}</button>
               </div>
             </div>
-            <div className="afd-empty-chart">No data to display for this period</div>
+            <div className="afd-empty-chart">{t("home_no_data")}</div>
           </div>
           <div className="afd-right-panel">
             {recVisible && (
               <div className="afd-card">
-                <div className="afd-card__hd"><span className="afd-card__title">Recommendations</span><button className="afd-card__close" onClick={()=>setRecVisible(false)}><X size={13}/></button></div>
-                <div className="afd-rec-item"><p>Sell products, offer subscriptions, and collect tips or donations by creating a link—no code required.</p><a href="#">Create payment link</a></div>
+                <div className="afd-card__hd"><span className="afd-card__title">{t("home_recommendations")}</span><button className="afd-card__close" onClick={()=>setRecVisible(false)}><X size={13}/></button></div>
+                <div className="afd-rec-item"><p>{t("home_rec1")}</p><a href="#">{t("home_rec1_link")}</a></div>
                 <div className="afd-rec-divider"/>
-                <div className="afd-rec-item"><p>Offer subscriptions to drive predictable recurring revenue streams.</p><a href="#">Create a subscription</a></div>
+                <div className="afd-rec-item"><p>{t("home_rec2")}</p><a href="#">{t("home_rec2_link")}</a></div>
               </div>
             )}
             <div className="afd-card">
-              <div className="afd-apikeys-hd"><span>API keys</span><a href="#">View docs</a></div>
-              <div className="afd-key-row"><span className="afd-key-label">Publishable key</span><span className="afd-key-val">pk_test_51TnN162KHtN...</span></div>
-              <div className="afd-key-row"><span className="afd-key-label">Secret key</span><span className="afd-key-val">sk_test_51TnN162KHtN...</span></div>
+              <div className="afd-apikeys-hd"><span>{t("home_api_keys")}</span><a href="#">{t("home_view_docs")}</a></div>
+              <div className="afd-key-row"><span className="afd-key-label">{t("home_publishable_key")}</span><span className="afd-key-val">pk_test_51TnN162KHtN...</span></div>
+              <div className="afd-key-row"><span className="afd-key-label">{t("home_secret_key")}</span><span className="afd-key-val">sk_test_51TnN162KHtN...</span></div>
             </div>
           </div>
         </div>
@@ -250,8 +258,8 @@ const AdminDashboardNew = () => {
       <div className="afd-coming-soon-page">
         <div className="afd-coming-soon-icon"><Rocket size={48}/></div>
         <h2>{menuLabel(activeMenu)}</h2>
-        <p>This feature is under construction.</p>
-        <p>We're working hard to bring it to you soon!</p>
+        <p>{t("coming_soon_desc1")}</p>
+        <p>{t("coming_soon_desc2")}</p>
       </div>
     );
   };
@@ -269,11 +277,11 @@ const AdminDashboardNew = () => {
           <div onClick={()=>setShowLogout(false)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.45)',zIndex:1000,backdropFilter:'blur(3px)'}}/>
           <div style={{position:'fixed',top:'50%',left:'50%',transform:'translate(-50%,-50%)',background:'#fff',borderRadius:16,padding:'32px 28px',width:340,zIndex:1001,textAlign:'center',boxShadow:'0 20px 60px rgba(0,0,0,0.18)'}}>
             <div style={{width:56,height:56,borderRadius:'50%',background:'#fee2e2',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 16px'}}><AlertTriangle size={26} color="#dc2626"/></div>
-            <h3 style={{fontSize:18,fontWeight:800,color:'#111827',margin:'0 0 8px'}}>Sign Out?</h3>
-            <p style={{fontSize:13.5,color:'#6b7280',lineHeight:1.6,margin:'0 0 24px'}}>Are you sure you want to sign out of your TableTop Leo account?</p>
+            <h3 style={{fontSize:18,fontWeight:800,color:'#111827',margin:'0 0 8px'}}>{t('signout_title')}</h3>
+            <p style={{fontSize:13.5,color:'#6b7280',lineHeight:1.6,margin:'0 0 24px'}}>{t('signout_desc')}</p>
             <div style={{display:'flex',gap:10}}>
-              <button onClick={()=>setShowLogout(false)} style={{flex:1,padding:'10px',border:'1.5px solid #e5e7eb',borderRadius:9,background:'#fff',fontSize:13.5,fontWeight:600,color:'#374151',cursor:'pointer'}}>Cancel</button>
-              <button onClick={confirmLogout} style={{flex:1,padding:'10px',border:'none',borderRadius:9,background:'linear-gradient(135deg,#ef4444,#dc2626)',fontSize:13.5,fontWeight:700,color:'#fff',cursor:'pointer',boxShadow:'0 4px 12px rgba(239,68,68,0.35)'}}>Yes, Sign Out</button>
+              <button onClick={()=>setShowLogout(false)} style={{flex:1,padding:'10px',border:'1.5px solid #e5e7eb',borderRadius:9,background:'#fff',fontSize:13.5,fontWeight:600,color:'#374151',cursor:'pointer'}}>{t('signout_cancel')}</button>
+              <button onClick={confirmLogout} style={{flex:1,padding:'10px',border:'none',borderRadius:9,background:'linear-gradient(135deg,#ef4444,#dc2626)',fontSize:13.5,fontWeight:700,color:'#fff',cursor:'pointer',boxShadow:'0 4px 12px rgba(239,68,68,0.35)'}}>{t('signout_confirm')}</button>
             </div>
           </div>
         </>
@@ -283,7 +291,7 @@ const AdminDashboardNew = () => {
         <aside className={`afd-sidebar${collapsed?' collapsed':''}`}>
           <div className="afd-sidebar__header">
             {!collapsed && <div className="afd-sidebar__brand"><span className="afd-sidebar__brand-name">TableTopLeo</span></div>}
-            <button className="afd-collapse-btn" onClick={()=>setCollapsed(c=>!c)} title={collapsed?'Expand':'Collapse'}>
+            <button className="afd-collapse-btn" onClick={()=>setCollapsed(c=>!c)} title={collapsed?t('expand_sidebar'):t('collapse_sidebar')}>
               {collapsed?<ChevronRight size={15}/>:<ChevronLeft size={15}/>}
             </button>
           </div>
@@ -306,7 +314,7 @@ const AdminDashboardNew = () => {
               </div>
             ))}
             <div className="afd-sidebar__divider"/>
-            <div className="afd-sidebar__section-label">MORE</div>
+            <div className="afd-sidebar__section-label">{t('nav_more_section')}</div>
             {PRODUCT_ITEMS.map(({id,label,icon:Icon})=>(
               <button key={id} className={`afd-sidebar__item${activeMenu===id?' afd-sidebar__item--active':''}`} onClick={()=>setActiveMenu(id)} title={collapsed?label:undefined}>
                 <Icon size={17}/><span className="afd-item-label">{label}</span>
@@ -315,20 +323,20 @@ const AdminDashboardNew = () => {
           </nav>
           <div className="afd-sidebar__bottom">
              
-            <button className="afd-sidebar__item" onClick={()=>setActiveMenu('help-desk')}><HelpCircle size={17}/><span className="afd-item-label">Help</span></button>
-            <button className="afd-sidebar__item afd-sidebar__item--danger" onClick={()=>setShowLogout(true)} style={{color:'#e53e3e'}}><LogOut size={17}/><span className="afd-item-label">Logout</span></button>
+            <button className="afd-sidebar__item" onClick={()=>setActiveMenu('help-desk')}><HelpCircle size={17}/><span className="afd-item-label">{t('nav_help')}</span></button>
+            <button className="afd-sidebar__item afd-sidebar__item--danger" onClick={()=>setShowLogout(true)} style={{color:'#e53e3e'}}><LogOut size={17}/><span className="afd-item-label">{t('nav_logout')}</span></button>
           </div>
         </aside>
 
         <div className="afd-main">
           <header className="afd-topbar">
-            <div className="afd-topbar__search"><Search size={14}/><span>Search</span></div>
+            <div className="afd-topbar__search"><Search size={14}/><span>{t('topbar_search')}</span></div>
             <div className="afd-topbar__actions">
               
 
               {/* ── BELL + REAL-TIME DROPDOWN ── */}
               <div style={{position:'relative'}} ref={bellRef}>
-                <button className={`afd-topbar__icon-btn ${unreadCount>0?'bell-new':''}`} title="New Orders" onClick={()=>setBellOpen(o=>!o)} style={{position:'relative'}}>
+                <button className={`afd-topbar__icon-btn ${unreadCount>0?'bell-new':''}`} title={t('topbar_new_orders')} onClick={()=>setBellOpen(o=>!o)} style={{position:'relative'}}>
                   <Bell size={17}/>
                   {newOrders.length>0&&(
                     <span style={{position:'absolute',top:2,right:2,minWidth:16,height:16,borderRadius:8,background:'linear-gradient(135deg,#ef4444,#dc2626)',color:'#fff',fontSize:9,fontWeight:800,display:'flex',alignItems:'center',justifyContent:'center',border:'2px solid #fff',padding:'0 3px',lineHeight:1}}>
@@ -342,22 +350,22 @@ const AdminDashboardNew = () => {
                     <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'11px 13px 10px',borderBottom:`1px solid ${dk?'rgba(255,255,255,0.06)':'#f3f4f6'}`}}>
                       <div style={{display:'flex',alignItems:'center',gap:6}}>
                         <Bell size={13} color="#635bff"/>
-                        <span style={{fontSize:12.5,fontWeight:700,color:dk?'#e2e8f0':'#111827'}}>New Orders</span>
+                        <span style={{fontSize:12.5,fontWeight:700,color:dk?'#e2e8f0':'#111827'}}>{t('bell_new_orders')}</span>
                         {newOrders.length>0&&<span style={{fontSize:9.5,fontWeight:800,background:'#635bff',color:'#fff',borderRadius:20,padding:'1px 6px'}}>{newOrders.length}</span>}
                       </div>
-                      {newOrders.length>0&&<button onClick={clearAllBell} style={{fontSize:10.5,color:dk?'#6b7280':'#9ca3af',background:'none',border:'none',cursor:'pointer',fontFamily:'inherit'}}>Clear</button>}
+                      {newOrders.length>0&&<button onClick={clearAllBell} style={{fontSize:10.5,color:dk?'#6b7280':'#9ca3af',background:'none',border:'none',cursor:'pointer',fontFamily:'inherit'}}>{t('bell_clear')}</button>}
                     </div>
 
                     <div style={{maxHeight:320,overflowY:'auto'}}>
                       {bellLoading?(
                         <div style={{padding:'28px 16px',textAlign:'center'}}>
-                          <div style={{fontSize:11.5,color:dk?'#6b7280':'#9ca3af'}}>Loading notifications...</div>
+                          <div style={{fontSize:11.5,color:dk?'#6b7280':'#9ca3af'}}>{t('bell_loading')}</div>
                         </div>
                       ):newOrders.length===0?(
                         <div style={{padding:'28px 16px',textAlign:'center'}}>
                           <ShoppingBag size={28} color={dk?'#4b5563':'#d1d5db'} strokeWidth={1.5} style={{display:'block',margin:'0 auto 8px'}}/>
-                          <div style={{fontSize:12,fontWeight:600,color:dk?'#9ca3af':'#6b7280'}}>No new orders</div>
-                          <div style={{fontSize:10.5,color:dk?'#6b7280':'#9ca3af',marginTop:3}}>You're all caught up</div>
+                          <div style={{fontSize:12,fontWeight:600,color:dk?'#9ca3af':'#6b7280'}}>{t('bell_no_orders')}</div>
+                          <div style={{fontSize:10.5,color:dk?'#6b7280':'#9ca3af',marginTop:3}}>{t('bell_caught_up')}</div>
                         </div>
                       ):newOrders.map((order,idx)=>{
                         const amount=Number(order.amount||0).toLocaleString('en-IN');
@@ -372,18 +380,18 @@ const AdminDashboardNew = () => {
                             <div style={{display:'flex',alignItems:'center',gap:8,minWidth:0}}>
                               <div style={{width:7,height:7,borderRadius:'50%',background:'#635bff',flexShrink:0}}/>
                               <div style={{minWidth:0}}>
-                                <div style={{fontSize:11,fontWeight:700,color:'#635bff',marginBottom:2}}>🔔 New Order Received</div>
+                                <div style={{fontSize:11,fontWeight:700,color:'#635bff',marginBottom:2}}>🔔 {t('bell_new_order_received')}</div>
                                 <div style={{fontSize:13,fontWeight:800,color:dk?'#e2e8f0':'#111827',fontFamily:'monospace',lineHeight:1}}>{order.orderNumber||order.orderId?.slice(0,14)}</div>
                               </div>
                             </div>
                             <div style={{display:'flex',alignItems:'center',gap:8,flexShrink:0}}>
                               <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:4}}>
                                 <span style={{fontSize:14,fontWeight:800,color:'#635bff'}}>{formatCurrency(amount, currencyCode)}</span>
-                                <span style={{fontSize:10,fontWeight:600,color:isPac?'#b45309':isPaid?'#16a34a':'#f59e0b'}}>{isPac?'🏪 At Counter':isPaid?'✓ Paid':'Pending'}</span>
+                                <span style={{fontSize:10,fontWeight:600,color:isPac?'#b45309':isPaid?'#16a34a':'#f59e0b'}}>{isPac?`🏪 ${t('bell_at_counter')}`:isPaid?`✓ ${t('bell_paid')}`:t('bell_pending_status')}</span>
                               </div>
                               <button
                                 onClick={(e)=>handleDismissOrder(e, order.notificationId)}
-                                title="Dismiss"
+                                title={t('bell_dismiss')}
                                 style={{background:'none',border:'none',cursor:'pointer',color:dk?'#6b7280':'#9ca3af',padding:2,display:'flex',flexShrink:0}}
                               >
                                 <X size={13}/>
@@ -396,9 +404,9 @@ const AdminDashboardNew = () => {
 
                     {newOrders.length>0&&(
                       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'8px 13px',borderTop:`1px solid ${dk?'rgba(255,255,255,0.06)':'#f3f4f6'}`}}>
-                        <span style={{fontSize:10.5,color:dk?'#6b7280':'#9ca3af'}}>{newOrders.length} pending</span>
+                        <span style={{fontSize:10.5,color:dk?'#6b7280':'#9ca3af'}}>{newOrders.length} {t('bell_pending')}</span>
                         <button onClick={()=>{setBellOpen(false);setActiveMenu('orders');}} style={{fontSize:11,fontWeight:700,color:'#635bff',background:'none',border:'none',cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',gap:3}}>
-                          View All <ArrowRight size={10}/>
+                          {t('bell_view_all')} <ArrowRight size={10}/>
                         </button>
                       </div>
                     )}
@@ -406,8 +414,8 @@ const AdminDashboardNew = () => {
                 )}
               </div>
 
-              <button className="afd-topbar__icon-btn" title="Settings" onClick={()=>setActiveMenu(p=>p==='settings'?'home':'settings')}><Settings size={17}/></button>
-              <button className="afd-topbar__icon-btn" title={dark?'Light mode':'Dark mode'} onClick={()=>setDark(d=>!d)}>{dark?<Sun size={17}/>:<Moon size={17}/>}</button>
+              <button className="afd-topbar__icon-btn" title={t('topbar_settings')} onClick={()=>setActiveMenu(p=>p==='settings'?'home':'settings')}><Settings size={17}/></button>
+              <button className="afd-topbar__icon-btn" title={dark?t('topbar_light_mode'):t('topbar_dark_mode')} onClick={()=>setDark(d=>!d)}>{dark?<Sun size={17}/>:<Moon size={17}/>}</button>
 
               <div className="afd-dropdown-wrap" ref={userRef}>
                 <button className="afd-user-btn" onClick={()=>setUserDropOpen(o=>!o)}>
@@ -428,11 +436,11 @@ const AdminDashboardNew = () => {
                           <div style={{fontSize:12,color:'#6b7280',marginTop:2,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{user?.email||''}</div>
                         </div>
                       </div>
-                      {user?.adminId&&(<div style={{background:'#f9fafb',border:'1px solid #f3f4f6',borderRadius:7,padding:'7px 10px'}}><div style={{fontSize:10,color:'#9ca3af',textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:3,fontWeight:600}}>Admin ID</div><div style={{fontSize:11.5,fontFamily:'monospace',color:'#374151',fontWeight:600,wordBreak:'break-all'}}>{user.adminId}</div></div>)}
+                      {user?.adminId&&(<div style={{background:'#f9fafb',border:'1px solid #f3f4f6',borderRadius:7,padding:'7px 10px'}}><div style={{fontSize:10,color:'#9ca3af',textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:3,fontWeight:600}}>{t('admin_id')}</div><div style={{fontSize:11.5,fontFamily:'monospace',color:'#374151',fontWeight:600,wordBreak:'break-all'}}>{user.adminId}</div></div>)}
                     </div>
-                    <button className="afd-dropdown-item" onClick={()=>{setUserDropOpen(false);setActiveMenu('settings');}}><User size={15}/> Account Settings</button>
+                    <button className="afd-dropdown-item" onClick={()=>{setUserDropOpen(false);setActiveMenu('settings');}}><User size={15}/> {t('topbar_account_settings')}</button>
                     <div className="afd-dropdown-divider"/>
-                    <button className="afd-dropdown-item afd-dropdown-item--danger" onClick={()=>{setUserDropOpen(false);setShowLogout(true);}}><LogOut size={15}/> Logout</button>
+                    <button className="afd-dropdown-item afd-dropdown-item--danger" onClick={()=>{setUserDropOpen(false);setShowLogout(true);}}><LogOut size={15}/> {t('nav_logout')}</button>
                   </div>
                 )}
               </div>

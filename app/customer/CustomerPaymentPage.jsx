@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import { ArrowLeft, CreditCard, Copy, X, CheckCircle, AlertCircle } from "lucide-react";
 import QRCode from "react-qr-code";
 import axios from "axios";
+import { useCustomerLanguage } from "../context/CustomerLanguageProvider";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:6163/api";
 
@@ -149,6 +150,7 @@ const renderAppIcon = (a, size) =>
 // ════════════════════════════════════════════════════════════
 
 const MobilePayModal = ({ businessId, orderId, total, currencyCode, businessName, onSuccess, onClose }) => {
+  const { t } = useCustomerLanguage();
   const [loading, setLoading] = useState(true);
   const [paymentData, setPaymentData] = useState(null);
   const [paymentStatus, setPaymentStatus] = useState("PENDING");
@@ -223,11 +225,11 @@ const MobilePayModal = ({ businessId, orderId, total, currencyCode, businessName
         setPaymentData(response.data.data);
         setTimeRemaining(response.data.data.expiresIn || 900);
       } else {
-        setError(response.data.message || "Failed to initiate payment");
+        setError(response.data.message || t("errors.paymentFailed"));
       }
     } catch (err) {
       console.error("MobilePay initiate error:", err);
-      setError(err.response?.data?.message || "Failed to initiate MobilePay payment");
+      setError(err.response?.data?.message || t("errors.paymentFailed"));
     } finally {
       setLoading(false);
     }
@@ -290,7 +292,7 @@ const MobilePayModal = ({ businessId, orderId, total, currencyCode, businessName
             borderTop: "3px solid #3b82f6", animation: "spin 1s linear infinite", margin: "0 auto 16px"
           }} />
           <p style={{ fontSize: 14, color: "#64748b", fontWeight: 500, margin: 0 }}>
-            Initiating MobilePay payment...
+            {t("payment.initiatingMobilePayPayment")}
           </p>
         </div>
       </div>
@@ -311,7 +313,7 @@ const MobilePayModal = ({ businessId, orderId, total, currencyCode, businessName
             <AlertCircle size={32} style={{ color: "#ef4444", flexShrink: 0 }} />
             <div>
               <h3 style={{ margin: "0 0 4px", fontSize: 16, fontWeight: 600, color: "#ef4444" }}>
-                Cannot Process Payment
+                {t("payment.cannotProcessPayment")}
               </h3>
               <p style={{ margin: 0, fontSize: 13, color: "#64748b" }}>{error}</p>
             </div>
@@ -321,13 +323,13 @@ const MobilePayModal = ({ businessId, orderId, total, currencyCode, businessName
               flex: 1, padding: "10px 16px", background: "#3b82f6", color: "#fff",
               border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer"
             }}>
-              Close
+              {t("common.close")}
             </button>
             <button onClick={initiatePayment} style={{
               flex: 1, padding: "10px 16px", background: "#fff", color: "#3b82f6",
               border: "1.5px solid #3b82f6", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer"
             }}>
-              Retry
+              {t("payment.retry")}
             </button>
           </div>
         </div>
@@ -347,20 +349,20 @@ const MobilePayModal = ({ businessId, orderId, total, currencyCode, businessName
         }}>
           <CheckCircle size={48} style={{ color: "#10b981", margin: "0 auto 16px" }} />
           <h3 style={{ margin: 0, fontSize: 18, fontWeight: 600, color: "#10b981" }}>
-            Payment Successful!
+            {t("payment.paymentSuccessful")}!
           </h3>
           <p style={{ margin: "8px 0 0", fontSize: 13, color: "#64748b" }}>
-            Your payment has been confirmed
+            {t("payment.yourPaymentConfirmed")}
           </p>
           <div style={{
             marginTop: 20, padding: 12, background: "#f0fdf4", borderRadius: 8, textAlign: "left", fontSize: 12
           }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-              <span style={{ color: "#475569" }}>Reference:</span>
+              <span style={{ color: "#475569" }}>{t("payment.reference")}</span>
               <code style={{ color: "#16a34a", fontWeight: 600 }}>{paymentData?.paymentReference}</code>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <span style={{ color: "#475569" }}>Amount:</span>
+              <span style={{ color: "#475569" }}>{t("payment.amount")}:</span>
               <strong style={{ color: "#16a34a" }}>{paymentData?.amount} {paymentData?.currency}</strong>
             </div>
           </div>
@@ -385,10 +387,10 @@ const MobilePayModal = ({ businessId, orderId, total, currencyCode, businessName
         }}>
           <div>
             <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "#0f172a" }}>
-              MobilePay Payment
+              {t("payment.mobilePayModalTitle")}
             </h2>
             <p style={{ margin: "4px 0 0", fontSize: 13, color: "#64748b" }}>
-              Scan QR code with your MobilePay app
+              {t("payment.scanQrWithApp")}
             </p>
           </div>
           <button onClick={onClose} style={{
@@ -403,7 +405,7 @@ const MobilePayModal = ({ businessId, orderId, total, currencyCode, businessName
         <div style={{
           textAlign: "center", marginBottom: 24, paddingBottom: 20, borderBottom: "1px solid #e2e8f0"
         }}>
-          <p style={{ margin: 0, fontSize: 12, color: "#64748b", fontWeight: 500 }}>Total Amount</p>
+          <p style={{ margin: 0, fontSize: 12, color: "#64748b", fontWeight: 500 }}>{t("payment.totalAmountLabel")}</p>
           <div style={{ fontSize: 36, fontWeight: 700, color: "#0f172a", marginTop: 8 }}>
             {paymentData?.amount} <span style={{ fontSize: 18, color: "#64748b" }}>
               {paymentData?.currency}
@@ -430,14 +432,14 @@ const MobilePayModal = ({ businessId, orderId, total, currencyCode, businessName
             )}
           </div>
           <div style={{ textAlign: "center", fontSize: 12, color: "#64748b" }}>
-            Point your camera at this QR code or open with MobilePay app
+            {t("payment.pointCamera")}
           </div>
 
           {/* Payment Link */}
           {paymentData?.paymentLink && (
             <div style={{ width: "100%", padding: 12, background: "#f8fafc", borderRadius: 8 }}>
               <div style={{ fontSize: 11, fontWeight: 600, color: "#64748b", marginBottom: 8 }}>
-                Can't scan? Use this link:
+                {t("payment.cantScanUseLink")}
               </div>
               <div style={{
                 display: "flex", gap: 8, background: "#fff", border: "1px solid #e2e8f0",
@@ -472,9 +474,9 @@ const MobilePayModal = ({ businessId, orderId, total, currencyCode, businessName
             }} />
             <div>
               <div style={{ fontSize: 12, fontWeight: 600, color: "#92400e" }}>
-                Waiting for payment...
+                {t("payment.waitingForPayment")}
               </div>
-              <div style={{ fontSize: 11, color: "#b45309" }}>Checked {pollCount} times</div>
+              <div style={{ fontSize: 11, color: "#b45309" }}>{t("payment.checkedTimes", { count: pollCount })}</div>
             </div>
           </div>
           {timeRemaining > 0 && (
@@ -490,13 +492,13 @@ const MobilePayModal = ({ businessId, orderId, total, currencyCode, businessName
             flex: 1, padding: "10px 16px", background: "#fff", color: "#3b82f6",
             border: "1.5px solid #e2e8f0", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer"
           }}>
-            Check Status
+            {t("payment.checkStatus")}
           </button>
           <button onClick={onClose} style={{
             flex: 1, padding: "10px 16px", background: "#fff", color: "#3b82f6",
             border: "1.5px solid #e2e8f0", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer"
           }}>
-            Cancel
+            {t("common.cancel")}
           </button>
         </div>
       </div>
@@ -509,47 +511,18 @@ const MobilePayModal = ({ businessId, orderId, total, currencyCode, businessName
 // MAIN PAYMENT PAGE - EXISTING CODE PRESERVED
 // ════════════════════════════════════════════════════════════
 
-const METHODS = [
-  {
-    id: "upi", label: "UPI",
-    sub: "PhonePe · GPay · Paytm · BHIM · Any UPI App",
-    apps: [
-      { name:"PhonePe" },
-      { name:"Google Pay" },
-      { name:"Paytm" },
-      { name:"BHIM" },
-    ],
-  },
-  {
-    id: "razorpay", label: "Cards & Net Banking",
-    sub: "Powered by Razorpay — PhonePe · GPay · Paytm · Cards · Net Banking",
-    apps: [
-      { name:"PhonePe" },
-      { name:"Google Pay" },
-      { name:"Paytm" },
-      { name:"Visa" },
-    ],
-  },
-  {
-    id: "stripe", label: "International Cards",
-    sub: "Powered by Stripe — Apple Pay · Mobile Pay · GPay · Cards · Net Banking",
-    apps: [
-      { name:"Apple Pay" },
-      { name:"Mobile Pay" },
-      { name:"Google Pay" },
-      { name:"Other Cards & Net Banking", generic:true },
-    ],
-  },
-  {
-    id: "mobilepay", label: "Mobile Pay",
-    sub: "Scan with your phone's wallet to pay instantly",
-    apps: [
-      { name:"Mobile Pay" },
-    ],
-  },
-];
-
 const CustomerPaymentPage = ({ total, business, diningInfo, onBack, onInitiatePayment, onConfirmPayment, payAtCounterAvailable }) => {
+  const { t } = useCustomerLanguage();
+  const METHODS = [
+    { id: "upi", label: t("payment.upi"), sub: t("payment.upiDesc"),
+      apps: [{ name:"PhonePe" },{ name:"Google Pay" },{ name:"Paytm" },{ name:"BHIM" }] },
+    { id: "razorpay", label: t("payment.razorpay"), sub: t("payment.payUsingApps"),
+      apps: [{ name:"PhonePe" },{ name:"Google Pay" },{ name:"Paytm" },{ name:"Visa" }] },
+    { id: "stripe", label: t("payment.internationalCards"), sub: t("payment.stripeApps"),
+      apps: [{ name:"Apple Pay" },{ name:"Mobile Pay" },{ name:"Google Pay" },{ name:"Other Cards & Net Banking", generic:true }] },
+    { id: "mobilepay", label: t("payment.mobilePay"), sub: t("payment.mobilePayDesc"),
+      apps: [{ name:"Mobile Pay" }] },
+  ];
   const _currCode = business?.currencyCode || "INR";
 
   // Which of the 4 online gateways to actually show — driven by the
@@ -620,7 +593,7 @@ const CustomerPaymentPage = ({ total, business, diningInfo, onBack, onInitiatePa
       const data = await onInitiatePayment(methodId);
       setPaymentData(data);
     } catch (e) {
-      setError(e.message || "Failed to initiate payment. Please try again.");
+      setError(e.message || t("errors.paymentInitFailed"));
     } finally {
       setLoading(false);
     }
@@ -657,7 +630,7 @@ const CustomerPaymentPage = ({ total, business, diningInfo, onBack, onInitiatePa
   };
 
   const handleUpiConfirm = async () => {
-    if (!upiRef.trim()) { setError("Please enter your UPI transaction reference."); return; }
+    if (!upiRef.trim()) { setError(t("errors.upiRefRequired")); return; }
     setConfirming(true); setError("");
     try {
       await onConfirmPayment({
@@ -672,7 +645,7 @@ const CustomerPaymentPage = ({ total, business, diningInfo, onBack, onInitiatePa
   };
 
   const handleRazorpayPay = () => {
-    if (!paymentData?.razorpayOrderId) { setError("Razorpay not initialized."); return; }
+    if (!paymentData?.razorpayOrderId) { setError(t("errors.gatewayNotInitialized")); return; }
     const options = {
       key:         paymentData.razorpayKeyId,
       amount:      Math.round(total * 100),
@@ -702,13 +675,13 @@ const CustomerPaymentPage = ({ total, business, diningInfo, onBack, onInitiatePa
       const rzp = new window.Razorpay(options);
       rzp.open();
     } else {
-      setError("Razorpay SDK not loaded. Please refresh and try again.");
+      setError(t("errors.sdkNotLoaded"));
     }
   };
 
   const handleStripePay = async () => {
-    if (!paymentData?.stripeClientSecret) { setError("Stripe not initialized."); return; }
-    if (!window.Stripe) { setError("Stripe SDK not loaded."); return; }
+    if (!paymentData?.stripeClientSecret) { setError(t("errors.gatewayNotInitialized")); return; }
+    if (!window.Stripe) { setError(t("errors.sdkNotLoaded")); return; }
     setConfirming(true); setError("");
     try {
       const stripe = window.Stripe(paymentData.stripePublishableKey);
@@ -771,7 +744,7 @@ const CustomerPaymentPage = ({ total, business, diningInfo, onBack, onInitiatePa
     <div className="cw-screen">
       <div className="cx-topbar">
         <button className="back-btn cx-topbar-action" onClick={onBack}><ArrowLeft size={20}/></button>
-        <span className="cx-topbar-title">Payment</span>
+        <span className="cx-topbar-title">{t("payment.title")}</span>
         <div style={{ width:32 }}/>
       </div>
 
@@ -779,18 +752,18 @@ const CustomerPaymentPage = ({ total, business, diningInfo, onBack, onInitiatePa
         {/* Order Summary */}
         <div className="cx-section">
           <div className="order-summary-box">
-            <div className="osb-title">Order Summary</div>
-            <div className="osb-row"><span className="osb-label">Business</span><span className="osb-value">{business?.businessName}</span></div>
-            <div className="osb-row"><span className="osb-label">Order Type</span><span className="osb-value">{diningInfo.type === "dine-in" ? "🍽️ Dine In" : "🥡 Take Away"}{diningInfo.table ? ` — ${diningInfo.table}` : ""}</span></div>
-            {diningInfo.name && <div className="osb-row"><span className="osb-label">Name</span><span className="osb-value">{diningInfo.name}</span></div>}
-            {diningInfo.note && <div className="osb-row"><span className="osb-label">Note</span><span className="osb-value" style={{ fontStyle:"italic", color:"var(--text-muted)", fontSize:12 }}>{diningInfo.note}</span></div>}
-            <div className="osb-row"><span className="osb-label">Amount</span><span className="osb-amount">{formatCurrency(total, _currCode)}</span></div>
+            <div className="osb-title">{t("payment.orderSummaryTitle")}</div>
+            <div className="osb-row"><span className="osb-label">{t("payment.business")}</span><span className="osb-value">{business?.businessName}</span></div>
+            <div className="osb-row"><span className="osb-label">{t("payment.orderType")}</span><span className="osb-value">{diningInfo.type === "dine-in" ? `🍽️ ${t("dining.dineIn")}` : `🥡 ${t("dining.takeAway")}`}{diningInfo.table ? ` — ${diningInfo.table}` : ""}</span></div>
+            {diningInfo.name && <div className="osb-row"><span className="osb-label">{t("payment.name")}</span><span className="osb-value">{diningInfo.name}</span></div>}
+            {diningInfo.note && <div className="osb-row"><span className="osb-label">{t("payment.note")}</span><span className="osb-value" style={{ fontStyle:"italic", color:"var(--text-muted)", fontSize:12 }}>{diningInfo.note}</span></div>}
+            <div className="osb-row"><span className="osb-label">{t("payment.amount")}</span><span className="osb-amount">{formatCurrency(total, _currCode)}</span></div>
           </div>
         </div>
 
         {/* Payment Methods */}
         <div className="cx-section" style={{ paddingTop:0 }}>
-          <div style={{ fontSize:13, fontWeight:700, color:"var(--text-primary)", marginBottom:10 }}>Select Payment Method</div>
+          <div style={{ fontSize:13, fontWeight:700, color:"var(--text-primary)", marginBottom:10 }}>{t("payment.selectMethod")}</div>
 
           {visibleMethods.map(m => (
             <div key={m.id} style={s.methodCard(selectedMethod===m.id)} onClick={() => handleSelectMethod(m.id)}>
@@ -815,7 +788,7 @@ const CustomerPaymentPage = ({ total, business, diningInfo, onBack, onInitiatePa
           <div style={{ textAlign:"center", padding:24 }}>
             <div style={{ width:32, height:32, border:"3px solid var(--brand-muted)", borderTop:"3px solid var(--brand)", borderRadius:"50%", animation:"spin 0.7s linear infinite", margin:"0 auto 10px" }}/>
             <p style={{ fontSize:13, color:"var(--text-muted)", margin:0 }}>
-              {checkingMobilePayConfig ? "Checking MobilePay configuration..." : "Initializing payment..."}
+              {checkingMobilePayConfig ? t("payment.checkingMobilePayConfig") : t("payment.initializingPayment")}
             </p>
           </div>
         )}
@@ -831,12 +804,12 @@ const CustomerPaymentPage = ({ total, business, diningInfo, onBack, onInitiatePa
         {selectedMethod==="upi" && paymentData && !loading && (
           <div style={{ margin:"0 16px", animation:"fadeIn 0.22s ease" }}>
             <div style={{ background:"var(--surface-2)", border:"1.5px solid var(--border)", borderRadius:"var(--radius-lg)", padding:20, display:"flex", flexDirection:"column", alignItems:"center", gap:12 }}>
-              <div style={{ fontSize:13, color:"var(--text-muted)", fontWeight:600 }}>Scan to pay <strong style={{ color:"var(--text-primary)" }}>{business?.businessName}</strong></div>
+              <div style={{ fontSize:13, color:"var(--text-muted)", fontWeight:600 }}>{t("payment.scanToPay")} <strong style={{ color:"var(--text-primary)" }}>{business?.businessName}</strong></div>
               <div style={{ fontSize:28, fontWeight:900, color:"var(--brand)" }}>{formatCurrency(total, _currCode)}</div>
               <div style={{ background:"#fff", padding:12, borderRadius:12, border:"1.5px solid var(--border)" }}>
                 <QRCode value={paymentData.upiString} size={150} fgColor="#7B3F00"/>
               </div>
-              <div style={{ fontSize:12, color:"var(--text-muted)", textAlign:"center" }}>Scan using any UPI app · Or tap an app below</div>
+              <div style={{ fontSize:12, color:"var(--text-muted)", textAlign:"center" }}>{t("payment.scanUsingAnyUpi")}</div>
               <div style={{ display:"flex", gap:10, flexWrap:"wrap", justifyContent:"center" }}>
                 {METHODS[0].apps.map(a => (
                   <a key={a.name} href={paymentData.upiString} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:3, textDecoration:"none" }}>
@@ -847,21 +820,21 @@ const CustomerPaymentPage = ({ total, business, diningInfo, onBack, onInitiatePa
               </div>
               <div style={{ width:"100%" }}>
                 <label style={{ fontSize:12.5, fontWeight:700, color:"var(--text-secondary)", display:"block", marginBottom:6 }}>
-                  Enter UPI Transaction ID after payment <span style={{ color:"var(--red)" }}>*</span>
+                  {t("payment.upiTransactionIdLabel")} <span style={{ color:"var(--red)" }}>*</span>
                 </label>
                 <input
                   value={upiRef} onChange={e => setUpiRef(e.target.value)}
-                  placeholder="e.g. 3208765432109876"
+                  placeholder={t("payment.upiRefPlaceholder")}
                   style={{ width:"100%", padding:"10px 12px", border:"1.5px solid var(--border)", borderRadius:"var(--radius-md)", fontSize:13, fontFamily:"monospace", outline:"none", boxSizing:"border-box" }}
                 />
                 <p style={{ margin:"4px 0 0", fontSize:11, color:"var(--text-muted)" }}>
-                  Find this in your UPI app after successful payment
+                  {t("payment.findInUpiApp")}
                 </p>
               </div>
             </div>
             <div style={{ marginTop:12 }}>
               <button style={s.payBtn(confirming || !upiRef.trim())} disabled={confirming || !upiRef.trim()} onClick={handleUpiConfirm}>
-                {confirming ? "Verifying..." : "I've Paid — Confirm Order ✓"}
+                {confirming ? t("payment.verifying") : t("payment.confirmOrderChecked")}
               </button>
             </div>
           </div>
@@ -871,7 +844,7 @@ const CustomerPaymentPage = ({ total, business, diningInfo, onBack, onInitiatePa
         {selectedMethod==="razorpay" && paymentData && !loading && (
           <div style={{ margin:"0 16px", animation:"fadeIn 0.22s ease" }}>
             <div style={{ background:"var(--surface-2)", border:"1.5px solid var(--border)", borderRadius:"var(--radius-lg)", padding:20, textAlign:"center" }}>
-              <div style={{ fontSize:13, color:"var(--text-muted)", marginBottom:6 }}>Pay using PhonePe, GPay, Paytm, Cards, or Net Banking</div>
+              <div style={{ fontSize:13, color:"var(--text-muted)", marginBottom:6 }}>{t("payment.payUsingApps")}</div>
               <div style={{ fontSize:26, fontWeight:900, color:"var(--brand)", marginBottom:12 }}>{formatCurrency(total, _currCode)}</div>
               <div style={{ display:"flex", gap:8, justifyContent:"center", marginBottom:16, flexWrap:"wrap" }}>
                 {METHODS[1].apps.map(a => (
@@ -881,7 +854,7 @@ const CustomerPaymentPage = ({ total, business, diningInfo, onBack, onInitiatePa
             </div>
             <div style={{ marginTop:12 }}>
               <button style={s.payBtn(confirming)} disabled={confirming} onClick={handleRazorpayPay}>
-                {confirming ? "Processing..." : `Pay ${formatCurrency(total, _currCode)} via Razorpay →`}
+                {confirming ? t("payment.processingPayment") : t("payment.payViaRazorpay", { amount: formatCurrency(total, _currCode) })}
               </button>
             </div>
           </div>
@@ -891,7 +864,7 @@ const CustomerPaymentPage = ({ total, business, diningInfo, onBack, onInitiatePa
         {selectedMethod==="stripe" && paymentData && !loading && (
           <div style={{ margin:"0 16px", animation:"fadeIn 0.22s ease" }}>
             <div style={{ background:"var(--surface-2)", border:"1.5px solid var(--border)", borderRadius:"var(--radius-lg)", padding:20, textAlign:"center" }}>
-              <div style={{ fontSize:13, color:"var(--text-muted)", marginBottom:6 }}>Apple Pay · Mobile Pay · Google Pay · Cards · Net Banking</div>
+              <div style={{ fontSize:13, color:"var(--text-muted)", marginBottom:6 }}>{t("payment.stripeApps")}</div>
               <div style={{ fontSize:26, fontWeight:900, color:"var(--brand)", marginBottom:12 }}>{formatCurrency(total, _currCode)}</div>
               <div style={{ display:"flex", gap:8, justifyContent:"center", marginBottom:16, flexWrap:"wrap" }}>
                 {METHODS[2].apps.map(a => renderAppIcon(a, 36))}
@@ -899,7 +872,7 @@ const CustomerPaymentPage = ({ total, business, diningInfo, onBack, onInitiatePa
             </div>
             <div style={{ marginTop:12 }}>
               <button style={s.payBtn(confirming)} disabled={confirming} onClick={handleStripePay}>
-                {confirming ? "Processing..." : `Pay ${formatCurrency(total, _currCode)} via Stripe →`}
+                {confirming ? t("payment.processingPayment") : t("payment.payViaStripe", { amount: formatCurrency(total, _currCode) })}
               </button>
             </div>
           </div>
@@ -936,10 +909,10 @@ const CustomerPaymentPage = ({ total, business, diningInfo, onBack, onInitiatePa
               </div>
               <div style={{ flex:1 }}>
                 <div style={{ fontSize:14, fontWeight:700, color: payAtCounter ? "var(--green)" : "var(--text-primary)" }}>
-                  🏪 Pay at Counter
+                  🏪 {t("payment.payAtCounterTitle")}
                 </div>
                 <div style={{ fontSize:12, color:"var(--text-muted)", marginTop:2 }}>
-                  Place your order now and pay cash / card at the counter
+                  {t("payment.payAtCounterToggleDesc")}
                 </div>
               </div>
             </div>
@@ -973,14 +946,14 @@ const CustomerPaymentPage = ({ total, business, diningInfo, onBack, onInitiatePa
               } catch (e) { setError(e.message); } finally { setConfirming(false); }
             }}
           >
-            {confirming ? "Placing Order..." : "Proceed with Order with Pay at Counter →"}
+            {confirming ? t("payment.placingOrder") : t("payment.proceedPayAtCounter")}
           </button>
         ) : (
           <button
             style={s.payBtn(!selectedMethod || loading || checkingMobilePayConfig)}
             disabled={!selectedMethod || loading || checkingMobilePayConfig}
           >
-            {!selectedMethod ? "Select a Payment Method" : `Pay ${formatCurrency(total, _currCode)}`}
+            {!selectedMethod ? t("payment.selectPaymentMethodBtn") : t("payment.payAmount", { amount: formatCurrency(total, _currCode) })}
           </button>
         )}
       </div>

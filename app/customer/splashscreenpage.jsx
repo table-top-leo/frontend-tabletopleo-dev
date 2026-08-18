@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { ChevronUp } from "lucide-react";
+import { useCustomerLanguage } from "../context/CustomerLanguageProvider";
 
 // Same per-type cover fallback used on the landing page, so every
 // business gets a relevant, on-brand splash screen even before
@@ -33,6 +34,7 @@ function getCoverImage(business) {
 }
 
 const CustomerSplashScreen = ({ business, onContinue }) => {
+  const { t } = useCustomerLanguage();
   const [leaving, setLeaving] = useState(false);
   const touchStartY = useRef(null);
   const fired = useRef(false);
@@ -120,7 +122,7 @@ const CustomerSplashScreen = ({ business, onContinue }) => {
       >
         <ChevronUp className="text-white/80 animate-bounce" size={22} strokeWidth={2.5} />
         <span className="text-xs font-semibold tracking-wide text-white/70">
-          Tap, scroll, or swipe up to begin
+          {t("splash.tapToBegin")}
         </span>
       </div>
 

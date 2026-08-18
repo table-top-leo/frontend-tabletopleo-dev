@@ -1,15 +1,13 @@
 "use client";
 import { X, User, Receipt, Flame, UtensilsCrossed, ChevronRight } from "lucide-react";
+import { useCustomerLanguage } from "../context/CustomerLanguageProvider";
 
-// Identity is derived purely from what the customer already typed at
-// checkout (name/email), stored per-business in localStorage — no login
-// flow needed. If nothing was ever entered, they're shown as a Guest.
 const CustomerSidebar = ({ open, onClose, business, identity, onMyOrders, onOffers, onHome }) => {
+  const { t } = useCustomerLanguage();
   const hasIdentity = identity && (identity.name || identity.email);
 
   return (
     <>
-      {/* Backdrop */}
       <div
         onClick={onClose}
         style={{
@@ -21,7 +19,6 @@ const CustomerSidebar = ({ open, onClose, business, identity, onMyOrders, onOffe
         }}
       />
 
-      {/* Drawer */}
       <div
         style={{
           position: "absolute", top: 0, bottom: 0, left: 0, zIndex: 301,
@@ -33,7 +30,6 @@ const CustomerSidebar = ({ open, onClose, business, identity, onMyOrders, onOffe
           boxShadow: open ? "8px 0 30px rgba(0,0,0,0.18)" : "none",
         }}
       >
-        {/* Profile header */}
         <div style={{ padding: "20px 18px 16px", background: "linear-gradient(135deg,#F2701D,#F0A500)", position: "relative" }}>
           <button onClick={onClose} style={{ position: "absolute", top: 14, right: 14, width: 30, height: 30, borderRadius: "50%", background: "rgba(255,255,255,0.22)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
             <X size={16} color="#fff" />
@@ -42,29 +38,27 @@ const CustomerSidebar = ({ open, onClose, business, identity, onMyOrders, onOffe
             <User size={26} color="#fff" />
           </div>
           <div style={{ fontSize: 16, fontWeight: 800, color: "#fff" }}>
-            {hasIdentity ? (identity.name || "Guest") : "Guest"}
+            {hasIdentity ? (identity.name || t("sidebar.guest")) : t("sidebar.guest")}
           </div>
           <div style={{ fontSize: 11.5, color: "rgba(255,255,255,0.85)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {hasIdentity && identity.email ? identity.email : hasIdentity && identity.phone ? identity.phone : "Order to see your details here"}
+            {hasIdentity && identity.email ? identity.email : hasIdentity && identity.phone ? identity.phone : t("sidebar.orderToSeeDetails")}
           </div>
         </div>
 
-        {/* Business context */}
         {business && (
           <div style={{ padding: "12px 18px", borderBottom: "1px solid var(--border-light)", fontSize: 11.5, color: "var(--text-muted)" }}>
-            Ordering at <span style={{ fontWeight: 700, color: "var(--text-primary)" }}>{business.businessName || business.name}</span>
+            {t("sidebar.orderingAt")} <span style={{ fontWeight: 700, color: "var(--text-primary)" }}>{business.businessName || business.name}</span>
           </div>
         )}
 
-        {/* Nav items */}
         <div style={{ flex: 1, padding: "10px 10px", display: "flex", flexDirection: "column", gap: 4 }}>
-          <SidebarItem icon={UtensilsCrossed} label="Home / Menu" onClick={onHome} />
-          <SidebarItem icon={Receipt} label="My Orders" onClick={onMyOrders} />
-          <SidebarItem icon={Flame} label="Offers & deals" onClick={onOffers} />
+          <SidebarItem icon={UtensilsCrossed} label={t("sidebar.homeMenu")} onClick={onHome} />
+          <SidebarItem icon={Receipt} label={t("sidebar.myOrders")} onClick={onMyOrders} />
+          <SidebarItem icon={Flame} label={t("landing.offersAndDeals")} onClick={onOffers} />
         </div>
 
         <div style={{ padding: "14px 18px", fontSize: 10.5, color: "var(--text-muted)", borderTop: "1px solid var(--border-light)" }}>
-          Powered by TableTop Leo
+          {t("sidebar.poweredBy")}
         </div>
       </div>
     </>
