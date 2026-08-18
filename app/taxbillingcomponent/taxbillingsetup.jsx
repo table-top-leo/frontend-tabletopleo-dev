@@ -4,12 +4,7 @@ import {
   Receipt, Loader2, CheckCircle2, Info, Percent,
 } from "lucide-react";
 import taxService from "../services/taxservice";
-const TAX_SYSTEM_PRESETS = [
-  { value: "GST",        label: "GST — Goods & Services Tax" },
-  { value: "VAT",        label: "VAT — Value Added Tax" },
-  { value: "SALES_TAX",  label: "Sales Tax" },
-  { value: "OTHER",      label: "Other / Custom" },
-];
+import { useLanguage } from "../context/LanguageContext";
 
 const EMPTY = {
   taxEnabled: false,
@@ -20,6 +15,14 @@ const EMPTY = {
 };
 
 export default function TaxBillingSetup() {
+  const { t } = useLanguage();
+  const TAX_SYSTEM_PRESETS = [
+    { value: "GST",        label: t("tx_preset_gst") },
+    { value: "VAT",        label: t("tx_preset_vat") },
+    { value: "SALES_TAX",  label: t("tx_preset_sales") },
+    { value: "OTHER",      label: t("tx_preset_other") },
+  ];
+
   const [loading, setLoading]   = useState(true);
   const [saving, setSaving]     = useState(false);
   const [error, setError]       = useState("");
@@ -49,10 +52,10 @@ export default function TaxBillingSetup() {
           });
           if (d.taxSystem && !isPreset) setCustomSystem(d.taxSystem);
         } else {
-          setError(res.message || "Failed to load tax configuration.");
+          setError(res.message || t("tx_load_failed"));
         }
       })
-      .catch((err) => setError(err.response?.data?.message || "Failed to load tax configuration."))
+      .catch((err) => setError(err.response?.data?.message || t("tx_load_failed")))
       .finally(() => setLoading(false));
   };
 
@@ -63,9 +66,9 @@ export default function TaxBillingSetup() {
     const resolvedSystem = draft.taxSystem === "OTHER" ? customSystem.trim() : draft.taxSystem;
 
     if (draft.taxEnabled) {
-      if (!resolvedSystem) return setError("Please select or enter a tax system.");
+      if (!resolvedSystem) return setError(t("tx_select_system"));
       if (draft.defaultTaxRate === "" || Number(draft.defaultTaxRate) < 0) {
-        return setError("Please enter a valid tax rate.");
+        return setError(t("tx_valid_rate"));
       }
     }
 
@@ -80,10 +83,10 @@ export default function TaxBillingSetup() {
       };
       const res = await taxService.updateMyTaxConfiguration(payload);
       if (!res.success) throw new Error(res.message);
-      showToast(draft.taxEnabled ? "Tax enabled and saved ✓" : "Tax disabled ✓");
+      showToast(draft.taxEnabled ? t("tx_enabled_toast") : t("tx_disabled_toast"));
       load();
     } catch (err) {
-      setError(err.response?.data?.message || err.message || "Failed to save tax configuration.");
+      setError(err.response?.data?.message || err.message || t("tx_save_failed"));
     } finally {
       setSaving(false);
     }
@@ -112,19 +115,17 @@ export default function TaxBillingSetup() {
           <Receipt size={20} color="#fff" />
         </div>
         <div>
-          <div style={{ fontSize: 19, fontWeight: 800, color: "#111827" }}>Tax & Billing</div>
-          <div style={{ fontSize: 12.5, color: "#6b7280", marginTop: 2 }}>Control whether — and how — tax is charged to your customers</div>
+          <div style={{ fontSize: 19, fontWeight: 800, color: "#111827" }}>{t("tx_title")}</div>
+          <div style={{ fontSize: 12.5, color: "#6b7280", marginTop: 2 }}>{t("tx_sub")}</div>
         </div>
       </div>
 
       {/* Enable toggle card — always visible, top of page */}
       <div style={{ background: "#fff", border: "1px solid #f0e4d6", borderRadius: 16, padding: "18px 20px", marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
         <div>
-          <div style={{ fontSize: 14.5, fontWeight: 800, color: "#111827" }}>Enable Tax</div>
+          <div style={{ fontSize: 14.5, fontWeight: 800, color: "#111827" }}>{t("tx_enable_tax")}</div>
           <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 3, lineHeight: 1.5 }}>
-            {draft.taxEnabled
-              ? "Tax is currently enabled — configure the details below."
-              : "Tax is currently disabled. Customers won't see or pay any tax. No further setup needed."}
+            {draft.taxEnabled ? t("tx_enabled_desc") : t("tx_disabled_desc")}
           </div>
         </div>
         <button
@@ -138,16 +139,16 @@ export default function TaxBillingSetup() {
 
       {/* Preview strip — always visible, shows exactly what the customer will see */}
       <div style={{ background: "#f9fafb", border: "1px dashed #e5e7eb", borderRadius: 12, padding: "12px 16px", marginBottom: 20, fontSize: 12.5, color: "#6b7280" }}>
-        <div style={{ fontWeight: 700, color: "#9ca3af", fontSize: 10.5, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 6 }}>Customer will see</div>
-        <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0" }}><span>Subtotal</span><span>500.00</span></div>
+        <div style={{ fontWeight: 700, color: "#9ca3af", fontSize: 10.5, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 6 }}>{t("tx_customer_will_see")}</div>
+        <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0" }}><span>{t("tx_subtotal")}</span><span>500.00</span></div>
         {draft.taxEnabled && (
           <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0" }}>
-            <span>{draft.taxSystem === "OTHER" ? (customSystem || "Tax") : (TAX_SYSTEM_PRESETS.find(p => p.value === draft.taxSystem)?.value || "Tax")}</span>
+            <span>{draft.taxSystem === "OTHER" ? (customSystem || t("tx_tax_generic")) : (TAX_SYSTEM_PRESETS.find(p => p.value === draft.taxSystem)?.value || t("tx_tax_generic"))}</span>
             <span>{draft.defaultTaxRate ? (500 * Number(draft.defaultTaxRate) / 100).toFixed(2) : "—"}</span>
           </div>
         )}
         <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0 0", fontWeight: 800, color: "#111827", borderTop: "1px solid #e5e7eb", marginTop: 4 }}>
-          <span>Total</span>
+          <span>{t("tx_total")}</span>
           <span>{draft.taxEnabled && draft.defaultTaxRate ? (500 + 500 * Number(draft.defaultTaxRate) / 100).toFixed(2) : "500.00"}</span>
         </div>
       </div>
@@ -157,7 +158,7 @@ export default function TaxBillingSetup() {
         <div style={{ background: "#fff", border: "1px solid #f0e4d6", borderRadius: 16, padding: "20px 22px", display: "flex", flexDirection: "column", gap: 18, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
 
           <div>
-            <label style={fieldLabel}>Tax System <span style={{ color: "#dc2626" }}>*</span></label>
+            <label style={fieldLabel}>{t("tx_tax_system")} <span style={{ color: "#dc2626" }}>*</span></label>
             <select value={draft.taxSystem} onChange={(e) => setDraft((d) => ({ ...d, taxSystem: e.target.value }))} style={fieldInput}>
               {TAX_SYSTEM_PRESETS.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
             </select>
@@ -165,57 +166,57 @@ export default function TaxBillingSetup() {
               <input
                 value={customSystem}
                 onChange={(e) => setCustomSystem(e.target.value)}
-                placeholder="Enter your tax system name (e.g. Consumption Tax)"
+                placeholder={t("tx_custom_system_ph")}
                 style={{ ...fieldInput, marginTop: 8 }}
               />
             )}
           </div>
 
           <div>
-            <label style={fieldLabel}>Tax Registration Number <span style={{ color: "#9ca3af", fontWeight: 500 }}>(optional)</span></label>
+            <label style={fieldLabel}>{t("tx_tax_reg_number")} <span style={{ color: "#9ca3af", fontWeight: 500 }}>{t("tx_optional")}</span></label>
             <input
               value={draft.taxRegistrationNumber}
               onChange={(e) => setDraft((d) => ({ ...d, taxRegistrationNumber: e.target.value }))}
-              placeholder="e.g. GSTIN / VAT number"
+              placeholder={t("tx_tax_reg_ph")}
               style={fieldInput}
             />
           </div>
 
           <div>
-            <label style={fieldLabel}>Default Tax Rate (%) <span style={{ color: "#dc2626" }}>*</span></label>
+            <label style={fieldLabel}>{t("tx_default_rate")} <span style={{ color: "#dc2626" }}>*</span></label>
             <div style={{ position: "relative" }}>
               <input
                 type="number" min="0" step="0.001"
                 value={draft.defaultTaxRate}
                 onChange={(e) => setDraft((d) => ({ ...d, defaultTaxRate: e.target.value }))}
-                placeholder="e.g. 5"
+                placeholder={t("tx_rate_ph")}
                 style={{ ...fieldInput, paddingRight: 32 }}
               />
               <Percent size={13} color="#9ca3af" style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)" }} />
             </div>
             <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 5 }}>
-              This is your rate to configure — we don't assume or hardcode any legal tax rate for you.
+              {t("tx_rate_hint")}
             </div>
           </div>
 
           <div>
-            <label style={fieldLabel}>Tax Calculation</label>
+            <label style={fieldLabel}>{t("tx_tax_calc")}</label>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
               <button
                 type="button"
                 onClick={() => setDraft((d) => ({ ...d, taxInclusive: false }))}
                 style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 4, padding: "12px 14px", borderRadius: 10, border: !draft.taxInclusive ? "2px solid #F2701D" : "2px solid #f0e4d6", background: !draft.taxInclusive ? "#FBF3EC" : "#fff", cursor: "pointer", textAlign: "left" }}
               >
-                <span style={{ fontSize: 12.5, fontWeight: 700, color: "#111827" }}>Tax Exclusive</span>
-                <span style={{ fontSize: 10.5, color: "#9ca3af" }}>Tax added on top of menu price</span>
+                <span style={{ fontSize: 12.5, fontWeight: 700, color: "#111827" }}>{t("tx_exclusive")}</span>
+                <span style={{ fontSize: 10.5, color: "#9ca3af" }}>{t("tx_exclusive_desc")}</span>
               </button>
               <button
                 type="button"
                 onClick={() => setDraft((d) => ({ ...d, taxInclusive: true }))}
                 style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 4, padding: "12px 14px", borderRadius: 10, border: draft.taxInclusive ? "2px solid #F2701D" : "2px solid #f0e4d6", background: draft.taxInclusive ? "#FBF3EC" : "#fff", cursor: "pointer", textAlign: "left" }}
               >
-                <span style={{ fontSize: 12.5, fontWeight: 700, color: "#111827" }}>Tax Inclusive</span>
-                <span style={{ fontSize: 10.5, color: "#9ca3af" }}>Menu price already includes tax</span>
+                <span style={{ fontSize: 12.5, fontWeight: 700, color: "#111827" }}>{t("tx_inclusive")}</span>
+                <span style={{ fontSize: 10.5, color: "#9ca3af" }}>{t("tx_inclusive_desc")}</span>
               </button>
             </div>
           </div>
@@ -234,14 +235,13 @@ export default function TaxBillingSetup() {
         style={{ marginTop: 18, width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "13px", borderRadius: 11, border: "none", background: saving ? "#e5e7eb" : "linear-gradient(135deg,#F2701D,#F0A500)", color: saving ? "#9ca3af" : "#fff", fontSize: 14, fontWeight: 800, cursor: saving ? "not-allowed" : "pointer" }}
       >
         {saving ? <Loader2 size={16} style={{ animation: "txSpin 0.8s linear infinite" }} /> : <CheckCircle2 size={16} />}
-        {saving ? "Saving..." : "Save Configuration"}
+        {saving ? t("tx_saving") : t("tx_save_config")}
       </button>
 
       <div style={{ marginTop: 18, display: "flex", gap: 10, padding: "12px 14px", background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 10, fontSize: 12, color: "#1e40af" }}>
         <Info size={15} style={{ flexShrink: 0, marginTop: 1 }} />
         <div>
-          Changes here only affect <strong>future</strong> orders. Orders already placed keep the tax
-          rate and system that applied when the customer paid — past invoices never change.
+          {t("tx_future_note").replace(/\*\*/g, "")}
         </div>
       </div>
     </div>

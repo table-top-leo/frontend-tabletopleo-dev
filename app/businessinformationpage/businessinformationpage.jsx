@@ -8,6 +8,7 @@ import {
 import "../businessinformationpage/designbusinessinfo.css";
 import { getBusinessInformation, updateBusinessInformation } from "../services/businessService";
 import { COUNTRY_CURRENCY_MAP, CURRENCIES, getCurrencySymbol } from "../utils/currencyHelper";
+import { useLanguage } from "../context/LanguageContext";
 
 const COUNTRIES = [
   "Afghanistan","Albania","Algeria","Andorra","Angola","Argentina","Armenia","Australia",
@@ -68,14 +69,6 @@ const PHONE_CODES = [
   { flag: "🇯🇵", code: "+81", iso: "JP" },
 ];
 
-const EXTRA_FIELD_TYPES = [
-  { label: "Social Media Link",  icon: Globe,     placeholder: "https://instagram.com/yourbusiness" },
-  { label: "Alternate Phone",    icon: Phone,     placeholder: "Enter alternate phone number" },
-  { label: "FSSAI Number",       icon: FileText,  placeholder: "Enter FSSAI license number" },
-  { label: "PAN Number",         icon: FileText,  placeholder: "Enter PAN number" },
-  { label: "Bank Account",       icon: Package,   placeholder: "Enter bank account number" },
-];
-
 function formatTimeTo12(timeVal) {
   if (!timeVal) return "09:00 AM";
   if (typeof timeVal === "string" && (timeVal.includes("AM") || timeVal.includes("PM")))
@@ -115,6 +108,18 @@ const EMPTY = {
 };
 
 const BusinessInformation = () => {
+  const { t } = useLanguage();
+
+  // Extra field types — built inside the component so labels/placeholders
+  // follow the active language. Icons stay attached, exactly as before.
+  const EXTRA_FIELD_TYPES = [
+    { label: t("bi_extra_social"),    icon: Globe,     placeholder: t("bi_extra_social_ph") },
+    { label: t("bi_extra_altphone"),  icon: Phone,     placeholder: t("bi_extra_altphone_ph") },
+    { label: t("bi_extra_fssai"),     icon: FileText,  placeholder: t("bi_extra_fssai_ph") },
+    { label: t("bi_extra_pan"),       icon: FileText,  placeholder: t("bi_extra_pan_ph") },
+    { label: t("bi_extra_bank"),      icon: Package,   placeholder: t("bi_extra_bank_ph") },
+  ];
+
   const [data,         setData]        = useState(EMPTY);
   const [draft,        setDraft]       = useState(EMPTY);
   const [editing,      setEditing]     = useState(false);
@@ -173,7 +178,7 @@ const BusinessInformation = () => {
       setData(mapped);
       setDraft(mapped);
     } catch (err) {
-      setFetchErr(err.response?.data?.message || err.message || "Failed to load business information.");
+      setFetchErr(err.response?.data?.message || err.message || t("bi_load_failed"));
     } finally {
       setLoading(false);
     }
@@ -206,18 +211,18 @@ const BusinessInformation = () => {
 
   const validate = () => {
     const e = {};
-    if (!draft.businessName.trim())  e.businessName  = "Business name is required.";
-    if (!draft.businessEmail.trim()) e.businessEmail = "Business email is required.";
+    if (!draft.businessName.trim())  e.businessName  = t("bi_err_name_required");
+    if (!draft.businessEmail.trim()) e.businessEmail = t("bi_err_email_required");
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(draft.businessEmail))
-      e.businessEmail = "Enter a valid email.";
-    if (!draft.businessPhone.trim()) e.businessPhone = "Business phone is required.";
-    if (!draft.addressLine1.trim())  e.addressLine1  = "Address line 1 is required.";
-    if (!draft.city.trim())          e.city          = "City is required.";
-    if (!draft.state.trim())         e.state         = "State is required.";
-    if (!draft.country)              e.country       = "Country is required.";
-    if (!draft.postalCode.trim())    e.postalCode    = "Postal code is required.";
+      e.businessEmail = t("bi_err_email_invalid");
+    if (!draft.businessPhone.trim()) e.businessPhone = t("bi_err_phone_required");
+    if (!draft.addressLine1.trim())  e.addressLine1  = t("bi_err_address1_required");
+    if (!draft.city.trim())          e.city          = t("bi_err_city_required");
+    if (!draft.state.trim())         e.state         = t("bi_err_state_required");
+    if (!draft.country)              e.country       = t("bi_err_country_required");
+    if (!draft.postalCode.trim())    e.postalCode    = t("bi_err_postal_required");
     if (!draft.dineInEnabled && !draft.takeawayEnabled) {
-      e.orderTypes = "Enable at least one order type — Dine In or Take Away.";
+      e.orderTypes = t("bi_err_order_types");
     }
     return e;
   };
@@ -269,9 +274,9 @@ const BusinessInformation = () => {
       } catch {}
       setEditing(false);
       setErrors({});
-      showToast("Business information updated successfully! ✓");
+      showToast(t("bi_toast_updated"));
     } catch (err) {
-      showToast(err.response?.data?.message || "Failed to update. Please try again.", "error");
+      showToast(err.response?.data?.message || t("bi_toast_update_failed"), "error");
     } finally {
       setSaving(false);
     }
@@ -290,7 +295,7 @@ const BusinessInformation = () => {
         <div style={{ textAlign:"center", color:"#71717a" }}>
           <div style={{ width:36, height:36, border:"3px solid #e4e4e7", borderTopColor:"#7c3aed", borderRadius:"50%", animation:"biSpin 0.8s linear infinite", margin:"0 auto 14px" }}/>
           <style>{`@keyframes biSpin{to{transform:rotate(360deg)}}`}</style>
-          <div style={{ fontSize:14, fontWeight:600 }}>Loading business information...</div>
+          <div style={{ fontSize:14, fontWeight:600 }}>{t("bi_loading")}</div>
         </div>
       </div>
     </div>
@@ -301,10 +306,10 @@ const BusinessInformation = () => {
       <div className="bi-card">
         <div style={{ padding:"48px 20px", textAlign:"center" }}>
           <div style={{ fontSize:44, marginBottom:14 }}>⚠️</div>
-          <div style={{ fontSize:16, fontWeight:700, color:"#18181b", marginBottom:8 }}>Could not load business information</div>
+          <div style={{ fontSize:16, fontWeight:700, color:"#18181b", marginBottom:8 }}>{t("bi_could_not_load")}</div>
           <div style={{ fontSize:13, color:"#71717a", marginBottom:20 }}>{fetchErr}</div>
           <button onClick={fetchBusiness} style={{ display:"inline-flex", alignItems:"center", gap:7, background:"#7c3aed", color:"#fff", border:"none", borderRadius:10, padding:"10px 22px", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }} type="button">
-            <RefreshCw size={15}/> Retry
+            <RefreshCw size={15}/> {t("bi_retry")}
           </button>
         </div>
       </div>
@@ -327,22 +332,22 @@ const BusinessInformation = () => {
 
       <div className="bi-card">
         <div className="bi-header">
-          <h1 className="bi-title">Business Information</h1>
+          <h1 className="bi-title">{t("bi_title")}</h1>
           <p className="bi-sub">
-            {editing ? "Make your changes below and click Update to save." : "Your registered business details. Click Edit to make changes."}
+            {editing ? t("bi_sub_edit") : t("bi_sub_view")}
           </p>
           <div className="bi-header-actions">
             {!editing ? (
               <button className="bi-btn-edit" onClick={handleEdit} type="button">
-                <Pencil size={15}/> Edit Information
+                <Pencil size={15}/> {t("bi_edit_info")}
               </button>
             ) : (
               <div className="bi-edit-actions">
                 <button className="bi-btn-cancel" onClick={handleCancel} type="button" disabled={saving}>
-                  <X size={15}/> Cancel
+                  <X size={15}/> {t("bi_cancel")}
                 </button>
                 <button className="bi-btn-done" onClick={handleUpdate} type="button" disabled={saving} style={{ background: saving?"#a78bfa":undefined }}>
-                  {saving ? <><div style={spinnerStyle}/> Updating...</> : <><Check size={15}/> Update</>}
+                  {saving ? <><div style={spinnerStyle}/> {t("bi_updating")}</> : <><Check size={15}/> {t("bi_update")}</>}
                 </button>
               </div>
             )}
@@ -352,13 +357,13 @@ const BusinessInformation = () => {
         {!editing && (
           <div className="bi-mode-banner">
             <Lock size={14}/>
-            <span>View mode — click <strong>Edit Information</strong> to make changes</span>
+            <span>{t("bi_view_mode_banner")} <strong>{t("bi_edit_info")}</strong> {t("bi_view_mode_banner2")}</span>
           </div>
         )}
         {editing && (
           <div className="bi-mode-banner" style={{ background:"#fef3c7", borderColor:"#fde68a", color:"#92400e" }}>
             <Pencil size={14}/>
-            <span>Edit mode — update your details and click <strong>Update</strong> to save</span>
+            <span>{t("bi_edit_mode_banner")} <strong>{t("bi_update")}</strong> {t("bi_edit_mode_banner2")}</span>
           </div>
         )}
 
@@ -366,10 +371,10 @@ const BusinessInformation = () => {
 
           {/* ── Business Name ── */}
           <div className="bi-field-group">
-            <label className="bi-label">Business Name <span className="bi-req">*</span></label>
+            <label className="bi-label">{t("bi_business_name")} <span className="bi-req">*</span></label>
             <div className={`bi-input-wrap ${errors.businessName?"bi-err":""} ${!editing?"bi-readonly":""}`}>
               <Building2 size={15} className="bi-icon"/>
-              <input className="bi-input" type="text" placeholder="Enter business name"
+              <input className="bi-input" type="text" placeholder={t("bi_business_name_ph")}
                 value={d.businessName} disabled={!editing}
                 onChange={e => handleFieldChange("businessName", e.target.value)}/>
             </div>
@@ -378,20 +383,20 @@ const BusinessInformation = () => {
 
           {/* ── Business Type — read-only ── */}
           <div className="bi-field-group">
-            <label className="bi-label">Business Type</label>
+            <label className="bi-label">{t("bi_business_type")}</label>
             <div className="bi-input-wrap bi-readonly">
               <MapPin size={15} className="bi-icon"/>
               <input className="bi-input" type="text" value={d.businessType} disabled readOnly/>
-              <span style={{ fontSize:11, color:"#a1a1aa", padding:"0 10px", whiteSpace:"nowrap" }}>Read-only</span>
+              <span style={{ fontSize:11, color:"#a1a1aa", padding:"0 10px", whiteSpace:"nowrap" }}>{t("bi_readonly")}</span>
             </div>
           </div>
 
           {/* ── Business Email ── */}
           <div className="bi-field-group">
-            <label className="bi-label">Business Email <span className="bi-req">*</span></label>
+            <label className="bi-label">{t("bi_business_email")} <span className="bi-req">*</span></label>
             <div className={`bi-input-wrap ${errors.businessEmail?"bi-err":""} ${!editing?"bi-readonly":""}`}>
               <Mail size={15} className="bi-icon"/>
-              <input className="bi-input" type="email" placeholder="Enter business email"
+              <input className="bi-input" type="email" placeholder={t("bi_business_email_ph")}
                 value={d.businessEmail} disabled={!editing}
                 onChange={e => handleFieldChange("businessEmail", e.target.value)}/>
             </div>
@@ -400,7 +405,7 @@ const BusinessInformation = () => {
 
           {/* ── Business Phone ── */}
           <div className="bi-field-group">
-            <label className="bi-label">Business Phone Number <span className="bi-req">*</span></label>
+            <label className="bi-label">{t("bi_business_phone")} <span className="bi-req">*</span></label>
             <div className={`bi-phone-wrap ${errors.businessPhone?"bi-err":""} ${!editing?"bi-readonly":""}`}>
               <Phone size={15} className="bi-icon"/>
               <select className="bi-phone-code" value={d.phoneCode} disabled={!editing}
@@ -408,7 +413,7 @@ const BusinessInformation = () => {
                 {PHONE_CODES.map(c => <option key={c.iso} value={c.code}>{c.flag} {c.code}</option>)}
               </select>
               <ChevronDown size={13} className="bi-phone-chevron"/>
-              <input className="bi-input bi-phone-input" type="tel" placeholder="Enter phone number"
+              <input className="bi-input bi-phone-input" type="tel" placeholder={t("bi_phone_ph")}
                 value={d.businessPhone} disabled={!editing}
                 onChange={e => handleFieldChange("businessPhone", e.target.value)}/>
             </div>
@@ -417,7 +422,7 @@ const BusinessInformation = () => {
 
           {/* ── Logo — CIRCLE shape ── */}
           <div className="bi-field-group">
-            <label className="bi-label">Business Logo (Optional)</label>
+            <label className="bi-label">{t("bi_logo_optional")}</label>
             <div style={{ display:"flex", alignItems:"center", gap:16 }}>
               {/* Circle upload button */}
               <div
@@ -441,35 +446,35 @@ const BusinessInformation = () => {
                     {editing && (
                       <div className="bi-logo-overlay" style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.45)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:4, opacity:0, transition:"opacity 0.2s" }}>
                         <Upload size={18} color="#fff"/>
-                        <span style={{ fontSize:10, fontWeight:700, color:"#fff" }}>Change</span>
+                        <span style={{ fontSize:10, fontWeight:700, color:"#fff" }}>{t("bi_change")}</span>
                       </div>
                     )}
                   </>
                 ) : (
                   <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:5 }}>
                     <Upload size={20} color={editing?"#7c3aed":"#a1a1aa"}/>
-                    {editing && <span style={{ fontSize:9.5, fontWeight:700, color:"#7c3aed", textAlign:"center", lineHeight:1.3 }}>Upload<br/>Logo</span>}
+                    {editing && <span style={{ fontSize:9.5, fontWeight:700, color:"#7c3aed", textAlign:"center", lineHeight:1.3 }}>{t("bi_upload_logo")}</span>}
                   </div>
                 )}
               </div>
               {/* Helper text */}
               <div>
                 <div style={{ fontSize:13, fontWeight:600, color:"#18181b", marginBottom:4 }}>
-                  {d.logoPreview ? "Logo uploaded" : "No logo uploaded"}
+                  {d.logoPreview ? t("bi_logo_uploaded") : t("bi_no_logo")}
                 </div>
                 {editing ? (
                   <>
-                    <div style={{ fontSize:12, color:"#71717a", lineHeight:1.5 }}>Click the circle to upload your business logo.</div>
-                    <div style={{ fontSize:11.5, color:"#a1a1aa", marginTop:2 }}>PNG, JPG up to 2MB. Best size: 400×400px.</div>
+                    <div style={{ fontSize:12, color:"#71717a", lineHeight:1.5 }}>{t("bi_logo_click_hint")}</div>
+                    <div style={{ fontSize:11.5, color:"#a1a1aa", marginTop:2 }}>{t("bi_logo_size_hint")}</div>
                     {d.logoPreview && (
                       <button onClick={() => handleFieldChange("logoPreview", null)} type="button"
                         style={{ marginTop:6, fontSize:11.5, color:"#ef4444", background:"none", border:"none", cursor:"pointer", padding:0, fontFamily:"inherit", fontWeight:600 }}>
-                        ✕ Remove logo
+                        ✕ {t("bi_remove_logo")}
                       </button>
                     )}
                   </>
                 ) : (
-                  <div style={{ fontSize:12, color:"#a1a1aa" }}>Click Edit to upload or change logo.</div>
+                  <div style={{ fontSize:12, color:"#a1a1aa" }}>{t("bi_click_edit_logo")}</div>
                 )}
               </div>
             </div>
@@ -477,10 +482,10 @@ const BusinessInformation = () => {
 
           {/* ── License ── */}
           <div className="bi-field-group">
-            <label className="bi-label">Business License Number (Optional)</label>
+            <label className="bi-label">{t("bi_license_optional")}</label>
             <div className={`bi-input-wrap ${!editing?"bi-readonly":""}`}>
               <FileText size={15} className="bi-icon"/>
-              <input className="bi-input" type="text" placeholder="Enter license number"
+              <input className="bi-input" type="text" placeholder={t("bi_license_ph")}
                 value={d.licenseNumber} disabled={!editing}
                 onChange={e => handleFieldChange("licenseNumber", e.target.value)}/>
             </div>
@@ -488,10 +493,10 @@ const BusinessInformation = () => {
 
           {/* ── GST ── */}
           <div className="bi-field-group">
-            <label className="bi-label">GST Number (Optional)</label>
+            <label className="bi-label">{t("bi_gst_optional")}</label>
             <div className={`bi-input-wrap ${!editing?"bi-readonly":""}`}>
               <Percent size={15} className="bi-icon"/>
-              <input className="bi-input" type="text" placeholder="Enter GST number"
+              <input className="bi-input" type="text" placeholder={t("bi_gst_ph")}
                 value={d.gstNumber} disabled={!editing}
                 onChange={e => handleFieldChange("gstNumber", e.target.value)}/>
             </div>
@@ -499,10 +504,10 @@ const BusinessInformation = () => {
 
           {/* ── Website ── */}
           <div className="bi-field-group">
-            <label className="bi-label">Website (Optional)</label>
+            <label className="bi-label">{t("bi_website_optional")}</label>
             <div className={`bi-input-wrap ${!editing?"bi-readonly":""}`}>
               <Globe size={15} className="bi-icon"/>
-              <input className="bi-input" type="url" placeholder="https://yourwebsite.com"
+              <input className="bi-input" type="url" placeholder={t("bi_website_ph")}
                 value={d.website} disabled={!editing}
                 onChange={e => handleFieldChange("website", e.target.value)}/>
             </div>
@@ -511,10 +516,10 @@ const BusinessInformation = () => {
           {/* ── Address Line 1 ── */}
           <div className="bi-col-full">
             <div className="bi-field-group">
-              <label className="bi-label">Address Line 1 <span className="bi-req">*</span></label>
+              <label className="bi-label">{t("bi_address1")} <span className="bi-req">*</span></label>
               <div className={`bi-input-wrap ${errors.addressLine1?"bi-err":""} ${!editing?"bi-readonly":""}`}>
                 <MapPin size={15} className="bi-icon"/>
-                <input className="bi-input" type="text" placeholder="Enter address line 1"
+                <input className="bi-input" type="text" placeholder={t("bi_address1_ph")}
                   value={d.addressLine1} disabled={!editing}
                   onChange={e => handleFieldChange("addressLine1", e.target.value)}/>
               </div>
@@ -525,10 +530,10 @@ const BusinessInformation = () => {
           {/* ── Address Line 2 ── */}
           <div className="bi-col-full">
             <div className="bi-field-group">
-              <label className="bi-label">Address Line 2 (Optional)</label>
+              <label className="bi-label">{t("bi_address2_optional")}</label>
               <div className={`bi-input-wrap ${!editing?"bi-readonly":""}`}>
                 <Building2 size={15} className="bi-icon"/>
-                <input className="bi-input" type="text" placeholder="Enter address line 2"
+                <input className="bi-input" type="text" placeholder={t("bi_address2_ph")}
                   value={d.addressLine2} disabled={!editing}
                   onChange={e => handleFieldChange("addressLine2", e.target.value)}/>
               </div>
@@ -537,10 +542,10 @@ const BusinessInformation = () => {
 
           {/* ── City ── */}
           <div className="bi-field-group">
-            <label className="bi-label">City <span className="bi-req">*</span></label>
+            <label className="bi-label">{t("bi_city")} <span className="bi-req">*</span></label>
             <div className={`bi-input-wrap ${errors.city?"bi-err":""} ${!editing?"bi-readonly":""}`}>
               <Building2 size={15} className="bi-icon"/>
-              <input className="bi-input" type="text" placeholder="Enter city"
+              <input className="bi-input" type="text" placeholder={t("bi_city_ph")}
                 value={d.city} disabled={!editing}
                 onChange={e => handleFieldChange("city", e.target.value)}/>
             </div>
@@ -549,10 +554,10 @@ const BusinessInformation = () => {
 
           {/* ── State ── */}
           <div className="bi-field-group">
-            <label className="bi-label">State / Province <span className="bi-req">*</span></label>
+            <label className="bi-label">{t("bi_state")} <span className="bi-req">*</span></label>
             <div className={`bi-input-wrap ${errors.state?"bi-err":""} ${!editing?"bi-readonly":""}`}>
               <MapPin size={15} className="bi-icon"/>
-              <input className="bi-input" type="text" placeholder="Enter state"
+              <input className="bi-input" type="text" placeholder={t("bi_state_ph")}
                 value={d.state} disabled={!editing}
                 onChange={e => handleFieldChange("state", e.target.value)}/>
             </div>
@@ -561,12 +566,12 @@ const BusinessInformation = () => {
 
           {/* ── Country + Currency side by side ── */}
           <div className="bi-field-group">
-            <label className="bi-label">Country <span className="bi-req">*</span></label>
+            <label className="bi-label">{t("bi_country")} <span className="bi-req">*</span></label>
             <div className={`bi-input-wrap bi-select-wrap ${errors.country?"bi-err":""} ${!editing?"bi-readonly":""}`}>
               <Globe size={15} className="bi-icon"/>
               <select className="bi-select" value={d.country} disabled={!editing}
                 onChange={e => handleCountryChange(e.target.value)}>
-                <option value="">Select country</option>
+                <option value="">{t("bi_select_country")}</option>
                 {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
               <ChevronDown size={13} className="bi-select-chevron"/>
@@ -576,7 +581,7 @@ const BusinessInformation = () => {
 
           {/* ── Currency ── */}
           <div className="bi-field-group">
-            <label className="bi-label">Currency</label>
+            <label className="bi-label">{t("bi_currency")}</label>
             <div className={`bi-input-wrap bi-select-wrap ${!editing?"bi-readonly":""}`}>
               {/* Show symbol as icon */}
               <span style={{ paddingLeft:12, paddingRight:6, fontSize:14, fontWeight:700, color:"#7c3aed", flexShrink:0, fontFamily:"monospace" }}>
@@ -585,7 +590,7 @@ const BusinessInformation = () => {
               <select className="bi-select" style={{ paddingLeft:0 }}
                 value={d.currencyCode || ""} disabled={!editing}
                 onChange={e => handleFieldChange("currencyCode", e.target.value)}>
-                <option value="">Not selected</option>
+                <option value="">{t("bi_not_selected")}</option>
                 {CURRENCIES.map(cur => (
                   <option key={cur.code} value={cur.code}>{cur.label}</option>
                 ))}
@@ -593,19 +598,19 @@ const BusinessInformation = () => {
               <ChevronDown size={13} className="bi-select-chevron"/>
             </div>
             {!editing && !d.currencyCode && (
-              <span style={{ fontSize:11.5, color:"#f59e0b", marginTop:4, display:"block" }}>⚠ No currency selected</span>
+              <span style={{ fontSize:11.5, color:"#f59e0b", marginTop:4, display:"block" }}>⚠ {t("bi_no_currency_selected")}</span>
             )}
             {editing && (
-              <span style={{ fontSize:11, color:"#a1a1aa", marginTop:4, display:"block" }}>Auto-set when country is selected. You can change manually.</span>
+              <span style={{ fontSize:11, color:"#a1a1aa", marginTop:4, display:"block" }}>{t("bi_currency_auto_hint")}</span>
             )}
           </div>
 
           {/* ── Postal Code ── */}
           <div className="bi-field-group">
-            <label className="bi-label">Postal / ZIP Code <span className="bi-req">*</span></label>
+            <label className="bi-label">{t("bi_postal_code")} <span className="bi-req">*</span></label>
             <div className={`bi-input-wrap ${errors.postalCode?"bi-err":""} ${!editing?"bi-readonly":""}`}>
               <Package size={15} className="bi-icon"/>
-              <input className="bi-input" type="text" placeholder="Enter postal code"
+              <input className="bi-input" type="text" placeholder={t("bi_postal_code_ph")}
                 value={d.postalCode} disabled={!editing}
                 onChange={e => handleFieldChange("postalCode", e.target.value)}/>
             </div>
@@ -614,12 +619,12 @@ const BusinessInformation = () => {
 
           {/* ── Opening Time ── */}
           <div className="bi-field-group">
-            <label className="bi-label">Opening Time <span className="bi-req">*</span></label>
+            <label className="bi-label">{t("bi_opening_time")} <span className="bi-req">*</span></label>
             <div className={`bi-input-wrap bi-select-wrap ${!editing?"bi-readonly":""}`}>
               <Clock size={15} className="bi-icon"/>
               <select className="bi-select" value={d.openingTime} disabled={!editing}
                 onChange={e => handleFieldChange("openingTime", e.target.value)}>
-                {TIMES.map(t => <option key={t} value={t}>{t}</option>)}
+                {TIMES.map(time => <option key={time} value={time}>{time}</option>)}
               </select>
               <ChevronDown size={13} className="bi-select-chevron"/>
             </div>
@@ -627,12 +632,12 @@ const BusinessInformation = () => {
 
           {/* ── Closing Time ── */}
           <div className="bi-field-group">
-            <label className="bi-label">Closing Time <span className="bi-req">*</span></label>
+            <label className="bi-label">{t("bi_closing_time")} <span className="bi-req">*</span></label>
             <div className={`bi-input-wrap bi-select-wrap ${!editing?"bi-readonly":""}`}>
               <Clock size={15} className="bi-icon"/>
               <select className="bi-select" value={d.closingTime} disabled={!editing}
                 onChange={e => handleFieldChange("closingTime", e.target.value)}>
-                {TIMES.map(t => <option key={t} value={t}>{t}</option>)}
+                {TIMES.map(time => <option key={time} value={time}>{time}</option>)}
               </select>
               <ChevronDown size={13} className="bi-select-chevron"/>
             </div>
@@ -640,7 +645,7 @@ const BusinessInformation = () => {
 
           {/* ── Working Days ── */}
           <div className="bi-field-group">
-            <label className="bi-label">Working Days (Optional)</label>
+            <label className="bi-label">{t("bi_working_days_optional")}</label>
             <div className={`bi-input-wrap bi-select-wrap ${!editing?"bi-readonly":""}`}>
               <Calendar size={15} className="bi-icon"/>
               <select className="bi-select" multiple value={d.workingDays}
@@ -649,7 +654,7 @@ const BusinessInformation = () => {
               </select>
               <ChevronDown size={13} className="bi-select-chevron"/>
             </div>
-            {editing && <span className="bi-hint">Hold Ctrl / Cmd to select multiple days</span>}
+            {editing && <span className="bi-hint">{t("bi_hold_ctrl_hint")}</span>}
             {!editing && d.workingDays.length > 0 && (
               <div className="bi-days-display">
                 {d.workingDays.map(day => <span key={day} className="bi-day-pill">{day.slice(0,3)}</span>)}
@@ -659,7 +664,7 @@ const BusinessInformation = () => {
 
           {/* ── Timezone ── */}
           <div className="bi-field-group">
-            <label className="bi-label">Time Zone <span className="bi-req">*</span></label>
+            <label className="bi-label">{t("bi_timezone")} <span className="bi-req">*</span></label>
             <div className={`bi-input-wrap bi-select-wrap ${!editing?"bi-readonly":""}`}>
               <Globe size={15} className="bi-icon"/>
               <select className="bi-select" value={d.timezone} disabled={!editing}
@@ -673,9 +678,9 @@ const BusinessInformation = () => {
           {/* ── Description ── */}
           <div className="bi-col-full">
             <div className="bi-field-group">
-              <label className="bi-label">Business Description (Optional)</label>
+              <label className="bi-label">{t("bi_description_optional")}</label>
               <div className={`bi-textarea-wrap ${!editing?"bi-readonly":""}`}>
-                <textarea className="bi-textarea" placeholder="Tell us about your business..."
+                <textarea className="bi-textarea" placeholder={t("bi_description_ph")}
                   value={d.description} disabled={!editing}
                   onChange={e => handleFieldChange("description", e.target.value)}/>
                 {editing && <Pencil size={14} className="bi-textarea-icon"/>}
@@ -686,14 +691,12 @@ const BusinessInformation = () => {
           {/* ── Table Service toggle ── */}
           <div className="bi-col-full">
             <div className="bi-field-group">
-              <label className="bi-label">Table Service</label>
+              <label className="bi-label">{t("bi_table_service")}</label>
               <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"14px 16px", background: editing ? "#fff" : "#f9fafb", border:"1.5px solid #e4e4e7", borderRadius:10 }}>
                 <div style={{ paddingRight:16 }}>
-                  <div style={{ fontSize:13, fontWeight:700, color:"#18181b" }}>Do you have table numbers for Dine In?</div>
+                  <div style={{ fontSize:13, fontWeight:700, color:"#18181b" }}>{t("bi_table_service_q")}</div>
                   <div style={{ fontSize:11.5, color:"#71717a", marginTop:3, lineHeight:1.5 }}>
-                    ON = customers sit at numbered tables, so the customer app asks for a table number.
-                    OFF = counter-service business (kirana store, juice bar, food stall, small cafe) with
-                    no fixed seating — the table number field is hidden for both Dine In and Take Away.
+                    {t("bi_table_service_desc")}
                   </div>
                 </div>
                 <button
@@ -711,12 +714,12 @@ const BusinessInformation = () => {
           {/* ── Order Types toggle ── */}
           <div className="bi-col-full">
             <div className="bi-field-group">
-              <label className="bi-label">Order Types Accepted <span className="bi-req">*</span></label>
+              <label className="bi-label">{t("bi_order_types")} <span className="bi-req">*</span></label>
               <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
                 <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"14px 16px", background: editing ? "#fff" : "#f9fafb", border:"1.5px solid #e4e4e7", borderRadius:10 }}>
                   <div>
-                    <div style={{ fontSize:13, fontWeight:700, color:"#18181b" }}>🍽️ Dine In</div>
-                    <div style={{ fontSize:11.5, color:"#71717a", marginTop:3 }}>Customers can order to eat at your place.</div>
+                    <div style={{ fontSize:13, fontWeight:700, color:"#18181b" }}>🍽️ {t("bi_dine_in")}</div>
+                    <div style={{ fontSize:11.5, color:"#71717a", marginTop:3 }}>{t("bi_dine_in_desc")}</div>
                   </div>
                   <button
                     type="button"
@@ -729,8 +732,8 @@ const BusinessInformation = () => {
                 </div>
                 <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"14px 16px", background: editing ? "#fff" : "#f9fafb", border:"1.5px solid #e4e4e7", borderRadius:10 }}>
                   <div>
-                    <div style={{ fontSize:13, fontWeight:700, color:"#18181b" }}>🥡 Take Away</div>
-                    <div style={{ fontSize:11.5, color:"#71717a", marginTop:3 }}>Customers can order for pickup / to go.</div>
+                    <div style={{ fontSize:13, fontWeight:700, color:"#18181b" }}>🥡 {t("bi_take_away")}</div>
+                    <div style={{ fontSize:11.5, color:"#71717a", marginTop:3 }}>{t("bi_take_away_desc")}</div>
                   </div>
                   <button
                     type="button"
@@ -743,7 +746,7 @@ const BusinessInformation = () => {
                 </div>
                 {errors.orderTypes && <span className="bi-field-err">⚠ {errors.orderTypes}</span>}
                 {!d.dineInEnabled && !d.takeawayEnabled && !errors.orderTypes && (
-                  <span style={{ fontSize:11.5, color:"#dc2626", fontWeight:600 }}>⚠ At least one order type should be enabled, or customers won't be able to order.</span>
+                  <span style={{ fontSize:11.5, color:"#dc2626", fontWeight:600 }}>⚠ {t("bi_order_types_warn")}</span>
                 )}
               </div>
             </div>
@@ -779,11 +782,11 @@ const BusinessInformation = () => {
             <div className="bi-col-full">
               <div className="bi-add-field-row">
                 <button className="bi-add-field-btn" onClick={() => setShowAddField(v => !v)} type="button">
-                  <Plus size={15}/> Add New Field
+                  <Plus size={15}/> {t("bi_add_new_field")}
                 </button>
                 {showAddField && (
                   <div className="bi-field-picker">
-                    <div className="bi-field-picker-title">Choose field type</div>
+                    <div className="bi-field-picker-title">{t("bi_choose_field_type")}</div>
                     {EXTRA_FIELD_TYPES.map(type => {
                       const Icon = type.icon;
                       return (
@@ -802,14 +805,14 @@ const BusinessInformation = () => {
         {/* Bottom Update bar */}
         {editing && (
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"18px 0 4px", borderTop:"1.5px solid #f4f4f5", marginTop:8, gap:12 }}>
-            <div style={{ fontSize:12.5, color:"#71717a" }}>⚠ Business type cannot be changed after setup.</div>
+            <div style={{ fontSize:12.5, color:"#71717a" }}>⚠ {t("bi_type_cannot_change")}</div>
             <div style={{ display:"flex", gap:10 }}>
               <button className="bi-btn-cancel" onClick={handleCancel} type="button" disabled={saving}>
-                <X size={15}/> Cancel
+                <X size={15}/> {t("bi_cancel")}
               </button>
               <button className="bi-btn-done" onClick={handleUpdate} type="button" disabled={saving}
                 style={{ background: saving?"#a78bfa":undefined, minWidth:120 }}>
-                {saving ? <><div style={spinnerStyle}/> Updating...</> : <><Check size={15}/> Update</>}
+                {saving ? <><div style={spinnerStyle}/> {t("bi_updating")}</> : <><Check size={15}/> {t("bi_update")}</>}
               </button>
             </div>
           </div>
@@ -817,7 +820,7 @@ const BusinessInformation = () => {
 
         <div className="bi-secure-note">
           <Lock size={13}/>
-          Your information is secure and will never be shared with anyone.
+          {t("bi_secure_note")}
         </div>
       </div>
     </div>

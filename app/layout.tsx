@@ -20,7 +20,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         {/* ── STRIPE SDK - Load before interactive ── */}
         <Script
           src="https://js.stripe.com/v3/"
-          strategy="beforeInteractive"
+          strategy="afterInteractive"
         />
         
         {/* ── RAZORPAY SDK ── */}

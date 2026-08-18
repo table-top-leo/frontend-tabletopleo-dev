@@ -15,6 +15,7 @@ import { uploadCategoryImage, uploadProductImage } from "../services/imageservic
 import api from "../services/axiosInterceptor";
 import { useCurrency } from "../context/CurrencyContext";
 import { getCurrencySymbol, formatCurrency } from "../utils/currencyHelper";
+import { useLanguage } from "../context/LanguageContext";
 
 const ITEMS_PER_PAGE = 5;
 
@@ -39,7 +40,7 @@ function Toast({ msg, type }) {
   );
 }
 
-function ImageUploadBox({ imageUrl, onUpload, onRemove, uploading, compact }) {
+function ImageUploadBox({ imageUrl, onUpload, onRemove, uploading, compact, t }) {
   const inputRef = useRef();
   const handle = (e) => { const f = e.target.files[0]; if (f) onUpload(f); e.target.value = ""; };
 
@@ -57,7 +58,7 @@ function ImageUploadBox({ imageUrl, onUpload, onRemove, uploading, compact }) {
             {uploading ? <Loader2 size={14} style={{ animation: "spin .7s linear infinite" }} /> : <Image size={15} />}
           </div>
         )}
-        <span style={{ fontSize: 12, color: "#a1a1aa" }}>{uploading ? "Uploading..." : imageUrl ? "Image uploaded" : "Optional: add image"}</span>
+        <span style={{ fontSize: 12, color: "#a1a1aa" }}>{uploading ? t("mc_uploading") : imageUrl ? t("mc_image_uploaded") : t("mc_optional_add_image")}</span>
       </div>
     );
   }
@@ -73,8 +74,8 @@ function ImageUploadBox({ imageUrl, onUpload, onRemove, uploading, compact }) {
       ) : (
         <div className="mc-upload-zone" onClick={() => inputRef.current?.click()} role="button" tabIndex={0} onKeyDown={e => e.key === "Enter" && inputRef.current?.click()}>
           {uploading
-            ? <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}><Loader2 size={24} style={{ animation: "spin .7s linear infinite", color: "#3b1f0a" }} /><span className="mc-upload-text">Uploading...</span></div>
-            : <><Upload size={24} className="mc-upload-icon" /><span className="mc-upload-text">Click to upload</span><span className="mc-upload-hint">PNG, JPG, WEBP up to 5MB</span></>}
+            ? <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}><Loader2 size={24} style={{ animation: "spin .7s linear infinite", color: "#3b1f0a" }} /><span className="mc-upload-text">{t("mc_uploading")}</span></div>
+            : <><Upload size={24} className="mc-upload-icon" /><span className="mc-upload-text">{t("mc_click_upload")}</span><span className="mc-upload-hint">{t("mc_png_jpg_hint")}</span></>}
         </div>
       )}
     </>
@@ -83,6 +84,7 @@ function ImageUploadBox({ imageUrl, onUpload, onRemove, uploading, compact }) {
 
 // ── MAIN COMPONENT ──────────────────────────────────────────
 const MenuCategory = () => {
+  const { t } = useLanguage();
   const user       = getUser();
   const adminId    = user?.adminId    || "";
   const businessId = user?.businessId || "";
@@ -183,7 +185,7 @@ const MenuCategory = () => {
     if (!adminId) return;
     setCatsLoading(true);
     try { const res = await getCategoriesByAdmin(adminId); setCategories(res.data || []); }
-    catch { showToast("Failed to load categories.", "error"); }
+    catch { showToast(t("mc_could_not_load_cats"), "error"); }
     finally { setCatsLoading(false); }
   }, [adminId, showToast]);
 
@@ -191,7 +193,7 @@ const MenuCategory = () => {
     if (!catId) return;
     setProdsLoading(true);
     try { const res = await getProductsByCategory(catId); setProducts(res.data || []); }
-    catch { showToast("Failed to load products.", "error"); }
+    catch { showToast(t("mc_could_not_load_items"), "error"); }
     finally { setProdsLoading(false); }
   }, [showToast]);
 
@@ -219,7 +221,7 @@ const MenuCategory = () => {
       setEditingCatId(null);
       fetchCategories();
       showToast("Category updated! ✓");
-    } catch { showToast("Failed to update category", "error"); }
+    } catch { showToast(t("mc_could_not_update_cat"), "error"); }
   };
 
   const handleEditCatImageUpload = async (file) => {
@@ -227,7 +229,7 @@ const MenuCategory = () => {
     try {
       const res = await uploadCategoryImage(file);
       setEditCatImageUrl(res.data?.data?.imageUrl || res.data?.imageUrl || null);
-    } catch { showToast("Failed to upload image", "error"); }
+    } catch { showToast(t("mc_could_not_upload_image"), "error"); }
     finally { setEditCatImgUploading(false); }
   };
 
@@ -238,14 +240,14 @@ const MenuCategory = () => {
   const handleCatImageUpload = async (file) => {
     setNewCatImgUploading(true);
     try { const res = await uploadCategoryImage(file); setNewCatImageUrl(res.data?.data?.imageUrl || res.data?.imageUrl || null); }
-    catch { showToast("Failed to upload image.", "error"); }
+    catch { showToast(t("mc_could_not_upload_image"), "error"); }
     finally { setNewCatImgUploading(false); }
   };
 
   const handleProdImageUpload = async (file) => {
     setProdImgUploading(true);
     try { const res = await uploadProductImage(file); setForm(prev => ({ ...prev, imageUrl: res.data?.data?.imageUrl || res.data?.imageUrl || null })); }
-    catch { showToast("Failed to upload image.", "error"); }
+    catch { showToast(t("mc_could_not_upload_image"), "error"); }
     finally { setProdImgUploading(false); }
   };
 
@@ -258,9 +260,9 @@ const MenuCategory = () => {
       setCategories(prev => [created, ...prev]);
       setSelectedCatId(created.categoryId);
       setNewCatName(""); setNewCatImageUrl(null); setShowAddCatInline(false);
-      showToast("Category created! ✓");
+      showToast(t("mc_category_created"));
     } catch (err) {
-      showToast(err.response?.data?.message || "Failed to create category.", "error");
+      showToast(err.response?.data?.message || t("mc_could_not_create_cat"), "error");
     } finally { setCatSaving(false); }
   };
 
@@ -270,9 +272,9 @@ const MenuCategory = () => {
       await deleteCategory(catId, adminId);
       setCategories(prev => prev.filter(c => c.categoryId !== catId));
       if (selectedCatId === catId) { setSelectedCatId(null); setProducts([]); }
-      showToast("Category deleted.");
+      showToast(t("mc_category_deleted"));
     } catch (err) {
-      showToast(err.response?.data?.message || "Failed to delete.", "error");
+      showToast(err.response?.data?.message || t("mc_could_not_delete"), "error");
     } finally { setDeleting(false); setShowDeleteModal(false); setDeleteTarget(null); }
   };
 
@@ -289,8 +291,8 @@ const MenuCategory = () => {
   const validateForm = () => {
     const errors = {};
     const hasCat = form.categoryId || form.newCategoryName.trim();
-    if (!hasCat) errors.category = "Select or enter a category.";
-    if (!form.name.trim()) errors.name = "Item name is required.";
+    if (!hasCat) errors.category = t("mc_err_select_category");
+    if (!form.name.trim()) errors.name = t("mc_err_name_required");
     const p = parseFloat(form.price);
     if (form.price === "" || isNaN(p) || p < 0) errors.price = "Enter a valid price.";
     return errors;
@@ -324,17 +326,17 @@ const MenuCategory = () => {
       if (editingItem) {
         const res = await updateProduct(editingItem.productId, adminId, payload);
         setProducts(prev => prev.map(p => p.productId === editingItem.productId ? res.data : p));
-        showToast("Item updated! ✓");
+        showToast(t("mc_item_updated"));
       } else {
         const res = await createProduct(payload);
         if (targetCatId === selectedCatId) setProducts(prev => [res.data, ...prev]);
         else setSelectedCatId(targetCatId);
         setCategories(prev => prev.map(c => c.categoryId === targetCatId ? { ...c, productCount: c.productCount + 1 } : c));
-        showToast("Item saved! ✓");
+        showToast(t("mc_item_saved"));
       }
       resetForm(); setCurrentPage(1);
     } catch (err) {
-      showToast(err.response?.data?.message || "Failed to save item.", "error");
+      showToast(err.response?.data?.message || t("mc_could_not_save_item"), "error");
     } finally { setFormSaving(false); }
   };
 
@@ -355,8 +357,8 @@ const MenuCategory = () => {
         await deleteProduct(deleteTarget.id, adminId);
         setProducts(prev => prev.filter(p => p.productId !== deleteTarget.id));
         setCategories(prev => prev.map(c => c.categoryId === selectedCatId ? { ...c, productCount: Math.max(0, c.productCount - 1) } : c));
-        showToast("Item deleted.");
-      } catch (err) { showToast(err.response?.data?.message || "Failed to delete.", "error"); }
+        showToast(t("mc_item_deleted"));
+      } catch (err) { showToast(err.response?.data?.message || t("mc_could_not_delete"), "error"); }
       finally { setDeleting(false); }
     } else if (deleteTarget.type === "category") {
       await handleDeleteCategory(deleteTarget.id);
@@ -419,18 +421,18 @@ const MenuCategory = () => {
         <div className="mc-modal-overlay" onClick={() => !deleting && setShowDeleteModal(false)}>
           <div className="mc-modal" onClick={e => e.stopPropagation()}>
             <div className="mc-modal-head">
-              <span className="mc-modal-title">{deleteTarget?.type === "category" ? "Delete Category" : "Delete Item"}</span>
+              <span className="mc-modal-title">{deleteTarget?.type === "category" ? t("mc_delete_category") : t("mc_delete_item")}</span>
               <button className="mc-modal-close" onClick={() => !deleting && setShowDeleteModal(false)} type="button"><X size={20} /></button>
             </div>
             <div className="mc-modal-body">
               <p style={{ fontSize: 13.5, color: "#3f3f46" }}>
-                {deleteTarget?.type === "category" ? "This will delete the category and ALL its products. This cannot be undone." : "Are you sure you want to delete this item?"}
+                {deleteTarget?.type === "category" ? t("mc_delete_cat_warn") : t("mc_delete_item_warn")}
               </p>
             </div>
             <div className="mc-modal-foot">
-              <button className="mc-btn-ghost" onClick={() => setShowDeleteModal(false)} disabled={deleting} type="button">Cancel</button>
+              <button className="mc-btn-ghost" onClick={() => setShowDeleteModal(false)} disabled={deleting} type="button">{t("mc_cancel")}</button>
               <button className="mc-btn-danger" onClick={confirmDelete} disabled={deleting} type="button">
-                {deleting ? <><Loader2 size={14} style={{ animation: "spin .7s linear infinite" }} /> Deleting...</> : "Yes, Delete"}
+                {deleting ? <><Loader2 size={14} style={{ animation: "spin .7s linear infinite" }} /> {t("mc_deleting")}</> : t("mc_yes_delete")}
               </button>
             </div>
           </div>
@@ -440,11 +442,11 @@ const MenuCategory = () => {
       <div className="mc-page-header">
         <div className="mc-page-title-row">
           <div>
-            <h1 className="mc-page-title">Menu &amp; Category</h1>
-            <p className="mc-page-sub">Manage your restaurant menu categories and items</p>
+            <h1 className="mc-page-title">{t("mc_page_title")}</h1>
+            <p className="mc-page-sub">{t("mc_page_sub")}</p>
           </div>
           <button className="mc-btn-dark mc-add-btn" onClick={() => setShowAddCatInline(true)} type="button">
-            <Plus size={16} /> Add New Category
+            <Plus size={16} /> {t("mc_add_new_category")}
           </button>
         </div>
       </div>
@@ -453,8 +455,8 @@ const MenuCategory = () => {
         {/* ── SIDEBAR ─────────────────────────────────────── */}
         <aside className="mc-sidebar">
           <div className="mc-sidebar-head">
-            <span className="mc-sidebar-title">Categories {!catsLoading && `(${categories.length})`}</span>
-            <button className="mc-btn-outline-sm" onClick={() => setShowAddCatInline(true)} type="button"><Plus size={14} /> Add</button>
+            <span className="mc-sidebar-title">{t("mc_categories")} {!catsLoading && `(${categories.length})`}</span>
+            <button className="mc-btn-outline-sm" onClick={() => setShowAddCatInline(true)} type="button"><Plus size={14} /> {t("mc_add")}</button>
           </div>
 
           {showAddCatInline && (
@@ -474,12 +476,12 @@ const MenuCategory = () => {
                         justifyContent: "space-between"
                       }}
                     >
-                      <span>✨ Pick from suggestions ({catSuggestions.length})</span>
+                      <span>{t("mc_pick_suggestions")} ({catSuggestions.length})</span>
                       <ChevronDown size={14} style={{ transform: showCatSuggDrop ? "rotate(180deg)" : "none", transition: "0.2s" }} />
                     </button>
                     {showCatSuggDrop && (
                       <div style={suggDropStyle}>
-                        <div className="sugg-drop-header">Suggestions for your business type</div>
+                        <div className="sugg-drop-header">{t("mc_suggestions_for_type")}</div>
                         {catSuggestions.map((s, i) => (
                           <button key={i} type="button"
                             style={suggItemStyle(false)}
@@ -499,17 +501,17 @@ const MenuCategory = () => {
 
               <input
                 className="mc-input" type="text"
-                placeholder="Category name (or type manually)..."
+                placeholder={t("mc_category_name_ph")}
                 value={newCatName}
                 onChange={e => setNewCatName(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && handleAddCategory()}
                 autoFocus
               />
-              <ImageUploadBox imageUrl={newCatImageUrl} onUpload={handleCatImageUpload} onRemove={() => setNewCatImageUrl(null)} uploading={newCatImgUploading} compact />
+              <ImageUploadBox imageUrl={newCatImageUrl} onUpload={handleCatImageUpload} onRemove={() => setNewCatImageUrl(null)} uploading={newCatImgUploading} compact t={t} />
               <div className="mc-inline-actions">
-                <button className="mc-btn-ghost" onClick={() => { setShowAddCatInline(false); setNewCatName(""); setNewCatImageUrl(null); setShowCatSuggDrop(false); }} disabled={catSaving} type="button">Cancel</button>
+                <button className="mc-btn-ghost" onClick={() => { setShowAddCatInline(false); setNewCatName(""); setNewCatImageUrl(null); setShowCatSuggDrop(false); }} disabled={catSaving} type="button">{t("mc_cancel")}</button>
                 <button className="mc-btn-dark" onClick={handleAddCategory} disabled={catSaving || !newCatName.trim()} type="button">
-                  {catSaving ? <><Loader2 size={14} style={{ animation: "spin .7s linear infinite" }} /> Creating...</> : <><Check size={14} /> Create</>}
+                  {catSaving ? <><Loader2 size={14} style={{ animation: "spin .7s linear infinite" }} /> {t("mc_creating")}</> : <><Check size={14} /> {t("mc_create")}</>}
                 </button>
               </div>
             </div>
@@ -518,14 +520,14 @@ const MenuCategory = () => {
           <div className="mc-cat-list">
             {catsLoading ? (
               <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: 32, gap: 10, color: "#71717a", fontSize: 13 }}>
-                <Loader2 size={18} style={{ animation: "spin .7s linear infinite" }} /> Loading...
+                <Loader2 size={18} style={{ animation: "spin .7s linear infinite" }} /> {t("mc_loading")}
               </div>
             ) : categories.length === 0 ? (
               <div className="mc-no-category">
                 <span className="mc-no-icon">📪</span>
-                <h3>No Categories Yet</h3>
-                <p>Add your first category to get started</p>
-                <button onClick={() => setShowAddCatInline(true)} type="button"><Plus size={14} /> Add New Category</button>
+                <h3>{t("mc_no_categories_title")}</h3>
+                <p>{t("mc_no_categories_sub")}</p>
+                <button onClick={() => setShowAddCatInline(true)} type="button"><Plus size={14} /> {t("mc_add_new_category")}</button>
               </div>
             ) : (
               categories.map(cat => (
@@ -565,11 +567,11 @@ const MenuCategory = () => {
                       <div style={{ display:"flex", gap:5 }}>
                         <button type="button" onClick={e=>handleUpdateCategory(cat,e)}
                           style={{ flex:1, padding:"4px 0", borderRadius:6, border:"none", background:"#7c3aed", color:"#fff", fontSize:11.5, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:4 }}>
-                          <Check size={11}/> Save
+                          <Check size={11}/> {t("mc_save")}
                         </button>
                         <button type="button" onClick={e=>{ e.stopPropagation(); setEditingCatId(null); }}
                           style={{ flex:1, padding:"4px 0", borderRadius:6, border:"1.5px solid #e4e4e7", background:"#fff", color:"#6b7280", fontSize:11.5, fontWeight:600, cursor:"pointer" }}>
-                          Cancel
+                          {t("mc_cancel")}
                         </button>
                       </div>
                     </div>
@@ -581,7 +583,7 @@ const MenuCategory = () => {
                       </div>
                       <div className="mc-cat-info">
                         <div className="mc-cat-name">{cat.categoryName}</div>
-                        <div className="mc-cat-count">{cat.productCount} Items</div>
+                        <div className="mc-cat-count">{cat.productCount} {t("mc_items_word")}</div>
                       </div>
                       <div className="mc-cat-row-actions" onClick={e => e.stopPropagation()}
                         style={{ display:"flex", alignItems:"center", gap:3, opacity:0, transition:"opacity 0.15s" }}
@@ -628,9 +630,9 @@ const MenuCategory = () => {
         <div className="mc-main">
           <div className="mc-form-panel">
             <div className="mc-form-head">
-              <h2 className="mc-form-title">{editingItem ? `Edit: ${editingItem.itemName}` : "Add New Item"}</h2>
+              <h2 className="mc-form-title">{editingItem ? `${t("mc_edit_prefix")} ${editingItem.itemName}` : t("mc_add_new_item")}</h2>
               <button className="mc-collapse-btn" onClick={() => setFormCollapsed(v => !v)} type="button">
-                {formCollapsed ? <><ChevronDown size={16} /> Expand</> : <><ChevronUp size={16} /> Collapse</>}
+                {formCollapsed ? <><ChevronDown size={16} /> {t("mc_expand")}</> : <><ChevronUp size={16} /> {t("mc_collapse")}</>}
               </button>
             </div>
 
@@ -640,7 +642,7 @@ const MenuCategory = () => {
                 {/* ── CATEGORY ROW ──────────────────────── */}
                 <div className="mc-form-row mc-form-cat-row">
                   <div className="mc-form-group mc-fg-half">
-                    <label className="mc-label">Category <span className="mc-req">*</span></label>
+                    <label className="mc-label">{t("mc_category_label")} <span className="mc-req">*</span></label>
 
                     {/* Category suggestion dropdown */}
                     {catSuggestions.length > 0 && (
@@ -655,12 +657,12 @@ const MenuCategory = () => {
                             cursor: "pointer", justifyContent: "space-between"
                           }}
                         >
-                          <span>✨ Suggested categories ({catSuggestions.length})</span>
+                          <span>{t("mc_suggested_categories")} ({catSuggestions.length})</span>
                           <ChevronDown size={14} style={{ transform: showFormCatDrop ? "rotate(180deg)" : "none", transition: "0.2s" }} />
                         </button>
                         {showFormCatDrop && (
                           <div style={suggDropStyle}>
-                            <div className="sugg-drop-header">Based on your business type</div>
+                            <div className="sugg-drop-header">{t("mc_based_on_business_type")}</div>
                             {catSuggestions.map((s, i) => (
                               <button key={i} type="button"
                                 style={suggItemStyle(false)}
@@ -685,7 +687,7 @@ const MenuCategory = () => {
                       <select className={`mc-select ${formErrors.category ? "mc-err" : ""}`}
                         value={form.categoryId}
                         onChange={e => { handleFieldChange("categoryId", e.target.value); handleFieldChange("newCategoryName", ""); }}>
-                        <option value="">— Select Existing Category —</option>
+                        <option value="">{t("mc_select_existing_category")}</option>
                         {categories.map(c => <option key={c.categoryId} value={String(c.categoryId)}>{c.categoryName}</option>)}
                       </select>
                       <ChevronDown size={15} className="mc-select-icon" />
@@ -693,16 +695,16 @@ const MenuCategory = () => {
                     {formErrors.category && <span className="mc-field-err">{formErrors.category}</span>}
                   </div>
 
-                  <div className="mc-form-or">or</div>
+                  <div className="mc-form-or">{t("mc_or")}</div>
 
                   <div className="mc-form-group mc-fg-half">
-                    <label className="mc-label">New Category Name</label>
+                    <label className="mc-label">{t("mc_new_category_name")}</label>
                     <input className="mc-input" type="text"
-                      placeholder="Type new category name here..."
+                      placeholder={t("mc_new_category_ph")}
                       value={form.newCategoryName}
                       onChange={e => { handleFieldChange("newCategoryName", e.target.value); handleFieldChange("categoryId", ""); }} />
                     <span style={{ fontSize: 11, color: "#a1a1aa", marginTop: 3, display: "block" }}>
-                      Not in dropdown? Type here to create a new category
+                      {t("mc_not_in_dropdown_hint")}
                     </span>
                   </div>
                 </div>
@@ -710,7 +712,7 @@ const MenuCategory = () => {
                 {/* ── ITEM NAME ROW ──────────────────────── */}
                 <div className="mc-form-row">
                   <div className="mc-form-group mc-fg-half">
-                    <label className="mc-label">Item Name <span className="mc-req">*</span></label>
+                    <label className="mc-label">{t("mc_item_name")} <span className="mc-req">*</span></label>
 
                     {/* Item suggestion dropdown — shows only after category is chosen */}
                     {currentCategoryName && (
@@ -718,7 +720,7 @@ const MenuCategory = () => {
                         {loadingItemSugg ? (
                           <div style={{ fontSize: 12, color: "#a1a1aa", display: "flex", alignItems: "center", gap: 6, padding: "6px 0" }}>
                             <Loader2 size={12} style={{ animation: "spin .7s linear infinite" }} />
-                            Loading suggestions for "{currentCategoryName}"...
+                            {t("mc_loading_suggestions_for")} "{currentCategoryName}"...
                           </div>
                         ) : itemSuggestions.length > 0 ? (
                           <>
@@ -732,12 +734,12 @@ const MenuCategory = () => {
                                 cursor: "pointer", justifyContent: "space-between"
                               }}
                             >
-                              <span>✨ Suggested items for "{currentCategoryName}" ({itemSuggestions.length})</span>
+                              <span>{t("mc_suggested_items_for")} "{currentCategoryName}" ({itemSuggestions.length})</span>
                               <ChevronDown size={14} style={{ transform: showFormItemDrop ? "rotate(180deg)" : "none", transition: "0.2s" }} />
                             </button>
                             {showFormItemDrop && (
                               <div style={suggDropStyle}>
-                                <div className="sugg-drop-header">Tap to fill item name</div>
+                                <div className="sugg-drop-header">{t("mc_tap_to_fill")}</div>
                                 {itemSuggestions.map((s, i) => (
                                   <button key={i} type="button"
                                     style={suggItemStyle(false)}
@@ -757,7 +759,7 @@ const MenuCategory = () => {
                           </>
                         ) : (
                           <div style={{ fontSize: 11.5, color: "#a1a1aa", padding: "4px 0" }}>
-                            No suggestions for this category — type item name below
+                            {t("mc_no_suggestions_type_manually")}
                           </div>
                         )}
                       </div>
@@ -766,7 +768,7 @@ const MenuCategory = () => {
                     <div className={`mc-input-icon-wrap ${formErrors.name ? "mc-err" : ""}`}>
                       <span className="mc-input-icon"><Coffee size={15} /></span>
                       <input className="mc-input-inner" type="text"
-                        placeholder={currentCategoryName ? "Select from suggestions above or type manually" : "Enter item name"}
+                        placeholder={currentCategoryName ? t("mc_item_name_ph_with_sugg") : t("mc_item_name_ph_plain")}
                         value={form.name}
                         onChange={e => handleFieldChange("name", e.target.value)} />
                     </div>
@@ -774,10 +776,10 @@ const MenuCategory = () => {
                   </div>
 
                   <div className="mc-form-group mc-fg-half">
-                    <label className="mc-label">Item Description (Optional)</label>
+                    <label className="mc-label">{t("mc_item_description_optional")}</label>
                     <div className="mc-input-icon-wrap">
                       <span className="mc-input-icon"><Filter size={14} /></span>
-                      <input className="mc-input-inner" type="text" placeholder="Enter item description"
+                      <input className="mc-input-inner" type="text" placeholder={t("mc_item_description_ph")}
                         value={form.description} onChange={e => handleFieldChange("description", e.target.value)} />
                     </div>
                   </div>
@@ -786,22 +788,22 @@ const MenuCategory = () => {
                 {/* ── IMAGE + PRICE ROW ──────────────────── */}
                 <div className="mc-form-row">
                   <div className="mc-form-group mc-fg-half">
-                    <label className="mc-label">Item Image (Optional)</label>
-                    <ImageUploadBox imageUrl={form.imageUrl} onUpload={handleProdImageUpload} onRemove={() => handleFieldChange("imageUrl", null)} uploading={prodImgUploading} />
+                    <label className="mc-label">{t("mc_item_image_optional")}</label>
+                    <ImageUploadBox imageUrl={form.imageUrl} onUpload={handleProdImageUpload} onRemove={() => handleFieldChange("imageUrl", null)} uploading={prodImgUploading} t={t} />
                   </div>
                   <div className="mc-form-group mc-fg-half">
-                    <label className="mc-label">Item Price <span className="mc-req">*</span></label>
+                    <label className="mc-label">{t("mc_item_price")} <span className="mc-req">*</span></label>
                     <div className={`mc-input-icon-wrap ${formErrors.price ? "mc-err" : ""}`}>
                       <span className="mc-input-icon mc-rupee">{currencyReady ? getCurrencySymbol(currencyCode) : "…"}</span>
                       <input className="mc-input-inner" type="number" min="0" step="0.01" placeholder="0.00"
                         value={form.price} onChange={e => handleFieldChange("price", e.target.value)} />
                     </div>
                     {formErrors.price && <span className="mc-field-err">{formErrors.price}</span>}
-                    <label className="mc-label" style={{ marginTop: 14 }}>Status</label>
+                    <label className="mc-label" style={{ marginTop: 14 }}>{t("mc_status")}</label>
                     <div className="mc-select-wrap">
                       <select className="mc-select" value={form.status} onChange={e => handleFieldChange("status", e.target.value)}>
-                        <option value="ACTIVE">Active</option>
-                        <option value="INACTIVE">Inactive</option>
+                        <option value="ACTIVE">{t("mc_active")}</option>
+                        <option value="INACTIVE">{t("mc_inactive")}</option>
                       </select>
                       <ChevronDown size={15} className="mc-select-icon" />
                     </div>
@@ -809,11 +811,11 @@ const MenuCategory = () => {
                 </div>
 
                 <div className="mc-form-actions">
-                  <button className="mc-btn-reset" onClick={resetForm} type="button" disabled={formSaving}><RotateCcw size={14} /> Reset</button>
+                  <button className="mc-btn-reset" onClick={resetForm} type="button" disabled={formSaving}><RotateCcw size={14} /> {t("mc_reset")}</button>
                   <button className="mc-btn-dark mc-save-btn" onClick={handleSaveItem} type="button" disabled={formSaving || prodImgUploading}>
                     {formSaving
-                      ? <><Loader2 size={14} style={{ animation: "spin .7s linear infinite" }} /> {editingItem ? "Updating..." : "Saving..."}</>
-                      : <><Send size={14} /> {editingItem ? "Update Item" : "Save Item"}</>}
+                      ? <><Loader2 size={14} style={{ animation: "spin .7s linear infinite" }} /> {editingItem ? t("mc_updating") : t("mc_saving")}</>
+                      : <><Send size={14} /> {editingItem ? t("mc_update_item") : t("mc_save_item")}</>}
                   </button>
                 </div>
               </div>
@@ -824,21 +826,21 @@ const MenuCategory = () => {
           <div className="mc-items-panel">
             <div className="mc-items-head">
               <h3 className="mc-items-title">
-                {selectedCategory ? `Items in ${selectedCategory.categoryName}` : "Select a category"} ({totalItems})
+                {selectedCategory ? `${t("mc_items_in")} ${selectedCategory.categoryName}` : t("mc_select_category_short")} ({totalItems})
               </h3>
               <div className="mc-items-controls">
                 <div className="mc-search-wrap">
                   <Search size={14} className="mc-search-icon" />
-                  <input className="mc-search-input" type="text" placeholder="Search items..."
+                  <input className="mc-search-input" type="text" placeholder={t("mc_search_items_ph")}
                     value={searchQuery} onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1); }} />
                 </div>
                 <div className="mc-select-wrap mc-status-select">
                   <select className="mc-select" value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setCurrentPage(1); }}>
-                    <option>All Status</option><option>Active</option><option>Inactive</option>
+                    <option>{t("mc_all_status")}</option><option>{t("mc_active")}</option><option>{t("mc_inactive")}</option>
                   </select>
                   <ChevronDown size={14} className="mc-select-icon" />
                 </div>
-                <button className="mc-icon-btn" onClick={() => selectedCatId && fetchProducts(selectedCatId)} title="Refresh" type="button"><RefreshCw size={15} /></button>
+                <button className="mc-icon-btn" onClick={() => selectedCatId && fetchProducts(selectedCatId)} title={t("mc_refresh")} type="button"><RefreshCw size={15} /></button>
               </div>
             </div>
 
@@ -846,18 +848,18 @@ const MenuCategory = () => {
               <table className="mc-table">
                 <thead>
                   <tr>
-                    <th className="mc-th">Item</th><th className="mc-th">Description</th>
-                    <th className="mc-th">Price</th><th className="mc-th">Status</th>
-                    <th className="mc-th mc-th-right">Actions</th>
+                    <th className="mc-th">{t("mc_item_th")}</th><th className="mc-th">{t("mc_description_th")}</th>
+                    <th className="mc-th">{t("mc_price_th")}</th><th className="mc-th">{t("mc_status_th")}</th>
+                    <th className="mc-th mc-th-right">{t("mc_actions_th")}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {prodsLoading ? (
-                    <tr><td colSpan={5} className="mc-empty"><div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}><Loader2 size={16} style={{ animation: "spin .7s linear infinite" }} /> Loading...</div></td></tr>
+                    <tr><td colSpan={5} className="mc-empty"><div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}><Loader2 size={16} style={{ animation: "spin .7s linear infinite" }} /> {t("mc_loading")}</div></td></tr>
                   ) : !selectedCatId ? (
-                    <tr><td colSpan={5} className="mc-empty">👈 Select a category from the left to view items.</td></tr>
+                    <tr><td colSpan={5} className="mc-empty">{t("mc_select_category_hint")}</td></tr>
                   ) : pagedProducts.length === 0 ? (
-                    <tr><td colSpan={5} className="mc-empty">{searchQuery || statusFilter !== "All Status" ? "No items match your search." : "No items yet. Add one using the form above."}</td></tr>
+                    <tr><td colSpan={5} className="mc-empty">{searchQuery || statusFilter !== "All Status" ? t("mc_no_items_match") : t("mc_no_items_yet")}</td></tr>
                   ) : (
                     pagedProducts.map(item => (
                       <tr key={item.productId} className="mc-tr">
@@ -874,12 +876,12 @@ const MenuCategory = () => {
                         <td className="mc-td mc-td-price">{currencyReady ? formatCurrency(Number(item.itemPrice), currencyCode) : "…"}</td>
                         <td className="mc-td">
                           <span className={`mc-status-badge ${item.productStatus === "ACTIVE" ? "mc-status-active" : "mc-status-inactive"}`}>
-                            <span className="mc-status-dot" />{item.productStatus === "ACTIVE" ? "Active" : "Inactive"}
+                            <span className="mc-status-dot" />{item.productStatus === "ACTIVE" ? t("mc_active") : t("mc_inactive")}
                           </span>
                         </td>
                         <td className="mc-td mc-td-actions">
-                          <button className="mc-action-edit" onClick={() => handleEdit(item)} type="button"><Pencil size={13} /> Edit</button>
-                          <button className="mc-action-delete" onClick={() => openDeleteModal({ type: "product", id: item.productId })} type="button"><Trash2 size={13} /> Delete</button>
+                          <button className="mc-action-edit" onClick={() => handleEdit(item)} type="button"><Pencil size={13} /> {t("mc_edit_action")}</button>
+                          <button className="mc-action-delete" onClick={() => openDeleteModal({ type: "product", id: item.productId })} type="button"><Trash2 size={13} /> {t("mc_delete_action")}</button>
                         </td>
                       </tr>
                     ))
@@ -891,7 +893,7 @@ const MenuCategory = () => {
             {filteredProducts.length > ITEMS_PER_PAGE && (
               <div className="mc-pagination">
                 <span className="mc-pg-info">
-                  Showing {Math.min((safePage - 1) * ITEMS_PER_PAGE + 1, filteredProducts.length)} to {Math.min(safePage * ITEMS_PER_PAGE, filteredProducts.length)} of {filteredProducts.length} items
+                  {t("mc_showing")} {Math.min((safePage - 1) * ITEMS_PER_PAGE + 1, filteredProducts.length)} {t("mc_to")} {Math.min(safePage * ITEMS_PER_PAGE, filteredProducts.length)} {t("mc_of_items")} {filteredProducts.length} {t("mc_items_word")}
                 </span>
                 <div className="mc-pg-controls">
                   <button className="mc-pg-btn" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={safePage === 1} type="button"><ChevronLeft size={15} /></button>
