@@ -6,54 +6,11 @@ import {
   MapPin, CreditCard, Lock, CheckCircle2, Loader2,
   Building2, Shield,
 } from "lucide-react";
+import { useLanguage } from "../context/LanguageContext";
 
 function getUser() {
   try { const s = localStorage.getItem("ttl_user"); return s ? JSON.parse(s) : null; } catch { return null; }
 }
-
-const PLANS = [
-  {
-    id:      "starter",
-    name:    "Starter",
-    price:   { monthly:0,    yearly:0 },
-    color:   "#64748b",
-    bg:      "#f8fafc",
-    border:  "#e2e8f0",
-    features:["1 Branch","50 orders/day","Basic analytics","QR ordering","5 menu categories","Email support"],
-    current: true,
-  },
-  {
-    id:      "pro",
-    name:    "Pro",
-    price:   { monthly:999,  yearly:799 },
-    color:   "#7c3aed",
-    bg:      "#faf5ff",
-    border:  "#ddd6fe",
-    popular: true,
-    features:["3 Branches","Unlimited orders","Advanced analytics","Custom QR branding","Priority support","Payment gateway","Customer reviews","Unlimited categories"],
-  },
-  {
-    id:      "elite",
-    name:    "Elite",
-    price:   { monthly:2499, yearly:1999 },
-    color:   "#d97706",
-    bg:      "#fffbeb",
-    border:  "#fde68a",
-    features:["Unlimited branches","All Pro features","White-label app","Dedicated manager","API access","Custom integrations","SMS notifications","Advanced reporting"],
-  },
-];
-
-const COMPARE = [
-  { label:"Branches",           starter:"1",      pro:"3",          elite:"Unlimited" },
-  { label:"Orders/day",         starter:"50",     pro:"Unlimited",  elite:"Unlimited" },
-  { label:"Menu categories",    starter:"5",      pro:"Unlimited",  elite:"Unlimited" },
-  { label:"Analytics",          starter:"Basic",  pro:"Advanced",   elite:"Advanced" },
-  { label:"QR custom branding", starter:false,    pro:true,         elite:true },
-  { label:"Payment gateway",    starter:false,    pro:true,         elite:true },
-  { label:"API access",         starter:false,    pro:false,        elite:true },
-  { label:"White-label",        starter:false,    pro:false,        elite:true },
-  { label:"Support",            starter:"Email",  pro:"Priority",   elite:"Dedicated" },
-];
 
 // ── PAYMENT METHOD ICONS (SVG inline) ─────────────────────────
 const UpiIcon = () => (
@@ -98,17 +55,50 @@ const AmexIcon = () => (
   </svg>
 );
 
-const PAYMENT_METHODS = [
-  { id:"upi",      label:"UPI",             Icon:UpiIcon,       sub:"Pay via any UPI app" },
-  { id:"razorpay", label:"Razorpay",        Icon:RazorpayIcon,  sub:"Cards, netbanking & wallets" },
-  { id:"stripe",   label:"Stripe",          Icon:StripeIcon,    sub:"International cards" },
-  { id:"card",     label:"Credit / Debit Card", Icon:()=><div style={{display:"flex",gap:4}}><VisaIcon/><MastercardIcon/><AmexIcon/></div>, sub:"Visa, Mastercard, Amex" },
-];
-
 // ── STEPS ──────────────────────────────────────────────────────
 // 0 = Plan list  1 = Billing details  2 = Payment method  3 = Processing  4 = Success
 
 export default function UpgradePlanPage({ onBack, currencySymbol = "₹", currencyCode = "INR" }) {
+  const { t } = useLanguage();
+
+  const PLANS = [
+    {
+      id: "starter", name: t("up_plan_starter"), price: { monthly: 0, yearly: 0 },
+      color: "#64748b", bg: "#f8fafc", border: "#e2e8f0",
+      features: [t("up_feat_1branch"), t("up_feat_50orders"), t("up_feat_basic_analytics"), t("up_feat_qr"), t("up_feat_5cats"), t("up_feat_email_support")],
+      current: true,
+    },
+    {
+      id: "pro", name: t("up_plan_pro"), price: { monthly: 999, yearly: 799 },
+      color: "#7c3aed", bg: "#faf5ff", border: "#ddd6fe", popular: true,
+      features: [t("up_feat_3branch"), t("up_feat_unlim_orders"), t("up_feat_adv_analytics"), t("up_feat_custom_qr"), t("up_feat_priority_support"), t("up_feat_gateway"), t("up_feat_reviews"), t("up_feat_unlim_cats")],
+    },
+    {
+      id: "elite", name: t("up_plan_elite"), price: { monthly: 2499, yearly: 1999 },
+      color: "#d97706", bg: "#fffbeb", border: "#fde68a",
+      features: [t("up_feat_unlim_branch"), t("up_feat_all_pro"), t("up_feat_whitelabel"), t("up_feat_dedicated_mgr"), t("up_feat_api"), t("up_feat_custom_int"), t("up_feat_sms"), t("up_feat_adv_reporting")],
+    },
+  ];
+
+  const COMPARE = [
+    { label: t("up_cmp_branches"), starter: "1", pro: "3", elite: t("up_cmp_unlimited") },
+    { label: t("up_cmp_orders_day"), starter: "50", pro: t("up_cmp_unlimited"), elite: t("up_cmp_unlimited") },
+    { label: t("up_cmp_menu_cats"), starter: "5", pro: t("up_cmp_unlimited"), elite: t("up_cmp_unlimited") },
+    { label: t("up_cmp_analytics"), starter: t("up_cmp_basic"), pro: t("up_cmp_advanced"), elite: t("up_cmp_advanced") },
+    { label: t("up_cmp_qr_branding"), starter: false, pro: true, elite: true },
+    { label: t("up_cmp_gateway"), starter: false, pro: true, elite: true },
+    { label: t("up_cmp_api"), starter: false, pro: false, elite: true },
+    { label: t("up_cmp_whitelabel"), starter: false, pro: false, elite: true },
+    { label: t("up_cmp_support"), starter: t("up_cmp_email"), pro: t("up_cmp_priority"), elite: t("up_cmp_dedicated") },
+  ];
+
+  const PAYMENT_METHODS = [
+    { id: "upi", label: t("up_pay_upi"), Icon: UpiIcon, sub: t("up_pay_upi_sub") },
+    { id: "razorpay", label: t("up_pay_razorpay"), Icon: RazorpayIcon, sub: t("up_pay_razorpay_sub") },
+    { id: "stripe", label: t("up_pay_stripe"), Icon: StripeIcon, sub: t("up_pay_stripe_sub") },
+    { id: "card", label: t("up_pay_card"), Icon: () => <div style={{display:"flex",gap:4}}><VisaIcon/><MastercardIcon/><AmexIcon/></div>, sub: t("up_pay_card_sub") },
+  ];
+
   const [step,          setStep]     = useState(0);
   const [billing,       setBilling]  = useState("monthly");
   const [selectedPlan,  setPlan]     = useState("pro");
@@ -156,8 +146,6 @@ export default function UpgradePlanPage({ onBack, currencySymbol = "₹", curren
     setTimeout(() => setStep(4), 3000);
   };
 
-  const STEPS_LABEL = ["Plan","Details","Payment","Processing","Done"];
-
   return (
     <div style={{ minHeight:"100vh", background:"#f6f6f9", fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI','Inter',sans-serif", fontSize:14, color:"#18181b" }}>
       <style>{`
@@ -184,11 +172,11 @@ export default function UpgradePlanPage({ onBack, currencySymbol = "₹", curren
       <div style={{ background:"#fff", borderBottom:"1px solid #ebebeb", padding:"14px 32px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
         <div style={{ display:"flex", alignItems:"center", gap:14 }}>
           <button className="up-btn-outline" style={{ padding:"8px 14px" }} onClick={step===0?onBack:()=>setStep(s=>Math.max(0,s-1))}>
-            <ArrowLeft size={14}/> {step===0?"Back to Settings":"Previous"}
+            <ArrowLeft size={14}/> {step===0?t("up_back_to_settings"):t("up_previous")}
           </button>
           <div>
-            <div style={{ fontSize:15, fontWeight:900, color:"#18181b" }}>Upgrade TableTop Leo</div>
-            <div style={{ fontSize:11.5, color:"#a1a1aa" }}>Professional billing · Secure checkout</div>
+            <div style={{ fontSize:15, fontWeight:900, color:"#18181b" }}>{t("up_title")}</div>
+            <div style={{ fontSize:11.5, color:"#a1a1aa" }}>{t("up_subtitle")}</div>
           </div>
         </div>
 
@@ -204,13 +192,13 @@ export default function UpgradePlanPage({ onBack, currencySymbol = "₹", curren
               </div>
             ))}
             <div style={{ marginLeft:8, fontSize:12, fontWeight:600, color:"#7c3aed" }}>
-              {step===1?"Billing Details":step===2?"Payment":"Processing"}
+              {step===1?t("up_step_billing"):step===2?t("up_step_payment"):t("up_step_processing")}
             </div>
           </div>
         )}
 
         <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:12, color:"#a1a1aa" }}>
-          <Lock size={12} color="#16a34a"/> SSL Secured
+          <Lock size={12} color="#16a34a"/> {t("up_ssl_secured")}
         </div>
       </div>
 
@@ -221,7 +209,7 @@ export default function UpgradePlanPage({ onBack, currencySymbol = "₹", curren
           <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:0, marginBottom:28, width:"fit-content", margin:"0 auto 28px", background:"#f1f1f4", borderRadius:11, padding:4 }}>
             {["monthly","yearly"].map(b=>(
               <button key={b} onClick={()=>setBilling(b)} style={{ padding:"8px 24px", borderRadius:8, border:"none", fontFamily:"inherit", fontSize:13, fontWeight:700, cursor:"pointer", background:billing===b?"#fff":"transparent", color:billing===b?"#7c3aed":"#71717a", boxShadow:billing===b?"0 1px 6px rgba(0,0,0,.1)":"none", transition:"all .15s" }}>
-                {b==="monthly"?"Monthly":"Yearly"}{b==="yearly"&&<span style={{ marginLeft:6, background:"#dcfce7", color:"#16a34a", fontSize:10, fontWeight:800, padding:"2px 6px", borderRadius:20 }}>-20%</span>}
+                {b==="monthly"?t("up_monthly"):t("up_yearly")}{b==="yearly"&&<span style={{ marginLeft:6, background:"#dcfce7", color:"#16a34a", fontSize:10, fontWeight:800, padding:"2px 6px", borderRadius:20 }}>-20%</span>}
               </button>
             ))}
           </div>
@@ -234,8 +222,8 @@ export default function UpgradePlanPage({ onBack, currencySymbol = "₹", curren
               return (
                 <div key={p.id} onClick={()=>!p.current&&setPlan(p.id)}
                   style={{ background:isSel?p.bg:"#fff", border:`2px solid ${isSel?p.color:"#e4e4e7"}`, borderRadius:18, padding:"22px 20px", cursor:p.current?"default":"pointer", transition:"all .18s", boxShadow:isSel?`0 4px 20px ${p.color}20`:"0 1px 4px rgba(0,0,0,.05)", position:"relative", animation:"upFadeUp .3s ease" }}>
-                  {p.popular&&<div style={{ position:"absolute", top:-10, left:"50%", transform:"translateX(-50%)", background:p.color, color:"#fff", fontSize:10, fontWeight:800, padding:"3px 14px", borderRadius:99, whiteSpace:"nowrap", textTransform:"uppercase", letterSpacing:".06em" }}>Most Popular</div>}
-                  {p.current&&<div style={{ position:"absolute", top:12, right:12, background:"#f1f5f9", color:"#64748b", fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:99 }}>Current</div>}
+                  {p.popular&&<div style={{ position:"absolute", top:-10, left:"50%", transform:"translateX(-50%)", background:p.color, color:"#fff", fontSize:10, fontWeight:800, padding:"3px 14px", borderRadius:99, whiteSpace:"nowrap", textTransform:"uppercase", letterSpacing:".06em" }}>{t("up_most_popular")}</div>}
+                  {p.current&&<div style={{ position:"absolute", top:12, right:12, background:"#f1f5f9", color:"#64748b", fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:99 }}>{t("up_current")}</div>}
 
                   <div style={{ width:40, height:40, borderRadius:11, background:`${p.color}18`, display:"flex", alignItems:"center", justifyContent:"center", marginBottom:14 }}>
                     {p.id==="starter"?<Zap size={18} style={{color:p.color}}/>:p.id==="pro"?<Star size={18} style={{color:p.color}}/>:<Crown size={18} style={{color:p.color}}/>}
@@ -243,10 +231,10 @@ export default function UpgradePlanPage({ onBack, currencySymbol = "₹", curren
 
                   <div style={{ fontSize:16, fontWeight:800, color:"#18181b", marginBottom:3 }}>{p.name}</div>
                   <div style={{ fontSize:26, fontWeight:900, color:p.color, marginBottom:2 }}>
-                    {pr===0?"Free":fmt(pr)}{pr>0&&<span style={{ fontSize:12, fontWeight:600, color:"#a1a1aa" }}>/mo</span>}
+                    {pr===0?t("free_starter_short").split(" ")[0]||"Free":fmt(pr)}{pr>0&&<span style={{ fontSize:12, fontWeight:600, color:"#a1a1aa" }}>/mo</span>}
                   </div>
                   {billing==="yearly"&&pr>0&&(
-                    <div style={{ fontSize:11, color:"#16a34a", fontWeight:700, marginBottom:12 }}>Save {fmt((p.price.monthly-p.price.yearly)*12)}/yr</div>
+                    <div style={{ fontSize:11, color:"#16a34a", fontWeight:700, marginBottom:12 }}>{t("up_save_yr", { amount: fmt((p.price.monthly-p.price.yearly)*12) })}</div>
                   )}
 
                   <div style={{ borderTop:"1px solid #f4f4f5", margin:"14px 0", paddingTop:14, display:"flex", flexDirection:"column", gap:8 }}>
@@ -263,7 +251,7 @@ export default function UpgradePlanPage({ onBack, currencySymbol = "₹", curren
                   <button onClick={e=>{e.stopPropagation();if(!p.current){setPlan(p.id);setStep(1);}}}
                     style={{ width:"100%", padding:"10px 0", border:"none", borderRadius:10, fontFamily:"inherit", fontWeight:800, fontSize:13, cursor:p.current?"default":"pointer", background:p.current?"#f1f5f9":isSel?p.color:"#f4f4f5", color:p.current?"#94a3b8":isSel?"#fff":p.color, marginTop:8, transition:"all .15s" }}
                     disabled={p.current}>
-                    {p.current?"Current Plan":`Choose ${p.name} →`}
+                    {p.current?t("up_current_plan"):t("up_choose_plan", { name: p.name })}
                   </button>
                 </div>
               );
@@ -272,12 +260,12 @@ export default function UpgradePlanPage({ onBack, currencySymbol = "₹", curren
 
           {/* Comparison table */}
           <div className="up-card">
-            <div style={{ padding:"14px 20px", borderBottom:"1px solid #f4f4f5", fontSize:13, fontWeight:700, color:"#3f3f46" }}>Feature Comparison</div>
+            <div style={{ padding:"14px 20px", borderBottom:"1px solid #f4f4f5", fontSize:13, fontWeight:700, color:"#3f3f46" }}>{t("up_feature_comparison")}</div>
             <div style={{ overflowX:"auto" }}>
               <table style={{ width:"100%", borderCollapse:"collapse" }}>
                 <thead>
                   <tr>
-                    <th style={{ padding:"10px 20px", textAlign:"left", fontSize:11.5, fontWeight:700, color:"#a1a1aa", textTransform:"uppercase", letterSpacing:".05em", borderBottom:"1px solid #f4f4f5" }}>Feature</th>
+                    <th style={{ padding:"10px 20px", textAlign:"left", fontSize:11.5, fontWeight:700, color:"#a1a1aa", textTransform:"uppercase", letterSpacing:".05em", borderBottom:"1px solid #f4f4f5" }}>{t("up_feature_col")}</th>
                     {PLANS.map(p=>(
                       <th key={p.id} style={{ padding:"10px 16px", fontSize:12, fontWeight:800, color:p.color, borderBottom:"1px solid #f4f4f5", textAlign:"center" }}>{p.name}</th>
                     ))}
@@ -313,8 +301,8 @@ export default function UpgradePlanPage({ onBack, currencySymbol = "₹", curren
                 {plan.id==="pro"?<Star size={18} color="#fff"/>:<Crown size={18} color="#fff"/>}
               </div>
               <div>
-                <div style={{ fontSize:13, fontWeight:800, color:"#4c1d95" }}>{plan.name} Plan · {billing==="monthly"?"Monthly":"Yearly"}</div>
-                <div style={{ fontSize:11.5, color:"#7c3aed" }}>{billing==="yearly"?"Save 20% vs monthly":"Switch to yearly to save 20%"}</div>
+                <div style={{ fontSize:13, fontWeight:800, color:"#4c1d95" }}>{plan.name} · {billing==="monthly"?t("up_monthly"):t("up_yearly")}</div>
+                <div style={{ fontSize:11.5, color:"#7c3aed" }}>{billing==="yearly"?t("up_save20_yearly"):t("up_switch_yearly")}</div>
               </div>
             </div>
             <div style={{ fontSize:22, fontWeight:900, color:"#4c1d95" }}>{fmt(price)}<span style={{ fontSize:12, fontWeight:600, color:"#a78bfa" }}>/mo</span></div>
@@ -322,15 +310,15 @@ export default function UpgradePlanPage({ onBack, currencySymbol = "₹", curren
 
           <div className="up-card">
             <div style={{ padding:"14px 20px", borderBottom:"1px solid #f4f4f5", fontSize:13, fontWeight:700, color:"#3f3f46", display:"flex", alignItems:"center", gap:8 }}>
-              <User size={14} style={{color:"#7c3aed"}}/> Billing Details
+              <User size={14} style={{color:"#7c3aed"}}/> {t("up_billing_details")}
             </div>
             <div style={{ padding:"20px" }}>
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
                 {[
-                  { key:"fullName",     label:"Full Name",      icon:User,     ph:"Your full name" },
-                  { key:"email",        label:"Email Address",  icon:Mail,     ph:"billing@email.com" },
-                  { key:"phone",        label:"Phone Number",   icon:Phone,    ph:"+91 XXXXX XXXXX" },
-                  { key:"businessName", label:"Business Name",  icon:Building2,ph:"Your restaurant name" },
+                  { key:"fullName",     label:t("up_full_name"),      icon:User,     ph:t("up_full_name_ph") },
+                  { key:"email",        label:t("up_email_address"),  icon:Mail,     ph:t("up_email_ph") },
+                  { key:"phone",        label:t("up_phone_number"),   icon:Phone,    ph:t("up_phone_ph") },
+                  { key:"businessName", label:t("up_business_name"),  icon:Building2,ph:t("up_business_name_ph") },
                 ].map(({ key, label, icon:Icon, ph })=>(
                   <div key={key}>
                     <label className="up-label">{label}</label>
@@ -342,10 +330,10 @@ export default function UpgradePlanPage({ onBack, currencySymbol = "₹", curren
                   </div>
                 ))}
                 <div style={{ gridColumn:"1/-1" }}>
-                  <label className="up-label">Address</label>
+                  <label className="up-label">{t("up_address")}</label>
                   <div style={{ position:"relative" }}>
                     <MapPin size={13} style={{ position:"absolute", left:11, top:12, color:"#a1a1aa" }}/>
-                    <input className="up-input" style={{ paddingLeft:32 }} placeholder="Street, City, State"
+                    <input className="up-input" style={{ paddingLeft:32 }} placeholder={t("up_address_ph")}
                       value={details.address} onChange={e=>setDetails(d=>({...d,address:e.target.value}))}/>
                   </div>
                 </div>
@@ -355,31 +343,31 @@ export default function UpgradePlanPage({ onBack, currencySymbol = "₹", curren
 
           {/* Order summary card */}
           <div className="up-card" style={{ marginTop:16 }}>
-            <div style={{ padding:"14px 20px", borderBottom:"1px solid #f4f4f5", fontSize:13, fontWeight:700, color:"#3f3f46" }}>Order Summary</div>
+            <div style={{ padding:"14px 20px", borderBottom:"1px solid #f4f4f5", fontSize:13, fontWeight:700, color:"#3f3f46" }}>{t("up_order_summary")}</div>
             <div style={{ padding:"14px 20px" }}>
               {[
-                { label:`${plan.name} Plan (${billing})`, val:fmt(price) },
-                { label:"Tax (18% GST)",                  val:fmt(Math.round(price*0.18)) },
-                { label:"Discount",                       val:"—" },
+                { label:`${plan.name} · ${billing==="monthly"?t("up_monthly"):t("up_yearly")}`, val:fmt(price) },
+                { label:t("up_tax_gst"),                  val:fmt(Math.round(price*0.18)) },
+                { label:t("up_discount"),                       val:"—" },
               ].map(({ label, val })=>(
                 <div key={label} style={{ display:"flex", justifyContent:"space-between", padding:"6px 0", fontSize:13, color:"#52525b", borderBottom:"1px solid #f9f9f9" }}>
                   <span>{label}</span><span style={{ fontWeight:600 }}>{val}</span>
                 </div>
               ))}
               <div style={{ display:"flex", justifyContent:"space-between", padding:"12px 0 2px", fontSize:15, fontWeight:900, color:"#18181b" }}>
-                <span>Total</span>
+                <span>{t("up_total")}</span>
                 <span style={{ color:"#7c3aed" }}>{fmt(price+Math.round(price*0.18))}</span>
               </div>
-              <div style={{ fontSize:11, color:"#a1a1aa", marginTop:2 }}>{currencyCode} · {billing==="monthly"?"Billed monthly":"Billed yearly"}</div>
+              <div style={{ fontSize:11, color:"#a1a1aa", marginTop:2 }}>{currencyCode} · {billing==="monthly"?t("up_billed_monthly"):t("up_billed_yearly")}</div>
             </div>
           </div>
 
           <button className="up-btn-primary" style={{ marginTop:20 }}
             onClick={()=>setStep(2)}>
-            Continue to Payment <ChevronRight size={15}/>
+            {t("up_continue_payment")} <ChevronRight size={15}/>
           </button>
           <div style={{ textAlign:"center", marginTop:12, fontSize:12, color:"#a1a1aa", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
-            <Lock size={12} color="#16a34a"/> Secure 256-bit SSL encryption
+            <Lock size={12} color="#16a34a"/> {t("up_secure_ssl")}
           </div>
         </div>
       )}
@@ -390,14 +378,14 @@ export default function UpgradePlanPage({ onBack, currencySymbol = "₹", curren
           {/* Summary strip */}
           <div style={{ background:"#f8f8fb", border:"1px solid #ebebeb", borderRadius:12, padding:"12px 16px", display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
             <div style={{ fontSize:13, color:"#52525b" }}>
-              <span style={{ fontWeight:700, color:"#18181b" }}>{plan.name} Plan</span> · {details.fullName || "—"}
+              <span style={{ fontWeight:700, color:"#18181b" }}>{plan.name}</span> · {details.fullName || "—"}
             </div>
             <div style={{ fontSize:15, fontWeight:900, color:"#7c3aed" }}>{fmt(price+Math.round(price*0.18))}</div>
           </div>
 
           <div className="up-card">
             <div style={{ padding:"14px 20px", borderBottom:"1px solid #f4f4f5", fontSize:13, fontWeight:700, color:"#3f3f46", display:"flex", alignItems:"center", gap:8 }}>
-              <CreditCard size={14} style={{color:"#7c3aed"}}/> Select Payment Method
+              <CreditCard size={14} style={{color:"#7c3aed"}}/> {t("up_select_payment_method")}
             </div>
             <div style={{ padding:"12px 16px", display:"flex", flexDirection:"column", gap:10 }}>
               {PAYMENT_METHODS.map(({ id, label, Icon, sub })=>(
@@ -418,10 +406,10 @@ export default function UpgradePlanPage({ onBack, currencySymbol = "₹", curren
             {/* UPI input */}
             {payMethod==="upi" && (
               <div style={{ padding:"0 16px 16px", animation:"upFadeUp .2s ease" }}>
-                <label className="up-label">UPI ID</label>
-                <input className="up-input" placeholder="yourname@upi" value={upiId} onChange={e=>setUpiId(e.target.value)}/>
+                <label className="up-label">{t("up_upi_id")}</label>
+                <input className="up-input" placeholder={t("up_upi_ph")} value={upiId} onChange={e=>setUpiId(e.target.value)}/>
                 <div style={{ fontSize:11.5, color:"#a1a1aa", marginTop:5 }}>
-                  Supported: PhonePe, GPay, Paytm, BHIM, Amazon Pay
+                  {t("up_upi_supported")}
                 </div>
               </div>
             )}
@@ -430,7 +418,7 @@ export default function UpgradePlanPage({ onBack, currencySymbol = "₹", curren
             {payMethod==="razorpay" && (
               <div style={{ padding:"0 16px 16px", animation:"upFadeUp .2s ease" }}>
                 <div style={{ background:"#eff6ff", border:"1px solid #bfdbfe", borderRadius:9, padding:"11px 14px", fontSize:12.5, color:"#1e40af" }}>
-                  You'll be redirected to Razorpay's secure checkout to complete payment.
+                  {t("up_razorpay_note")}
                 </div>
               </div>
             )}
@@ -439,7 +427,7 @@ export default function UpgradePlanPage({ onBack, currencySymbol = "₹", curren
             {payMethod==="stripe" && (
               <div style={{ padding:"0 16px 16px", animation:"upFadeUp .2s ease" }}>
                 <div style={{ background:"#faf5ff", border:"1px solid #ddd6fe", borderRadius:9, padding:"11px 14px", fontSize:12.5, color:"#5b21b6" }}>
-                  You'll be redirected to Stripe's secure checkout. Supports international cards.
+                  {t("up_stripe_note")}
                 </div>
               </div>
             )}
@@ -448,11 +436,11 @@ export default function UpgradePlanPage({ onBack, currencySymbol = "₹", curren
             {payMethod==="card" && (
               <div style={{ padding:"0 16px 16px", display:"flex", flexDirection:"column", gap:12, animation:"upFadeUp .2s ease" }}>
                 <div>
-                  <label className="up-label">Card Number</label>
+                  <label className="up-label">{t("up_card_number")}</label>
                   <div style={{ position:"relative" }}>
                     <CreditCard size={13} style={{ position:"absolute", left:11, top:"50%", transform:"translateY(-50%)", color:"#a1a1aa" }}/>
                     <input className="up-input" style={{ paddingLeft:32, letterSpacing:2 }}
-                      placeholder="1234  5678  9012  3456" maxLength={19}
+                      placeholder={t("up_card_number_ph")} maxLength={19}
                       value={cardData.number}
                       onChange={e=>{
                         const v = e.target.value.replace(/\D/g,"").slice(0,16);
@@ -462,7 +450,7 @@ export default function UpgradePlanPage({ onBack, currencySymbol = "₹", curren
                 </div>
                 <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
                   <div>
-                    <label className="up-label">Expiry Date</label>
+                    <label className="up-label">{t("up_expiry_date")}</label>
                     <input className="up-input" placeholder="MM / YY" maxLength={7}
                       value={cardData.expiry}
                       onChange={e=>{
@@ -471,7 +459,7 @@ export default function UpgradePlanPage({ onBack, currencySymbol = "₹", curren
                       }}/>
                   </div>
                   <div>
-                    <label className="up-label">CVV</label>
+                    <label className="up-label">{t("up_cvv")}</label>
                     <div style={{ position:"relative" }}>
                       <input className="up-input" placeholder="•••" maxLength={4} type="password"
                         value={cardData.cvv} onChange={e=>setCardData(d=>({...d,cvv:e.target.value.replace(/\D/g,"").slice(0,4)}))}/>
@@ -479,23 +467,23 @@ export default function UpgradePlanPage({ onBack, currencySymbol = "₹", curren
                   </div>
                 </div>
                 <div>
-                  <label className="up-label">Name on Card</label>
-                  <input className="up-input" placeholder="As printed on your card"
+                  <label className="up-label">{t("up_name_on_card")}</label>
+                  <input className="up-input" placeholder={t("up_name_on_card_ph")}
                     value={cardData.name} onChange={e=>setCardData(d=>({...d,name:e.target.value}))}/>
                 </div>
                 <div style={{ display:"flex", gap:8, alignItems:"center", marginTop:2 }}>
                   <VisaIcon/><MastercardIcon/><AmexIcon/>
-                  <span style={{ fontSize:11, color:"#a1a1aa", marginLeft:4 }}>All major cards accepted</span>
+                  <span style={{ fontSize:11, color:"#a1a1aa", marginLeft:4 }}>{t("up_all_cards")}</span>
                 </div>
               </div>
             )}
           </div>
 
           <button className="up-btn-primary" style={{ marginTop:20 }} onClick={handlePay}>
-            <Lock size={14}/> Pay {fmt(price+Math.round(price*0.18))} Securely
+            <Lock size={14}/> {t("up_pay_securely", { amount: fmt(price+Math.round(price*0.18)) })}
           </button>
           <div style={{ textAlign:"center", marginTop:12, fontSize:11.5, color:"#a1a1aa", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
-            <Shield size={12} color="#16a34a"/> PCI-DSS Compliant · Data encrypted end-to-end
+            <Shield size={12} color="#16a34a"/> {t("up_pci_note")}
           </div>
         </div>
       )}
@@ -507,11 +495,11 @@ export default function UpgradePlanPage({ onBack, currencySymbol = "₹", curren
             <Loader2 size={36} style={{ color:"#7c3aed", animation:"upSpin .8s linear infinite" }}/>
           </div>
           <div style={{ textAlign:"center" }}>
-            <div style={{ fontSize:20, fontWeight:800, color:"#18181b", marginBottom:6 }}>Processing Payment...</div>
-            <div style={{ fontSize:13.5, color:"#a1a1aa", maxWidth:300 }}>Please don't close this window. This usually takes a few seconds.</div>
+            <div style={{ fontSize:20, fontWeight:800, color:"#18181b", marginBottom:6 }}>{t("up_processing_title")}</div>
+            <div style={{ fontSize:13.5, color:"#a1a1aa", maxWidth:300 }}>{t("up_processing_desc")}</div>
           </div>
           <div style={{ display:"flex", flexDirection:"column", gap:8, width:280 }}>
-            {["Verifying payment details","Connecting to gateway","Confirming subscription"].map((s,i)=>(
+            {[t("up_verifying"), t("up_connecting"), t("up_confirming")].map((s,i)=>(
               <div key={s} style={{ display:"flex", alignItems:"center", gap:10, fontSize:13, color:"#52525b" }}>
                 <div style={{ width:18, height:18, borderRadius:"50%", background:"#7c3aed", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, animation:`upPulse ${.5+i*.3}s ease infinite` }}>
                   <Check size={10} color="#fff"/>
@@ -530,20 +518,20 @@ export default function UpgradePlanPage({ onBack, currencySymbol = "₹", curren
             <CheckCircle2 size={46} color="#16a34a" strokeWidth={2}/>
           </div>
           <div style={{ textAlign:"center" }}>
-            <div style={{ fontSize:24, fontWeight:900, color:"#18181b", marginBottom:8 }}>Payment Successful! 🎉</div>
+            <div style={{ fontSize:24, fontWeight:900, color:"#18181b", marginBottom:8 }}>{t("up_payment_successful")}</div>
             <div style={{ fontSize:14, color:"#6b7280", maxWidth:360, lineHeight:1.6 }}>
-              Welcome to <strong>{plan.name}</strong>! Your subscription is now active. A confirmation has been sent to <strong>{details.email}</strong>.
+              {t("up_welcome_to")} <strong>{plan.name}</strong>! {t("up_confirmation_sent")} <strong>{details.email}</strong>.
             </div>
           </div>
 
           <div className="up-card" style={{ width:"100%", maxWidth:420 }}>
-            <div style={{ padding:"14px 20px", borderBottom:"1px solid #f4f4f5", fontSize:12.5, fontWeight:700, color:"#3f3f46" }}>Transaction Details</div>
+            <div style={{ padding:"14px 20px", borderBottom:"1px solid #f4f4f5", fontSize:12.5, fontWeight:700, color:"#3f3f46" }}>{t("up_transaction_details")}</div>
             <div style={{ padding:"14px 20px" }}>
               {[
-                { label:"Plan",          val:`${plan.name} (${billing})` },
-                { label:"Amount Paid",   val:fmt(price+Math.round(price*0.18)) },
-                { label:"Payment ID",    val:`TXN${Date.now().toString().slice(-8)}` },
-                { label:"Billing",       val:details.email },
+                { label:t("up_txn_plan"),          val:`${plan.name} (${billing==="monthly"?t("up_monthly"):t("up_yearly")})` },
+                { label:t("up_txn_amount"),   val:fmt(price+Math.round(price*0.18)) },
+                { label:t("up_txn_id"),    val:`TXN${Date.now().toString().slice(-8)}` },
+                { label:t("up_txn_billing"),       val:details.email },
               ].map(({ label, val })=>(
                 <div key={label} style={{ display:"flex", justifyContent:"space-between", padding:"7px 0", fontSize:13, borderBottom:"1px solid #f9f9f9" }}>
                   <span style={{ color:"#a1a1aa" }}>{label}</span>
@@ -554,7 +542,7 @@ export default function UpgradePlanPage({ onBack, currencySymbol = "₹", curren
           </div>
 
           <button className="up-btn-primary" style={{ maxWidth:320 }} onClick={onBack}>
-            <Sparkles size={14}/> Go to Settings
+            <Sparkles size={14}/> {t("up_go_to_settings")}
           </button>
         </div>
       )}

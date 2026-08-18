@@ -7,6 +7,7 @@ import {
 import { FaCrown } from "react-icons/fa";
 import { MdOutlineReceiptLong } from "react-icons/md";
 import "../adminbillingcomponent/AdminBilling.css";
+import { useLanguage } from "../context/LanguageContext";
 
 /* ============================================================
    AdminBilling — Billing & Subscription page.
@@ -23,77 +24,87 @@ import "../adminbillingcomponent/AdminBilling.css";
    ============================================================ */
 
 // ── Dummy usage data (would come from a real /api/admin/usage endpoint) ──
-const USAGE = [
-  { label: "Orders this month", used: 142, limit: 200, icon: ShoppingBag },
-  { label: "Menu Items",        used: 48,  limit: 60,  icon: Utensils },
-  { label: "Team Members",      used: 2,   limit: 3,   icon: Users },
-];
+function buildUsage(t) {
+  return [
+    { label: t("ab_usage_orders"), used: 142, limit: 200, icon: ShoppingBag },
+    { label: t("ab_usage_items"),  used: 48,  limit: 60,  icon: Utensils },
+    { label: t("ab_usage_team"),   used: 2,   limit: 3,   icon: Users },
+  ];
+}
 
 // ── Dummy plan catalogue ──
-const PLANS = [
-  {
-    key: "free",
-    name: "Free",
-    tagline: "Everything you need to get your first orders live.",
-    price: "$0",
-    period: "/forever",
-    current: true,
-    features: [
-      { text: "Up to 200 orders / month", on: true },
-      { text: "Up to 60 menu items", on: true },
-      { text: "QR code menu ordering", on: true },
-      { text: "Up to 3 team members", on: true },
-      { text: "Kiosk & self-service ordering", on: false },
-      { text: "Priority support", on: false },
-    ],
-  },
-  {
-    key: "pro",
-    name: "Pro",
-    tagline: "For growing restaurants ready to scale up.",
-    price: "$29",
-    period: "/month",
-    recommended: true,
-    features: [
-      { text: "Unlimited orders", on: true },
-      { text: "Unlimited menu items", on: true },
-      { text: "QR code + Kiosk ordering", on: true },
-      { text: "Up to 15 team members", on: true },
-      { text: "Advanced analytics & reports", on: true },
-      { text: "Priority support", on: true },
-    ],
-  },
-  {
-    key: "enterprise",
-    name: "Enterprise",
-    tagline: "Custom limits, SLAs and dedicated support.",
-    price: "Custom",
-    period: "",
-    features: [
-      { text: "Everything in Pro", on: true },
-      { text: "Unlimited team members", on: true },
-      { text: "Multi-location management", on: true },
-      { text: "Custom integrations & API access", on: true },
-      { text: "Dedicated account manager", on: true },
-      { text: "99.9% uptime SLA", on: true },
-    ],
-  },
-];
+function buildPlans(t) {
+  return [
+    {
+      key: "free",
+      name: t("ab_plan_free_name"),
+      tagline: t("ab_plan_free_tagline"),
+      price: "$0",
+      period: "/forever",
+      current: true,
+      features: [
+        { text: t("ab_feat_orders200"), on: true },
+        { text: t("ab_feat_items60"), on: true },
+        { text: t("ab_feat_qr"), on: true },
+        { text: t("ab_feat_team3"), on: true },
+        { text: t("ab_feat_kiosk"), on: false },
+        { text: t("ab_feat_priority_support"), on: false },
+      ],
+    },
+    {
+      key: "pro",
+      name: t("ab_plan_pro_name"),
+      tagline: t("ab_plan_pro_tagline"),
+      price: "$29",
+      period: "/month",
+      recommended: true,
+      features: [
+        { text: t("ab_feat_unlim_orders"), on: true },
+        { text: t("ab_feat_unlim_items"), on: true },
+        { text: t("ab_feat_qr_kiosk"), on: true },
+        { text: t("ab_feat_team15"), on: true },
+        { text: t("ab_feat_adv_analytics"), on: true },
+        { text: t("ab_feat_priority_support"), on: true },
+      ],
+    },
+    {
+      key: "enterprise",
+      name: t("ab_plan_enterprise_name"),
+      tagline: t("ab_plan_enterprise_tagline"),
+      price: "Custom",
+      period: "",
+      features: [
+        { text: t("ab_feat_everything_pro"), on: true },
+        { text: t("ab_feat_unlim_team"), on: true },
+        { text: t("ab_feat_multi_location"), on: true },
+        { text: t("ab_feat_custom_int"), on: true },
+        { text: t("ab_feat_dedicated_mgr"), on: true },
+        { text: t("ab_feat_sla"), on: true },
+      ],
+    },
+  ];
+}
 
 // ── Dummy billing history (would come from a real /api/admin/billing/invoices endpoint) ──
-const BILLING_HISTORY = [
-  { id: "INV-2026-0005", desc: "Free Plan — July 2026",              date: "Jul 1, 2026", amount: 0,    status: "free" },
-  { id: "INV-2026-0004", desc: "Free Plan — June 2026",               date: "Jun 1, 2026", amount: 0,    status: "free" },
-  { id: "INV-2026-0003", desc: "SMS Notifications Add-on",            date: "May 14, 2026", amount: 4.99, status: "paid" },
-  { id: "INV-2026-0002", desc: "Free Plan — May 2026",                date: "May 1, 2026", amount: 0,    status: "free" },
-  { id: "INV-2026-0001", desc: "Account Created — Free Plan Activated", date: "Apr 18, 2026", amount: 0,  status: "free" },
-];
+function buildBillingHistory(t) {
+  return [
+    { id: "INV-2026-0005", desc: `${t("ab_free_plan_name")} — July 2026`,              date: "Jul 1, 2026", amount: 0,    status: "free" },
+    { id: "INV-2026-0004", desc: `${t("ab_free_plan_name")} — June 2026`,               date: "Jun 1, 2026", amount: 0,    status: "free" },
+    { id: "INV-2026-0003", desc: "SMS Notifications Add-on",            date: "May 14, 2026", amount: 4.99, status: "paid" },
+    { id: "INV-2026-0002", desc: `${t("ab_free_plan_name")} — May 2026`,                date: "May 1, 2026", amount: 0,    status: "free" },
+    { id: "INV-2026-0001", desc: `Account Created — ${t("ab_free_plan_name")} Activated`, date: "Apr 18, 2026", amount: 0,  status: "free" },
+  ];
+}
 
 function usagePct(used, limit) {
   return Math.min(100, Math.round((used / limit) * 100));
 }
 
 export default function AdminBilling() {
+  const { t } = useLanguage();
+  const USAGE = buildUsage(t);
+  const PLANS = buildPlans(t);
+  const BILLING_HISTORY = buildBillingHistory(t);
   const [billingEmail, setBillingEmail] = useState("");
   const [legalName, setLegalName]       = useState("");
   const [taxId, setTaxId]               = useState("");
@@ -106,8 +117,8 @@ export default function AdminBilling() {
           <MdOutlineReceiptLong color="#fff" size={26} />
         </div>
         <div>
-          <h1 className="abill-title">Billing &amp; Subscription</h1>
-          <p className="abill-subtitle">Manage your plan, track usage and review invoices</p>
+          <h1 className="abill-title">{t("ab_header_title")}</h1>
+          <p className="abill-subtitle">{t("ab_header_sub")}</p>
         </div>
       </div>
 
@@ -116,21 +127,20 @@ export default function AdminBilling() {
         <div className="abill-hero-top">
           <div>
             <div className="abill-hero-plan-label">
-              Current Plan
+              {t("ab_current_plan")}
               <span className="abill-hero-active-pill">
-                <ShieldCheck size={11} /> Active
+                <ShieldCheck size={11} /> {t("ab_active")}
               </span>
             </div>
             <div className="abill-hero-plan-name">
-              Free Plan <span className="abill-hero-plan-price">{PLANS[0].price}{PLANS[0].period}</span>
+              {t("ab_free_plan_name")} <span className="abill-hero-plan-price">{PLANS[0].price}{PLANS[0].period}</span>
             </div>
             <div className="abill-hero-desc">
-              You're on the Free plan — perfect for getting started. Upgrade to Pro anytime to unlock
-              unlimited orders, kiosk ordering and advanced analytics.
+              {t("ab_free_plan_desc")}
             </div>
           </div>
           <button className="abill-upgrade-btn">
-            <FaCrown size={14} /> Upgrade to Pro <ArrowUpRight size={15} />
+            <FaCrown size={14} /> {t("ab_upgrade_to_pro")} <ArrowUpRight size={15} />
           </button>
         </div>
 
@@ -160,8 +170,8 @@ export default function AdminBilling() {
       {/* ── Plan comparison ── */}
       <div className="abill-section-head">
         <div>
-          <div className="abill-section-title">Available Plans</div>
-          <div className="abill-section-sub">Compare plans and upgrade whenever you're ready</div>
+          <div className="abill-section-title">{t("ab_available_plans")}</div>
+          <div className="abill-section-sub">{t("ab_available_plans_sub")}</div>
         </div>
       </div>
 
@@ -171,7 +181,7 @@ export default function AdminBilling() {
             key={p.key}
             className={`abill-plan-card ${p.recommended ? "abill-plan-recommended" : ""} ${p.current ? "abill-plan-current" : ""}`}
           >
-            {p.recommended && <div className="abill-plan-badge">Most Popular</div>}
+            {p.recommended && <div className="abill-plan-badge">{t("ab_most_popular")}</div>}
             <div className="abill-plan-name">{p.name}</div>
             <div className="abill-plan-tagline">{p.tagline}</div>
             <div className="abill-plan-price-row">
@@ -190,7 +200,7 @@ export default function AdminBilling() {
               className={`abill-plan-btn ${p.current ? "abill-plan-btn-current" : p.recommended ? "abill-plan-btn-primary" : ""}`}
               disabled={p.current}
             >
-              {p.current ? "Current Plan" : p.key === "enterprise" ? "Contact Sales" : "Upgrade to Pro"}
+              {p.current ? t("ab_current_plan_btn") : p.key === "enterprise" ? t("ab_contact_sales") : t("ab_upgrade_to_pro")}
             </button>
           </div>
         ))}
@@ -199,82 +209,82 @@ export default function AdminBilling() {
       {/* ── Payment method + Billing details ── */}
       <div className="abill-section-head">
         <div>
-          <div className="abill-section-title">Payment &amp; Billing Details</div>
-          <div className="abill-section-sub">Used automatically once you upgrade to a paid plan</div>
+          <div className="abill-section-title">{t("ab_payment_billing_details")}</div>
+          <div className="abill-section-sub">{t("ab_payment_billing_sub")}</div>
         </div>
       </div>
 
       <div className="abill-two-col">
         <div className="abill-card">
-          <div className="abill-card-title"><CreditCard size={16} /> Payment Method</div>
-          <div className="abill-card-sub">No card is charged while you're on the Free plan</div>
+          <div className="abill-card-title"><CreditCard size={16} /> {t("ab_payment_method")}</div>
+          <div className="abill-card-sub">{t("ab_payment_method_sub")}</div>
           <div className="abill-pm-empty">
             <CreditCard size={26} color="#9096a2" strokeWidth={1.5} />
-            <div className="abill-pm-empty-title">No payment method on file</div>
-            <div className="abill-pm-empty-sub">Add one now so upgrading later is instant</div>
-            <button className="abill-pm-add-btn"><CreditCard size={13} /> Add Payment Method</button>
+            <div className="abill-pm-empty-title">{t("ab_no_payment_method")}</div>
+            <div className="abill-pm-empty-sub">{t("ab_add_payment_now")}</div>
+            <button className="abill-pm-add-btn"><CreditCard size={13} /> {t("ab_add_payment_method_btn")}</button>
           </div>
         </div>
 
         <div className="abill-card">
-          <div className="abill-card-title"><Building2 size={16} /> Billing Information</div>
-          <div className="abill-card-sub">Used on future invoices and tax receipts</div>
+          <div className="abill-card-title"><Building2 size={16} /> {t("ab_billing_info")}</div>
+          <div className="abill-card-sub">{t("ab_billing_info_sub")}</div>
           <div className="abill-field">
-            <label className="abill-field-label">Business Legal Name</label>
+            <label className="abill-field-label">{t("ab_legal_name")}</label>
             <input
               className="abill-field-input"
-              placeholder="e.g. Tabesto Foods Pvt. Ltd."
+              placeholder={t("ab_legal_name_ph")}
               value={legalName}
               onChange={(e) => setLegalName(e.target.value)}
             />
           </div>
           <div className="abill-field-row">
             <div className="abill-field">
-              <label className="abill-field-label">GSTIN / Tax ID</label>
+              <label className="abill-field-label">{t("ab_tax_id")}</label>
               <input
                 className="abill-field-input"
-                placeholder="Optional"
+                placeholder={t("ab_tax_id_ph")}
                 value={taxId}
                 onChange={(e) => setTaxId(e.target.value)}
               />
             </div>
             <div className="abill-field">
-              <label className="abill-field-label">Billing Email</label>
+              <label className="abill-field-label">{t("ab_billing_email")}</label>
               <input
                 className="abill-field-input"
-                placeholder="billing@yourbusiness.com"
+                placeholder={t("ab_billing_email_ph")}
                 value={billingEmail}
                 onChange={(e) => setBillingEmail(e.target.value)}
               />
             </div>
           </div>
-          <button className="abill-save-btn">Save Details</button>
+          <button className="abill-save-btn">{t("ab_save_details")}</button>
         </div>
       </div>
 
       {/* ── Billing history ── */}
       <div className="abill-section-head">
         <div>
-          <div className="abill-section-title">Billing History</div>
-          <div className="abill-section-sub">Every invoice and add-on purchase on your account</div>
+          <div className="abill-section-title">{t("ab_billing_history")}</div>
+          <div className="abill-section-sub">{t("ab_billing_history_sub")}</div>
         </div>
       </div>
 
       <div className="abill-panel">
         <div className="abill-panel-head">
-          <div className="abill-panel-head-title"><Sparkles size={16} /> Invoices &amp; Purchases</div>
-          <button className="abill-download-all"><Download size={13} /> Download All</button>
+          <div className="abill-panel-head-title"><Sparkles size={16} /> {t("ab_invoices_purchases")}</div>
+          <button className="abill-download-all"><Download size={13} /> {t("ab_download_all")}</button>
         </div>
 
         <div className="abill-table-wrap">
           <table className="abill-table">
             <thead>
               <tr>
-                <th className="abill-th">Description</th>
-                <th className="abill-th">Date</th>
-                <th className="abill-th abill-right">Amount</th>
-                <th className="abill-th">Status</th>
-                <th className="abill-th abill-right">Invoice</th>
+                <th className="abill-th">{t("ab_th_description")}</th>
+                <th className="abill-th">{t("ab_th_date")}</th>
+                <th className="abill-th abill-right">{t("ab_th_amount")}</th>
+                <th className="abill-th">{t("ab_th_status")}</th>
+                <th className="abill-th abill-right">{t("ab_th_invoice")}</th>
               </tr>
             </thead>
             <tbody>
@@ -298,7 +308,7 @@ export default function AdminBilling() {
                   <td className="abill-td">
                     <span className={`abill-status-pill ${row.status === "paid" ? "abill-status-paid" : "abill-status-free"}`}>
                       <span className="abill-status-dot" />
-                      {row.status === "paid" ? "Paid" : "Free"}
+                      {row.status === "paid" ? t("ab_status_paid") : t("ab_status_free")}
                     </span>
                   </td>
                   <td className="abill-td abill-right">
@@ -313,7 +323,7 @@ export default function AdminBilling() {
         </div>
 
         <div className="abill-demo-note">
-          <Info size={13} /> Sample data shown — connect a billing provider to replace this with real invoices.
+          <Info size={13} /> {t("ab_demo_note")}
         </div>
       </div>
     </div>

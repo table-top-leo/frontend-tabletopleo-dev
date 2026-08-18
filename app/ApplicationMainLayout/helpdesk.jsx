@@ -14,6 +14,7 @@ import "../designdashboardcomponent/helpdesk.css";
 // NOTE: adjust this path to wherever your SupportModal/DeleteModal
 // file actually lives in your project (it exports both components).
 import { SupportModal } from "../ApplicationMainLayout/modalsettingspage";
+import { useLanguage } from "../context/LanguageContext";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:6163";
 const WHATSAPP_NUMBER = "918688349726"; // 91 + 8688349726
@@ -27,20 +28,24 @@ function authHeaders() {
   };
 }
 
-const NAV = [
-  { id: "home",     label: "Help Center",    icon: Home },
-  { id: "chat",     label: "AI Assistant",   icon: Bot },
-  { id: "tickets",  label: "My Requests",    icon: Ticket },
-  { id: "docs",     label: "Documentation",  icon: BookOpen },
-  { id: "feedback", label: "Rate the App",   icon: Star },
-];
+function buildNav(t) {
+  return [
+    { id: "home",     label: t("hd_nav_home"),     icon: Home },
+    { id: "chat",     label: t("hd_nav_chat"),     icon: Bot },
+    { id: "tickets",  label: t("hd_nav_tickets"),  icon: Ticket },
+    { id: "docs",     label: t("hd_nav_docs"),     icon: BookOpen },
+    { id: "feedback", label: t("hd_nav_feedback"), icon: Star },
+  ];
+}
 
-const QUICK_ACTIONS = [
-  { key: "chat",  icon: MessageCircle, label: "Live Chat",     desc: "Chat with us on WhatsApp", color: "qa-green",  badge: "Online" },
-  { key: "email", icon: Mail,          label: "Email Support", desc: "support@tabletopleo.com",   color: "qa-violet", badge: "24/7 Support" },
-  { key: "call",  icon: Phone,         label: "Call Us",       desc: "+91 86883 49726",           color: "qa-blue",   badge: "9AM–9PM" },
-  { key: "demo",  icon: Video,         label: "Schedule Demo", desc: "Book a 30-min call",         color: "qa-amber",  badge: null },
-];
+function buildQuickActions(t) {
+  return [
+    { key: "chat",  icon: MessageCircle, label: t("hd_qa_chat_label"),  desc: t("hd_qa_chat_desc"),  color: "qa-green",  badge: t("hd_qa_chat_badge") },
+    { key: "email", icon: Mail,          label: t("hd_qa_email_label"), desc: t("hd_qa_email_desc"), color: "qa-violet", badge: t("hd_qa_email_badge") },
+    { key: "call",  icon: Phone,         label: t("hd_qa_call_label"),  desc: t("hd_qa_call_desc"),  color: "qa-blue",   badge: t("hd_qa_call_badge") },
+    { key: "demo",  icon: Video,         label: t("hd_qa_demo_label"),  desc: t("hd_qa_demo_desc"),  color: "qa-amber",  badge: null },
+  ];
+}
 
 const FAQ = [
   { q: "How do I add a new menu category?",         a: "Go to Menu & Category → click 'Add Category' → enter the name and save. Your new category will appear instantly in the sidebar." },
@@ -82,18 +87,22 @@ const BOT_RESPONSES = {
   thanks: "You're very welcome! 😊 That's what I'm here for. Feel free to ask me anything else — or if you'd like a real human, our team is one WhatsApp message away.",
 };
 
-const STATUS_MAP = {
-  OPEN:        { label: "Open",        cls: "tk-open",       icon: Circle },
-  IN_PROGRESS: { label: "In Progress", cls: "tk-inprogress", icon: RefreshCw },
-  RESOLVED:    { label: "Resolved",    cls: "tk-resolved",   icon: CheckCircle2 },
-  CLOSED:      { label: "Closed",      cls: "tk-resolved",   icon: CheckCircle2 },
-};
+function buildStatusMap(t) {
+  return {
+    OPEN:        { label: t("hd_status_open"),       cls: "tk-open",       icon: Circle },
+    IN_PROGRESS: { label: t("hd_status_inprogress"), cls: "tk-inprogress", icon: RefreshCw },
+    RESOLVED:    { label: t("hd_status_resolved"),   cls: "tk-resolved",   icon: CheckCircle2 },
+    CLOSED:      { label: t("hd_status_closed"),     cls: "tk-resolved",   icon: CheckCircle2 },
+  };
+}
 
-const PRIORITY_MAP = {
-  High:   { label: "High",   cls: "pr-high" },
-  Medium: { label: "Medium", cls: "pr-medium" },
-  Low:    { label: "Low",    cls: "pr-low" },
-};
+function buildPriorityMap(t) {
+  return {
+    High:   { label: t("hd_priority_high"),   cls: "pr-high" },
+    Medium: { label: t("hd_priority_medium"), cls: "pr-medium" },
+    Low:    { label: t("hd_priority_low"),    cls: "pr-low" },
+  };
+}
 
 function getBotReply(msg) {
   const m = msg.toLowerCase();
@@ -110,6 +119,11 @@ function getBotReply(msg) {
 }
 
 export default function HelpDesk() {
+  const { t } = useLanguage();
+  const NAV = buildNav(t);
+  const QUICK_ACTIONS = buildQuickActions(t);
+  const STATUS_MAP = buildStatusMap(t);
+  const PRIORITY_MAP = buildPriorityMap(t);
   const [active, setActive]         = useState("home");
   const [messages, setMessages]     = useState([
     { role: "bot", text: "Hi! I'm **Leo**, your TableTop AI assistant 👋\n\nI can help you with orders, menu setup, payments, kiosk mode, QR codes and more. What do you need help with today?", time: "Just now", liked: null },
@@ -138,9 +152,9 @@ export default function HelpDesk() {
       .then((res) => res.json())
       .then((json) => {
         if (json.success) setTickets(json.data || []);
-        else setTicketsError(json.message || "Failed to load your requests");
+        else setTicketsError(json.message || t("hd_ticket_load_fail") || "Failed to load your requests");
       })
-      .catch(() => setTicketsError("Failed to load your requests"))
+      .catch(() => setTicketsError(t("hd_ticket_load_fail") || "Failed to load your requests"))
       .finally(() => setTicketsLoading(false));
   };
 
@@ -204,12 +218,12 @@ export default function HelpDesk() {
         }),
       });
       const json = await res.json();
-      if (!res.ok || json.success === false) throw new Error(json.message || "Failed to submit request");
+      if (!res.ok || json.success === false) throw new Error(json.message || t("hd_submit_request"));
       setTickets((prev) => [json.data, ...prev]);
       setTicketForm({ subject: "", desc: "", priority: "Medium" });
       setNewTicket(false);
     } catch (e) {
-      setSubmitError(e.message || "Failed to submit request. Please try again.");
+      setSubmitError(e.message || t("hd_submit_request"));
     } finally {
       setSubmitting(false);
     }
@@ -226,11 +240,11 @@ export default function HelpDesk() {
         body: JSON.stringify({ rating, reviewText: feedback.trim() || null }),
       });
       const json = await res.json();
-      if (!res.ok || json.success === false) throw new Error(json.message || "Failed to submit feedback");
+      if (!res.ok || json.success === false) throw new Error(json.message || t("hd_submit_feedback"));
       setMyReview(json.data);
       setFeedbackSent(true);
     } catch (e) {
-      setFeedbackError(e.message || "Failed to submit feedback. Please try again.");
+      setFeedbackError(e.message || t("hd_submit_feedback"));
     } finally {
       setFeedbackSending(false);
     }
@@ -277,8 +291,8 @@ export default function HelpDesk() {
             <LifeBuoy size={18} color="#fff" />
           </div>
           <div>
-            <div className="hd-brand-name">Help Center</div>
-            <div className="hd-brand-sub">TableTop Leo</div>
+            <div className="hd-brand-name">{t("hd_brand_name")}</div>
+            <div className="hd-brand-sub">{t("hd_brand_sub")}</div>
           </div>
         </div>
 
@@ -296,11 +310,11 @@ export default function HelpDesk() {
         <div className="hd-sidebar-status">
           <div className="hd-status-row">
             <span className="hd-status-dot hd-status-green" />
-            <span className="hd-status-label">24/7 AI Support</span>
+            <span className="hd-status-label">{t("hd_status_ai_support")}</span>
           </div>
           <div className="hd-status-row">
             <Clock size={11} className="hd-status-clock" />
-            <span className="hd-status-label">Live Team · Mon–Sun 9AM–9PM</span>
+            <span className="hd-status-label">{t("hd_status_live_team")}</span>
           </div>
         </div>
       </aside>
@@ -313,16 +327,16 @@ export default function HelpDesk() {
             </div>
             <div>
               <div className="hd-topbar-title">{activeNav?.label}</div>
-              <div className="hd-topbar-sub">TableTop Leo · Help & Support</div>
+              <div className="hd-topbar-sub">{t("hd_topbar_sub")}</div>
             </div>
           </div>
           <div className="hd-topbar-right">
             <div className="hd-search-bar">
               <Search size={14} className="hd-search-icon" />
-              <input className="hd-search-input" placeholder="Search help articles..." value={search} onChange={e => setSearch(e.target.value)} />
+              <input className="hd-search-input" placeholder={t("hd_search_ph")} value={search} onChange={e => setSearch(e.target.value)} />
             </div>
             <div className="hd-online-badge">
-              <span className="hd-status-dot hd-status-green" /> Online
+              <span className="hd-status-dot hd-status-green" /> {t("hd_online")}
             </div>
           </div>
           <div className="hd-mobile-tabs">
@@ -341,15 +355,15 @@ export default function HelpDesk() {
             <div className="hd-home">
               <div className="hd-hero">
                 <div className="hd-hero-icon"><LifeBuoy size={28} color="#7c3aed" /></div>
-                <h1 className="hd-hero-title">How can we help you?</h1>
-                <p className="hd-hero-sub">Search our knowledge base or reach out to our support team.</p>
+                <h1 className="hd-hero-title">{t("hd_hero_title")}</h1>
+                <p className="hd-hero-sub">{t("hd_hero_sub")}</p>
                 <div className="hd-hero-search">
                   <Search size={16} className="hd-hero-search-icon" />
-                  <input className="hd-hero-search-input" placeholder="e.g. How to add a menu item..." value={search} onChange={e => setSearch(e.target.value)} />
-                  <button type="button" className="hd-hero-search-btn" onClick={() => setActive("docs")}>Search</button>
+                  <input className="hd-hero-search-input" placeholder={t("hd_hero_search_ph")} value={search} onChange={e => setSearch(e.target.value)} />
+                  <button type="button" className="hd-hero-search-btn" onClick={() => setActive("docs")}>{t("hd_search_btn")}</button>
                 </div>
                 <div className="hd-hero-tags">
-                  {["Payments", "QR Code", "Orders", "Menu Setup", "Team"].map(tag => (
+                  {[t("hd_tag_payments"), t("hd_tag_qr"), t("hd_tag_orders"), t("hd_tag_menu"), t("hd_tag_team")].map(tag => (
                     <button key={tag} type="button" onClick={() => { setSearch(tag); setActive("docs"); }} className="hd-tag">{tag}</button>
                   ))}
                 </div>
@@ -371,8 +385,8 @@ export default function HelpDesk() {
               <div className="hd-home-grid">
                 <div className="hd-panel">
                   <div className="hd-panel-head">
-                    <h3 className="hd-panel-title">Popular Articles</h3>
-                    <button type="button" onClick={() => setActive("docs")} className="hd-panel-link">View all <ChevronRight size={13} /></button>
+                    <h3 className="hd-panel-title">{t("hd_popular_articles")}</h3>
+                    <button type="button" onClick={() => setActive("docs")} className="hd-panel-link">{t("hd_view_all")} <ChevronRight size={13} /></button>
                   </div>
                   {DOCS.slice(0, 4).map((doc, i) => {
                     const Icon = doc.icon;
@@ -391,7 +405,7 @@ export default function HelpDesk() {
 
                 <div className="hd-panel">
                   <div className="hd-panel-head">
-                    <h3 className="hd-panel-title">Quick FAQ</h3>
+                    <h3 className="hd-panel-title">{t("hd_quick_faq")}</h3>
                   </div>
                   {filteredFaq.slice(0, 3).map((f, i) => (
                     <div key={i} className="hd-faq-item">
@@ -403,17 +417,17 @@ export default function HelpDesk() {
                     </div>
                   ))}
                   <button type="button" onClick={() => setActive("chat")} className="hd-ask-leo-btn">
-                    <Bot size={14} /> Ask Leo AI instead
+                    <Bot size={14} /> {t("hd_ask_leo")}
                   </button>
                 </div>
               </div>
 
               <div className="hd-stats-row">
                 {[
-                  { icon: MessageSquare, val: "2 min",  label: "Avg Response" },
-                  { icon: CheckCircle2,  val: "98.4%",  label: "Resolution Rate" },
-                  { icon: Star,          val: "4.9 ★",  label: "Satisfaction" },
-                  { icon: Users,         val: "24/7",   label: "AI Support" },
+                  { icon: MessageSquare, val: "2 min",  label: t("hd_stat_avg_response") },
+                  { icon: CheckCircle2,  val: "98.4%",  label: t("hd_stat_resolution_rate") },
+                  { icon: Star,          val: "4.9 ★",  label: t("hd_stat_satisfaction") },
+                  { icon: Users,         val: "24/7",   label: t("hd_stat_ai_support") },
                 ].map(({ icon: Icon, val, label }) => (
                   <div key={label} className="hd-stat-card">
                     <Icon size={16} className="hd-stat-icon" />
@@ -433,8 +447,8 @@ export default function HelpDesk() {
                   <span className="hd-chat-avatar-dot" />
                 </div>
                 <div>
-                  <div className="hd-chat-name">Leo AI Assistant</div>
-                  <div className="hd-chat-status">Always online · Powered by TableTop</div>
+                  <div className="hd-chat-name">{t("hd_chat_name")}</div>
+                  <div className="hd-chat-status">{t("hd_chat_status")}</div>
                 </div>
                 <div className="hd-chat-header-right">
                   <button type="button" className="hd-chat-action-btn" onClick={() => setMessages([{ role: "bot", text: "Hi! I'm **Leo**, your TableTop AI assistant 👋\n\nHow can I help you today?", time: "Just now", liked: null }])}>
@@ -486,7 +500,7 @@ export default function HelpDesk() {
 
               <div className="hd-chat-input-wrap">
                 <button type="button" className="hd-input-action-btn"><Paperclip size={15} /></button>
-                <input className="hd-chat-input" placeholder="Ask Leo anything about TableTop..."
+                <input className="hd-chat-input" placeholder={t("hd_chat_input_ph")}
                   value={input} onChange={e => setInput(e.target.value)}
                   onKeyDown={e => e.key === "Enter" && sendMessage()} />
                 <button type="button" className="hd-input-action-btn"><Smile size={15} /></button>
@@ -496,7 +510,7 @@ export default function HelpDesk() {
               </div>
 
               <div className="hd-chat-footer-note">
-                Powered by TableTop Leo AI · Responses may not always be perfect · <span className="hd-chat-link" onClick={() => setActive("tickets")}>Raise a request</span> for complex issues
+                {t("hd_chat_footer_note")} <span className="hd-chat-link" onClick={() => setActive("tickets")}>{t("hd_raise_request")}</span> for complex issues
               </div>
             </div>
           )}
@@ -505,48 +519,48 @@ export default function HelpDesk() {
             <div className="hd-tickets-wrap">
               <div className="hd-tickets-head">
                 <div>
-                  <h2 className="hd-section-title">My Requests</h2>
-                  <p className="hd-section-sub">Track and manage the support requests you've raised</p>
+                  <h2 className="hd-section-title">{t("hd_my_requests")}</h2>
+                  <p className="hd-section-sub">{t("hd_my_requests_sub")}</p>
                 </div>
                 <button type="button" onClick={() => setNewTicket(true)} className="hd-btn-primary">
-                  <Plus size={14} /> New Request
+                  <Plus size={14} /> {t("hd_new_request")}
                 </button>
               </div>
 
               {newTicket && (
                 <div className="hd-ticket-form">
                   <div className="hd-tf-head">
-                    <span className="hd-tf-title">Create New Request</span>
+                    <span className="hd-tf-title">{t("hd_create_new_request")}</span>
                     <button type="button" onClick={() => setNewTicket(false)} className="hd-tf-close"><X size={16} /></button>
                   </div>
                   <div className="hd-tf-body">
                     <div className="hd-tf-field">
-                      <label className="hd-tf-label">Subject *</label>
-                      <input className="hd-tf-input" placeholder="Briefly describe your issue..."
+                      <label className="hd-tf-label">{t("hd_subject_label")}</label>
+                      <input className="hd-tf-input" placeholder={t("hd_subject_ph")}
                         value={ticketForm.subject} onChange={e => setTicketForm(f => ({ ...f, subject: e.target.value }))} />
                     </div>
                     <div className="hd-tf-field">
-                      <label className="hd-tf-label">Description</label>
-                      <textarea className="hd-tf-textarea" rows={3} placeholder="Provide more details about your issue..."
+                      <label className="hd-tf-label">{t("hd_description_label")}</label>
+                      <textarea className="hd-tf-textarea" rows={3} placeholder={t("hd_description_ph")}
                         value={ticketForm.desc} onChange={e => setTicketForm(f => ({ ...f, desc: e.target.value }))} />
                     </div>
                     <div className="hd-tf-field">
-                      <label className="hd-tf-label">Priority</label>
+                      <label className="hd-tf-label">{t("hd_priority_label")}</label>
                       <div className="hd-priority-btns">
                         {["Low", "Medium", "High"].map(p => (
                           <button key={p} type="button" onClick={() => setTicketForm(f => ({ ...f, priority: p }))}
                             className={`hd-priority-btn ${ticketForm.priority === p ? "hd-priority-active" : ""}`}>
-                            {p}
+                            {PRIORITY_MAP[p].label}
                           </button>
                         ))}
                       </div>
                     </div>
                     {submitError && <div className="hd-tf-field" style={{ color: "#dc2626", fontSize: 12.5, fontWeight: 600 }}>⚠ {submitError}</div>}
                     <div className="hd-tf-actions">
-                      <button type="button" onClick={() => setNewTicket(false)} className="hd-btn-ghost">Cancel</button>
+                      <button type="button" onClick={() => setNewTicket(false)} className="hd-btn-ghost">{t("cancel")}</button>
                       <button type="button" onClick={submitTicket} disabled={submitting || !ticketForm.subject.trim()} className="hd-btn-primary">
                         {submitting ? <Loader2 size={13} style={{ animation: "spin .7s linear infinite" }} /> : <Send size={13} />}
-                        {submitting ? "Submitting..." : "Submit Request"}
+                        {submitting ? t("hd_submitting") : t("hd_submit_request")}
                       </button>
                     </div>
                   </div>
@@ -557,7 +571,7 @@ export default function HelpDesk() {
                 {["all", "OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"].map(s => (
                   <button key={s} type="button" onClick={() => setFilterStatus(s)}
                     className={`hd-filter-btn ${filterStatus === s ? "hd-filter-active" : ""}`}>
-                    {s === "all" ? "All" : STATUS_MAP[s]?.label || s}
+                    {s === "all" ? t("hd_filter_all") : STATUS_MAP[s]?.label || s}
                     {s !== "all" && <span className="hd-filter-count">{normalizedTickets.filter(t => t.status === s).length}</span>}
                   </button>
                 ))}
@@ -569,7 +583,7 @@ export default function HelpDesk() {
                 ) : ticketsError ? (
                   <div className="hd-empty">{ticketsError}</div>
                 ) : filteredTickets.length === 0 ? (
-                  <div className="hd-empty">No requests found. Raise one above if you need help!</div>
+                  <div className="hd-empty">{t("hd_no_requests")}</div>
                 ) : (
                   filteredTickets.map(t => {
                     const st = STATUS_MAP[t.status] || STATUS_MAP.OPEN;
@@ -601,13 +615,13 @@ export default function HelpDesk() {
           {active === "docs" && (
             <div className="hd-docs-wrap">
               <div className="hd-docs-head">
-                <h2 className="hd-section-title">Documentation</h2>
-                <p className="hd-section-sub">Everything you need to know about TableTop Leo</p>
+                <h2 className="hd-section-title">{t("hd_documentation")}</h2>
+                <p className="hd-section-sub">{t("hd_documentation_sub")}</p>
               </div>
 
               <div className="hd-docs-cats">
-                {["All", "Getting Started", "Orders", "Menu", "Payments", "Analytics", "Team"].map(cat => (
-                  <button key={cat} type="button" className={`hd-cat-pill ${cat === "All" ? "hd-cat-active" : ""}`}>{cat}</button>
+                {[t("hd_cat_all"), "Getting Started", "Orders", "Menu", "Payments", "Analytics", "Team"].map((cat, i) => (
+                  <button key={cat} type="button" className={`hd-cat-pill ${i === 0 ? "hd-cat-active" : ""}`}>{cat}</button>
                 ))}
               </div>
 
@@ -624,7 +638,7 @@ export default function HelpDesk() {
                         <span><Eye size={11} /> {doc.views}</span>
                       </div>
                       <button type="button" className="hd-doc-card-btn">
-                        Read Article <ChevronRight size={13} />
+                        {t("hd_read_article")} <ChevronRight size={13} />
                       </button>
                     </div>
                   );
@@ -632,7 +646,7 @@ export default function HelpDesk() {
               </div>
 
               <div className="hd-faq-section">
-                <h3 className="hd-faq-title">Frequently Asked Questions</h3>
+                <h3 className="hd-faq-title">{t("hd_faq_title")}</h3>
                 {filteredFaq.map((f, i) => (
                   <div key={i} className="hd-faq-item">
                     <button type="button" onClick={() => setOpenFaq(openFaq === i ? null : i)} className="hd-faq-q">
@@ -653,22 +667,22 @@ export default function HelpDesk() {
               ) : myReview || feedbackSent ? (
                 <div className="hd-feedback-success">
                   <CheckCircle2 size={40} className="hd-success-icon" />
-                  <h2 className="hd-success-title">Thank you for your feedback!</h2>
+                  <h2 className="hd-success-title">{t("hd_feedback_thanks")}</h2>
                   <p className="hd-success-sub">
-                    You rated TableTop Leo {(myReview?.rating || rating)} / 5. Your response helps us improve every day.
+                    {t("hd_feedback_thanks_sub", { rating: (myReview?.rating || rating) })}
                   </p>
                 </div>
               ) : (
                 <>
                   <div className="hd-feedback-hero">
                     <Star size={28} className="hd-feedback-star-icon" />
-                    <h2 className="hd-feedback-title">Rate the App</h2>
-                    <p className="hd-feedback-sub">Help us make TableTop Leo better for everyone</p>
+                    <h2 className="hd-feedback-title">{t("hd_rate_app")}</h2>
+                    <p className="hd-feedback-sub">{t("hd_rate_app_sub")}</p>
                   </div>
 
                   <div className="hd-feedback-card">
                     <div className="hd-fb-section">
-                      <div className="hd-fb-label">How would you rate your overall experience?</div>
+                      <div className="hd-fb-label">{t("hd_overall_experience")}</div>
                       <div className="hd-stars">
                         {[1,2,3,4,5].map(n => (
                           <button key={n} type="button"
@@ -682,7 +696,7 @@ export default function HelpDesk() {
                       </div>
                       {rating > 0 && (
                         <div className="hd-rating-label">
-                          {["", "Poor", "Fair", "Good", "Very Good", "Excellent!"][rating]}
+                          {["", t("hd_rate_poor"), t("hd_rate_fair"), t("hd_rate_good"), t("hd_rate_verygood"), t("hd_rate_excellent")][rating]}
                         </div>
                       )}
                     </div>
@@ -690,9 +704,9 @@ export default function HelpDesk() {
                     <div className="hd-fb-divider" />
 
                     <div className="hd-fb-section">
-                      <div className="hd-fb-label">Tell us more (optional)</div>
+                      <div className="hd-fb-label">{t("hd_tell_more")}</div>
                       <textarea className="hd-fb-textarea" rows={3}
-                        placeholder="Share your thoughts, suggestions or report any issues..."
+                        placeholder={t("hd_feedback_ph")}
                         value={feedback} onChange={e => setFeedback(e.target.value)} />
                     </div>
 
@@ -702,7 +716,7 @@ export default function HelpDesk() {
 
                     <button type="button" onClick={submitFeedback} disabled={rating === 0 || feedbackSending} className="hd-fb-submit">
                       {feedbackSending ? <Loader2 size={14} style={{ animation: "spin .7s linear infinite" }} /> : <Send size={14} />}
-                      {feedbackSending ? "Submitting..." : "Submit Feedback"}
+                      {feedbackSending ? t("hd_submitting_feedback") : t("hd_submit_feedback")}
                     </button>
                   </div>
                 </>

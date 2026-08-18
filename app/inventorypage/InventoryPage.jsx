@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { FaApple, FaGooglePlay, FaCrown } from "react-icons/fa";
 import "../inventorypage/InventoryPage.css";
+import { useLanguage } from "../context/LanguageContext";
 
  
 
@@ -96,6 +97,7 @@ const STATS = [
 ];
 
 export default function InventoryPage() {
+  const { t } = useLanguage();
   const [enquiryOpen, setEnquiryOpen] = useState(false);
   const [selectedKiosk, setSelectedKiosk] = useState(null);
 
@@ -109,7 +111,7 @@ export default function InventoryPage() {
       {/* ── Top bar ── */}
       <div className="inv-topbar">
         <Sparkles size={16} color="var(--inv-gold)" />
-        New hardware catalog — enquire today, our team replies within 24–48 hours
+        {t("inv_topbar_banner")}
       </div>
 
       {/* ── Hero ── */}
@@ -118,21 +120,19 @@ export default function InventoryPage() {
         <div className="inv-hero-blob inv-hero-blob-2" />
 
         <div className="inv-hero-inner">
-          <span className="inv-hero-badge"><Package size={16} /> TableTop Leo Inventory</span>
+          <span className="inv-hero-badge"><Package size={16} /> {t("inv_badge")}</span>
           <h1 className="inv-hero-title">
-            Everything you need to<br />
-            <span className="inv-hero-accent">run your restaurant</span>
+            {t("inv_hero_title1")}<br />
+            <span className="inv-hero-accent">{t("inv_hero_title2")}</span>
           </h1>
           <p className="inv-hero-sub">
-            Self-service kiosks, hardware accessories, our merchant mobile app, brochures
-            and partnership programs — browse it all in one place, and enquire whenever
-            you're ready. No payment required to get started.
+            {t("inv_hero_sub")}
           </p>
           <div className="inv-hero-actions">
             <a href="#kiosks" className="inv-btn inv-btn-primary">
-              Browse Kiosk Machines <ArrowRight size={18} />
+              {t("inv_browse_kiosks")} <ArrowRight size={18} />
             </a>
-            <a href="#apps" className="inv-btn inv-btn-outline">View Mobile App</a>
+            <a href="#apps" className="inv-btn inv-btn-outline">{t("inv_view_app")}</a>
           </div>
         </div>
 
@@ -149,11 +149,10 @@ export default function InventoryPage() {
       {/* ── Kiosk Machines ── */}
       <section id="kiosks" className="inv-section inv-section-white">
         <div className="inv-section-head">
-          <span className="inv-eyebrow">Hardware Catalog</span>
-          <h2 className="inv-section-title">Self-Service Kiosk Machines</h2>
+          <span className="inv-eyebrow">{t("inv_hardware_catalog")}</span>
+          <h2 className="inv-section-title">{t("inv_kiosk_section_title")}</h2>
           <p className="inv-section-sub">
-            Every kiosk ships pre-loaded with TableTop Leo's ordering software. Tap any
-            model to send an enquiry — pricing and availability are shared by our team.
+            {t("inv_kiosk_section_sub")}
           </p>
         </div>
 
@@ -178,8 +177,8 @@ export default function InventoryPage() {
                   ))}
                 </ul>
                 <div className="inv-kiosk-footer">
-                  <span className="inv-kiosk-price-note">Pricing on enquiry</span>
-                  <span className="inv-kiosk-cta">Enquire Now <ChevronRight size={15} /></span>
+                  <span className="inv-kiosk-price-note">{t("inv_pricing_on_enquiry")}</span>
+                  <span className="inv-kiosk-cta">{t("inv_enquire_now")} <ChevronRight size={15} /></span>
                 </div>
               </div>
             </button>
@@ -190,8 +189,8 @@ export default function InventoryPage() {
       {/* ── Accessories ── */}
       <section className="inv-section inv-section-white" style={{ paddingTop: 0 }}>
         <div className="inv-section-head">
-          <span className="inv-eyebrow">Add-Ons</span>
-          <h2 className="inv-section-title" style={{ fontSize: 32 }}>Hardware Accessories</h2>
+          <span className="inv-eyebrow">{t("inv_addons")}</span>
+          <h2 className="inv-section-title" style={{ fontSize: 32 }}>{t("inv_hardware_accessories")}</h2>
         </div>
         <div className="inv-accessory-grid">
           {ACCESSORIES.map((a) => {
@@ -210,11 +209,10 @@ export default function InventoryPage() {
       {/* ── Mobile Apps ── */}
       <section id="apps" className="inv-section inv-section-white" style={{ background: "var(--inv-surface-2)" }}>
         <div className="inv-section-head inv-section-head-center">
-          <span className="inv-eyebrow">Mobile App</span>
-          <h2 className="inv-section-title">Manage Your Business On the Go</h2>
+          <span className="inv-eyebrow">{t("inv_mobile_app")}</span>
+          <h2 className="inv-section-title">{t("inv_manage_on_go")}</h2>
           <p className="inv-section-sub">
-            The TableTop Leo Merchant App is on its way — live orders, menu updates, and
-            analytics, right from your pocket.
+            {t("inv_app_coming")}
           </p>
         </div>
 
@@ -223,12 +221,12 @@ export default function InventoryPage() {
             const Icon = app.icon;
             return (
               <div key={app.platform} className="inv-app-card">
-                <span className="inv-badge-progress"><Clock size={13} /> Under Progress</span>
+                <span className="inv-badge-progress"><Clock size={13} /> {t("inv_under_progress")}</span>
                 <div className="inv-app-icon"><Icon size={30} /></div>
                 <div className="inv-app-name">{app.name}</div>
                 <div className="inv-app-desc">{app.desc}</div>
                 <div className="inv-app-store-btn">
-                  {app.platform === "iOS" ? "Download on the App Store" : "Get it on Google Play"}
+                  {app.platform === "iOS" ? t("inv_download_appstore") : t("inv_get_googleplay")}
                 </div>
               </div>
             );
@@ -239,8 +237,8 @@ export default function InventoryPage() {
       {/* ── Brochures ── */}
       <section className="inv-section inv-section-white">
         <div className="inv-section-head">
-          <span className="inv-eyebrow">Resources</span>
-          <h2 className="inv-section-title" style={{ fontSize: 32 }}>Brochures &amp; Downloads</h2>
+          <span className="inv-eyebrow">{t("inv_resources")}</span>
+          <h2 className="inv-section-title" style={{ fontSize: 32 }}>{t("inv_brochures_downloads")}</h2>
         </div>
         <div className="inv-brochure-grid">
           {BROCHURES.map((b) => {
@@ -249,13 +247,13 @@ export default function InventoryPage() {
               <div key={b.name} className="inv-brochure-card">
                 <div className="inv-brochure-top">
                   <div className="inv-brochure-icon"><Icon size={24} /></div>
-                  <span className="inv-badge-progress"><Clock size={13} /> Under Progress</span>
+                  <span className="inv-badge-progress"><Clock size={13} /> {t("inv_under_progress")}</span>
                 </div>
                 <div className="inv-brochure-name">{b.name}</div>
                 <div className="inv-brochure-desc">{b.desc}</div>
                 <div className="inv-brochure-footer">
                   <span className="inv-brochure-pages">{b.pages} · PDF</span>
-                  <span className="inv-brochure-download"><Download size={14} /> Coming Soon</span>
+                  <span className="inv-brochure-download"><Download size={14} /> {t("inv_coming_soon")}</span>
                 </div>
               </div>
             );
@@ -266,11 +264,10 @@ export default function InventoryPage() {
       {/* ── Partnerships ── */}
       <section className="inv-section inv-section-dark">
         <div className="inv-section-head inv-section-head-center">
-          <span className="inv-eyebrow inv-eyebrow-light">Collaborate With Us</span>
-          <h2 className="inv-section-title">Partnership Programs</h2>
+          <span className="inv-eyebrow inv-eyebrow-light">{t("inv_collaborate")}</span>
+          <h2 className="inv-section-title">{t("inv_partnership_programs")}</h2>
           <p className="inv-section-sub inv-section-sub-light">
-            Reseller margins, chain rollouts, and bulk hardware deals — all currently
-            being finalized. Register your interest and we'll reach out first.
+            {t("inv_partnership_sub")}
           </p>
         </div>
         <div className="inv-partner-grid">
@@ -280,12 +277,12 @@ export default function InventoryPage() {
               <div key={p.title} className="inv-partner-card">
                 <div className="inv-partner-top">
                   <div className="inv-partner-icon"><Icon size={24} /></div>
-                  <span className="inv-badge-progress-dark"><Clock size={13} /> Under Progress</span>
+                  <span className="inv-badge-progress-dark"><Clock size={13} /> {t("inv_under_progress")}</span>
                 </div>
                 <div className="inv-partner-title">{p.title}</div>
                 <div className="inv-partner-desc">{p.desc}</div>
                 <button className="inv-partner-link" onClick={() => openEnquiry({ id: "partnership", name: p.title, size: "Partnership" })}>
-                  Notify Me <ChevronRight size={15} />
+                  {t("inv_notify_me")} <ChevronRight size={15} />
                 </button>
               </div>
             );
@@ -296,11 +293,10 @@ export default function InventoryPage() {
       {/* ── Why TableTop Leo ── */}
       <section className="inv-section inv-section-white">
         <div className="inv-section-head inv-section-head-center">
-          <span className="inv-eyebrow">Why TableTop Leo</span>
-          <h2 className="inv-section-title">Built for Restaurants That Want to Grow</h2>
+          <span className="inv-eyebrow">{t("inv_why_tabletopleo")}</span>
+          <h2 className="inv-section-title">{t("inv_built_for_growth")}</h2>
           <p className="inv-section-sub">
-            From your first QR code to a fleet of self-service kiosks across every branch —
-            one platform, no messy integrations.
+            {t("inv_why_sub")}
           </p>
         </div>
         <div className="inv-why-grid">
@@ -322,13 +318,13 @@ export default function InventoryPage() {
         <div className="inv-footer-cta">
           <div className="inv-footer-blob inv-footer-blob-1" />
           <div className="inv-footer-blob inv-footer-blob-2" />
-          <h2 className="inv-footer-cta-title">Ready to bring self-service ordering to your restaurant?</h2>
+          <h2 className="inv-footer-cta-title">{t("inv_footer_cta_title")}</h2>
           <p className="inv-footer-cta-sub">
-            Enquire about kiosks, accessories, or partnerships — our team responds within 24–48 hours.
+            {t("inv_footer_cta_sub")}
           </p>
           <div className="inv-footer-cta-actions">
             <button className="inv-btn inv-btn-white" onClick={() => openEnquiry(null)}>
-              <Send size={17} /> Send an Enquiry
+              <Send size={17} /> {t("inv_send_enquiry")}
             </button>
             <div className="inv-footer-contact">
               <span className="inv-footer-contact-item"><Phone size={16} /> +91 86883 49726</span>

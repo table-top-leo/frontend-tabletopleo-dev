@@ -24,6 +24,7 @@ import {
 import "../designdashboardcomponent/designdashboardpage.css";
 import adminOrderService from "../services/adminOrderService";
 import { formatCurrency } from "../utils/currencyHelper";
+import { useLanguage } from "../context/LanguageContext";
 
 const WEEKDAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 const MONTH_NAMES = [
@@ -43,11 +44,11 @@ function useOutsideClose(open, setOpen) {
   return ref;
 }
 
-function getGreeting() {
+function getGreeting(t) {
   const h = new Date().getHours();
-  if (h < 12) return "Good Morning";
-  if (h < 17) return "Good Afternoon";
-  return "Good Evening";
+  if (h < 12) return t("dash_greeting_morning");
+  if (h < 17) return t("dash_greeting_afternoon");
+  return t("dash_greeting_evening");
 }
 
 function sameDay(a, b) {
@@ -77,42 +78,56 @@ function buildMonthGrid(year, month) {
   return weeks;
 }
 
-const DATE_PRESETS = [
-  "Today",
-  "Yesterday",
-  "Last 7 Days",
-  "Last 30 Days",
-  "This Month",
-  "Last Month",
-  "This Year",
-];
+function buildDatePresets(t) {
+  return [
+    t("dash_today"),
+    t("home_yesterday"),
+    t("home_last_7_days"),
+    t("dash_last30"),
+    t("dash_this_month_label"),
+    t("dash_last_month"),
+    t("dash_this_year"),
+  ];
+}
 
-function resolvePreset(label, anchor) {
+// English preset keys used internally for date math — decoupled from the
+// translated label shown in the UI, so switching language never breaks
+// which date range is actually selected.
+const PRESET_KEYS = ["Today", "Yesterday", "Last 7 Days", "Last 30 Days", "This Month", "Last Month", "This Year"];
+
+function presetKeyForLabel(label, t) {
+  const presets = buildDatePresets(t);
+  const idx = presets.indexOf(label);
+  return idx >= 0 ? PRESET_KEYS[idx] : label;
+}
+
+function resolvePreset(label, anchor, t) {
+  const key = t ? presetKeyForLabel(label, t) : label;
   const end = new Date(anchor);
   const start = new Date(anchor);
-  if (label === "Today") return [end, end];
-  if (label === "Yesterday") {
+  if (key === "Today") return [end, end];
+  if (key === "Yesterday") {
     const y = new Date(end);
     y.setDate(y.getDate() - 1);
     return [y, y];
   }
-  if (label === "Last 7 Days") {
+  if (key === "Last 7 Days") {
     start.setDate(start.getDate() - 6);
     return [start, end];
   }
-  if (label === "Last 30 Days") {
+  if (key === "Last 30 Days") {
     start.setDate(start.getDate() - 29);
     return [start, end];
   }
-  if (label === "This Month") {
+  if (key === "This Month") {
     return [new Date(end.getFullYear(), end.getMonth(), 1), end];
   }
-  if (label === "Last Month") {
+  if (key === "Last Month") {
     const s = new Date(end.getFullYear(), end.getMonth() - 1, 1);
     const e = new Date(end.getFullYear(), end.getMonth(), 0);
     return [s, e];
   }
-  if (label === "This Year") {
+  if (key === "This Year") {
     return [new Date(end.getFullYear(), 0, 1), end];
   }
   return [end, end];
@@ -124,13 +139,13 @@ function endOfDay(d) { const x = new Date(d); x.setHours(23, 59, 59, 999); retur
 function addDays(d, n) { const x = new Date(d); x.setDate(x.getDate() + n); return x; }
 function daysBetween(a, b) { return Math.max(1, Math.round((endOfDay(b) - startOfDay(a)) / 86400000) + 1); }
 
-function timeAgo(dateStr) {
+function timeAgo(dateStr, t) {
   if (!dateStr) return "";
   const diff = Math.max(0, (Date.now() - new Date(dateStr).getTime()) / 1000);
-  if (diff < 45) return "just now";
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-  return `${Math.floor(diff / 86400)}d ago`;
+  if (diff < 45) return t("time_just_now");
+  if (diff < 3600) return t("time_min_ago", { n: Math.floor(diff / 60) });
+  if (diff < 86400) return t("time_hour_ago", { n: Math.floor(diff / 3600) });
+  return t("time_day_ago", { n: Math.floor(diff / 86400) });
 }
 
 function bucketGranularityFor(days, requested) {
@@ -202,41 +217,50 @@ function buildSparklinePath(series, width = 1000, height = 110, padding = 8) {
   return { path: d, lastX, lastY };
 }
 
-const METHOD_LABEL = { upi: "UPI", razorpay: "Cards", stripe: "Int'l Card", paypal: "PayPal", pay_at_counter: "Pay at Counter" };
+function buildMethodLabel(t) {
+  return { upi: t("method_upi"), razorpay: t("method_cards"), stripe: t("method_intl_card"), paypal: t("method_paypal"), pay_at_counter: t("method_pay_counter") };
+}
 const DONUT_COLORS = ["#4f46e5", "#0ea5e9", "#f59e0b", "#10b981", "#94a3b8", "#ec4899"];
 
-const STATUS_META = {
-  PLACED:    { label: "Placed",    color: "#f59e0b" },
-  ACCEPTED:  { label: "Accepted",  color: "#0ea5e9" },
-  PREPARING: { label: "Preparing", color: "#6366f1" },
-  READY:     { label: "Ready",     color: "#8b5cf6" },
-  COMPLETED: { label: "Completed", color: "#22c55e" },
-  CANCELLED: { label: "Cancelled", color: "#ef4444" },
-};
+function buildStatusMeta(t) {
+  return {
+    PLACED:    { label: t("status_placed"),    color: "#f59e0b" },
+    ACCEPTED:  { label: t("status_accepted"),  color: "#0ea5e9" },
+    PREPARING: { label: t("status_preparing"), color: "#6366f1" },
+    READY:     { label: t("status_ready"),     color: "#8b5cf6" },
+    COMPLETED: { label: t("status_completed"), color: "#22c55e" },
+    CANCELLED: { label: t("status_cancelled"), color: "#ef4444" },
+  };
+}
 
 // ── SHARED DROPDOWN CONTROLS (unchanged) ─────────────────────
+// `options` is an array of { key, label }: `key` is a stable English
+// identifier used for onChange/comparisons, `label` is what's actually
+// shown (already translated by the caller) — so switching language never
+// silently desyncs the selected value from the business logic that reads it.
 function InlineSelect({ value, options, onChange }) {
   const [open, setOpen] = useState(false);
   const ref = useOutsideClose(open, setOpen);
+  const current = options.find((o) => o.key === value) || options[0];
   return (
     <div className="violet-select" ref={ref}>
       <button className="violet-trigger" onClick={() => setOpen((o) => !o)}>
-        {value}
+        {current?.label}
         <ChevronDown size={12} className="marigold-chevron" />
       </button>
       {open && (
         <div className="marigold-panel">
           {options.map((o) => (
             <button
-              key={o}
-              className={`marigold-item ${value === o ? "marigold-item--selected" : ""}`}
+              key={o.key}
+              className={`marigold-item ${value === o.key ? "marigold-item--selected" : ""}`}
               onClick={() => {
-                onChange(o);
+                onChange(o.key);
                 setOpen(false);
               }}
             >
-              <span className="marigold-check">{value === o && <Check size={12} />}</span>
-              {o}
+              <span className="marigold-check">{value === o.key && <Check size={12} />}</span>
+              {o.label}
             </button>
           ))}
         </div>
@@ -248,25 +272,26 @@ function InlineSelect({ value, options, onChange }) {
 function SelectDropdown({ value, options, onChange }) {
   const [open, setOpen] = useState(false);
   const ref = useOutsideClose(open, setOpen);
+  const current = options.find((o) => o.key === value) || options[0];
   return (
     <div className="marigold-wrap" ref={ref}>
       <button className="marigold-pill" onClick={() => setOpen((o) => !o)}>
-        {value}
+        {current?.label}
         <ChevronDown size={14} className="marigold-chevron" />
       </button>
       {open && (
         <div className="marigold-panel">
           {options.map((o) => (
             <button
-              key={o}
-              className={`marigold-item ${value === o ? "marigold-item--selected" : ""}`}
+              key={o.key}
+              className={`marigold-item ${value === o.key ? "marigold-item--selected" : ""}`}
               onClick={() => {
-                onChange(o);
+                onChange(o.key);
                 setOpen(false);
               }}
             >
-              <span className="marigold-check">{value === o && <Check size={13} />}</span>
-              {o}
+              <span className="marigold-check">{value === o.key && <Check size={13} />}</span>
+              {o.label}
             </button>
           ))}
         </div>
@@ -275,8 +300,12 @@ function SelectDropdown({ value, options, onChange }) {
   );
 }
 
-function CompareToggle({ value, onChange }) {
-  const options = ["No Comparison", "Previous Period", "Previous Year"];
+function CompareToggle({ value, onChange, t }) {
+  const options = [
+    { key: "No Comparison", label: t("compare_no_comparison") },
+    { key: "Previous Period", label: t("home_previous_period") },
+    { key: "Previous Year", label: t("compare_previous_year") },
+  ];
   const [open, setOpen] = useState(false);
   const ref = useOutsideClose(open, setOpen);
   const active = value !== "No Comparison";
@@ -287,21 +316,21 @@ function CompareToggle({ value, onChange }) {
         onClick={() => setOpen((o) => !o)}
       >
         <RotateCcw size={14} />
-        Compare
+        {t("home_compare")}
       </button>
       {open && (
         <div className="marigold-panel">
           {options.map((o) => (
             <button
-              key={o}
-              className={`marigold-item ${value === o ? "marigold-item--selected" : ""}`}
+              key={o.key}
+              className={`marigold-item ${value === o.key ? "marigold-item--selected" : ""}`}
               onClick={() => {
-                onChange(o);
+                onChange(o.key);
                 setOpen(false);
               }}
             >
-              <span className="marigold-check">{value === o && <Check size={13} />}</span>
-              {o}
+              <span className="marigold-check">{value === o.key && <Check size={13} />}</span>
+              {o.label}
             </button>
           ))}
         </div>
@@ -310,7 +339,7 @@ function CompareToggle({ value, onChange }) {
   );
 }
 
-function DateRangeCalendar({ onApply }) {
+function DateRangeCalendar({ onApply, t }) {
   const [open, setOpen] = useState(false);
   const today = new Date();
   const [start, setStart] = useState(null);
@@ -331,7 +360,7 @@ function DateRangeCalendar({ onApply }) {
   };
 
   const applyPreset = (p) => {
-    const [s, e] = resolvePreset(p, today);
+    const [s, e] = resolvePreset(p, today, t);
     setStart(s);
     setEnd(e);
     setBaseMonth(new Date(s.getFullYear(), s.getMonth(), 1));
@@ -416,12 +445,12 @@ function DateRangeCalendar({ onApply }) {
   return (
     <div className="jasmine-wrap" ref={ref}>
       <button className="jasmine-trigger" onClick={() => setOpen((o) => !o)}>
-        Date range
+        {t("home_date_range")}
       </button>
       {open && (
         <div className="jasmine-popover">
           <div className="jasmine-presets">
-            {DATE_PRESETS.map((p) => (
+            {buildDatePresets(t).map((p) => (
               <button key={p} className="jasmine-preset" onClick={() => applyPreset(p)}>
                 {p}
               </button>
@@ -434,14 +463,14 @@ function DateRangeCalendar({ onApply }) {
             </div>
             <div className="jasmine-footer">
               <span className="jasmine-footer-text">
-                {start ? formatShort(start) : "Start date"} – {end ? formatShort(end) : "End date"}
+                {start ? formatShort(start) : t("daterange_start_date")} – {end ? formatShort(end) : t("daterange_end_date")}
               </span>
               <div className="jasmine-footer-actions">
                 <button className="jasmine-btn-ghost" onClick={cancel}>
-                  Cancel
+                  {t("cancel")}
                 </button>
                 <button className="jasmine-btn-primary" onClick={apply} disabled={!start || !end}>
-                  Apply
+                  {t("daterange_apply")}
                 </button>
               </div>
             </div>
@@ -454,6 +483,7 @@ function DateRangeCalendar({ onApply }) {
 
 // ── MAIN DASHBOARD ────────────────────────────────────────────
 export default function DashboardMainSetup() {
+  const { t } = useLanguage();
   const [userName, setUserName] = useState("there");
   // Rendered as a fixed placeholder on the server AND on the client's first
   // paint, then swapped to the real time-of-day greeting right after mount.
@@ -461,8 +491,8 @@ export default function DashboardMainSetup() {
   // mismatch — the server's clock/timezone doesn't necessarily agree with
   // the browser's, so "Good Morning" vs "Good Evening" could differ between
   // the SSR pass and the client pass.
-  const [greeting, setGreeting] = useState("Hello");
-  useEffect(() => { setGreeting(getGreeting()); }, []);
+  const [greeting, setGreeting] = useState(() => t("dash_greeting_hello"));
+  useEffect(() => { setGreeting(getGreeting(t)); }, [t]);
   const [currency, setCurrency] = useState("INR");
 
   // read the logged-in admin's name/currency only after mount (client-only)
@@ -498,7 +528,7 @@ export default function DashboardMainSetup() {
       setOrders(Array.isArray(res?.data) ? res.data : []);
       setLastSync(new Date());
     } catch (e) {
-      setErrorMsg("Unable to load live orders right now.");
+      setErrorMsg(t("dash_error_orders"));
     } finally {
       setLoading(false);
     }
@@ -509,6 +539,17 @@ export default function DashboardMainSetup() {
     const iv = setInterval(() => fetchOrders(true), 45000); // live refresh
     return () => clearInterval(iv);
   }, []);
+
+  // rangeLabel stores a canonical English key when a preset was chosen
+  // (e.g. "Last 7 Days"), or an already-formatted date string when a custom
+  // range was applied via the calendar. This resolves it to what should
+  // actually be displayed in the current language.
+  const rangePresetDisplay = {
+    "Today": t("dash_today"), "Yesterday": t("home_yesterday"), "Last 7 Days": t("home_last_7_days"),
+    "Last 30 Days": t("dash_last30"), "This Month": t("dash_this_month_label"),
+    "Last Month": t("dash_last_month"), "This Year": t("dash_this_year"),
+  };
+  const rangeLabelDisplay = rangePresetDisplay[rangeLabel] || rangeLabel;
 
   // ── date range resolution ──
   const range = useMemo(() => {
@@ -553,13 +594,16 @@ export default function DashboardMainSetup() {
   };
 
   const kpis = [
-    { key: "revenue", label: "Total Revenue", icon: Wallet, value: formatCurrency(totalRevenue.toFixed(2), currency), trend: pctChange(totalRevenue, prevRevenue) },
-    { key: "orders", label: "Total Orders", icon: ShoppingBag, value: totalOrdersCount.toLocaleString(), trend: pctChange(totalOrdersCount, prevOrdersCount) },
-    { key: "aov", label: "Avg Order Value", icon: ReceiptText, value: formatCurrency(avgOrderValue.toFixed(2), currency), trend: pctChange(avgOrderValue, prevAvgOrderValue) },
-    { key: "completion", label: "Completion Rate", icon: CheckCircle2, value: `${completionRate.toFixed(0)}%`, trend: pctChange(completionRate, prevCompletionRate) },
+    { key: "revenue", label: t("dash_kpi_revenue"), icon: Wallet, value: formatCurrency(totalRevenue.toFixed(2), currency), trend: pctChange(totalRevenue, prevRevenue) },
+    { key: "orders", label: t("dash_kpi_orders"), icon: ShoppingBag, value: totalOrdersCount.toLocaleString(), trend: pctChange(totalOrdersCount, prevOrdersCount) },
+    { key: "aov", label: t("dash_kpi_aov"), icon: ReceiptText, value: formatCurrency(avgOrderValue.toFixed(2), currency), trend: pctChange(avgOrderValue, prevAvgOrderValue) },
+    { key: "completion", label: t("dash_kpi_completion"), icon: CheckCircle2, value: `${completionRate.toFixed(0)}%`, trend: pctChange(completionRate, prevCompletionRate) },
   ];
 
-  // ── top summary card values ──
+  // ── top summary card values (grossLabel now stores a canonical English
+  // key — "Total Revenue" | "Total Orders" | "Avg Order Value" — set only
+  // via InlineSelect's key/label options below, so this comparison is safe
+  // no matter what language is active) ──
   const grossValue = grossLabel === "Total Orders"
     ? totalOrdersCount.toLocaleString()
     : grossLabel === "Avg Order Value"
@@ -622,18 +666,19 @@ export default function DashboardMainSetup() {
   const maxTopQty = Math.max(...topItems.map((i) => i.qty), 1);
 
   // ── payment method breakdown ──
+  const methodLabel = buildMethodLabel(t);
   const paymentBreakdown = useMemo(() => {
     const map = new Map();
     filteredOrders.forEach((o) => {
       const key = o.paymentMethod || "other";
-      const cur = map.get(key) || { key, label: METHOD_LABEL[key] || (key ? key.replace(/_/g, " ") : "Other"), count: 0, revenue: 0 };
+      const cur = map.get(key) || { key, label: methodLabel[key] || (key ? key.replace(/_/g, " ") : t("method_other")), count: 0, revenue: 0 };
       cur.count += 1;
       cur.revenue += Number(o.grandTotal || 0);
       map.set(key, cur);
     });
     const total = filteredOrders.length || 1;
     return Array.from(map.values()).map((x) => ({ ...x, pct: (x.count / total) * 100 })).sort((a, b) => b.count - a.count);
-  }, [filteredOrders]);
+  }, [filteredOrders, methodLabel, t]);
 
   const donutGradient = useMemo(() => {
     let acc = 0;
@@ -645,12 +690,13 @@ export default function DashboardMainSetup() {
   }, [paymentBreakdown]);
 
   // ── business health / order status breakdown ──
+  const statusMeta = buildStatusMeta(t);
   const statusBreakdown = useMemo(() => {
     const buckets = {};
-    Object.keys(STATUS_META).forEach((k) => (buckets[k] = 0));
+    Object.keys(statusMeta).forEach((k) => (buckets[k] = 0));
     filteredOrders.forEach((o) => { const s = o.orderStatus || "PLACED"; buckets[s] = (buckets[s] || 0) + 1; });
     return buckets;
-  }, [filteredOrders]);
+  }, [filteredOrders, statusMeta]);
   const statusTotal = Object.values(statusBreakdown).reduce((a, b) => a + b, 0) || 1;
 
   // ── recent live orders feed ──
@@ -660,13 +706,13 @@ export default function DashboardMainSetup() {
   );
 
   const exportCSV = () => {
-    const header = ["Order Number", "Customer", "Items", "Amount", "Payment", "Status", "Date"];
+    const header = [t("csv_order_number"), t("csv_customer"), t("dash_items_suffix"), t("csv_amount"), t("csv_payment"), t("csv_status"), t("csv_date")];
     const rows = filteredOrders.map((o) => [
       o.orderNumber,
-      o.customerName || "Guest",
+      o.customerName || t("dash_guest"),
       (o.items || []).reduce((s, i) => s + Number(i.quantity || 0), 0),
       Number(o.grandTotal || 0).toFixed(2),
-      METHOD_LABEL[o.paymentMethod] || o.paymentMethod || "-",
+      methodLabel[o.paymentMethod] || o.paymentMethod || "-",
       o.orderStatus,
       new Date(o.createdAt).toLocaleString(),
     ]);
@@ -688,7 +734,7 @@ export default function DashboardMainSetup() {
         </h1>
         <div className="meadow-live">
           <span className="pearl-dot" />
-          Live · Updated {lastSync ? lastSync.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }) : "—"}
+          {t("dash_live")} · {t("dash_updated")} {lastSync ? lastSync.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }) : "—"}
         </div>
       </div>
 
@@ -711,7 +757,7 @@ export default function DashboardMainSetup() {
               <div className={`kpi-trend ${up ? "kpi-trend--up" : "kpi-trend--down"}`}>
                 {up ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
                 {Math.abs(k.trend).toFixed(1)}%
-                <span className="kpi-trend-sub">vs previous</span>
+                <span className="kpi-trend-sub">{t("dash_vs_previous")}</span>
               </div>
             </div>
           );
@@ -723,18 +769,26 @@ export default function DashboardMainSetup() {
           <div>
             <InlineSelect
               value={grossLabel}
-              options={["Total Revenue", "Total Orders", "Avg Order Value"]}
+              options={[
+                { key: "Total Revenue", label: t("dash_kpi_revenue") },
+                { key: "Total Orders", label: t("dash_kpi_orders") },
+                { key: "Avg Order Value", label: t("dash_kpi_aov") },
+              ]}
               onChange={setGrossLabel}
             />
             <div className="orchid-metric-value">{loading ? "—" : grossValue}</div>
             <div className="orchid-metric-time">
-              {lastSync ? `Updated ${lastSync.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}` : "Syncing..."}
+              {lastSync ? `${t("dash_updated")} ${lastSync.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}` : t("dash_syncing")}
             </div>
           </div>
           <div>
             <InlineSelect
               value={compareMetric}
-              options={["Yesterday", "Today", "Last 7 days"]}
+              options={[
+                { key: "Yesterday", label: t("home_yesterday") },
+                { key: "Today", label: t("dash_today") },
+                { key: "Last 7 days", label: t("home_last_7_days") },
+              ]}
               onChange={setCompareMetric}
             />
             <div className="orchid-metric-value">{loading ? "—" : compareValue}</div>
@@ -759,13 +813,13 @@ export default function DashboardMainSetup() {
         <div className="orchid-balance-row">
           <div className="orchid-balance-col">
             <div className="orchid-balance-head">
-              <span className="orchid-balance-label">This Month Revenue</span>
+              <span className="orchid-balance-label">{t("dash_this_month_revenue")}</span>
             </div>
             <div className="orchid-balance-amount">{formatCurrency(thisMonthRevenue.toFixed(2), currency)}</div>
           </div>
           <div className="orchid-balance-col">
             <div className="orchid-balance-head">
-              <span className="orchid-balance-label">Pending Payments</span>
+              <span className="orchid-balance-label">{t("dash_pending_payments")}</span>
             </div>
             <div className="orchid-balance-amount" style={{ color: pendingAmount > 0 ? "#f59e0b" : "#94a3b8" }}>
               {formatCurrency(pendingAmount.toFixed(2), currency)}
@@ -777,10 +831,11 @@ export default function DashboardMainSetup() {
       <div className="tulip-grid">
         <div className="tulip-col-left">
           <div className="tulip-card">
-            <h2 className="tulip-title">Your overview</h2>
+            <h2 className="tulip-title">{t("dash_your_overview")}</h2>
             <div className="tulip-filters">
               <div className="tulip-filter-group">
                 <DateRangeCalendar
+                  t={t}
                   onApply={({ start, end, label }) => {
                     setCustomRange({ start, end });
                     setRangeLabel(label);
@@ -788,36 +843,56 @@ export default function DashboardMainSetup() {
                 />
                 <SelectDropdown
                   value={rangeLabel}
-                  options={["Today", "Yesterday", "Last 7 Days", "Last 30 Days", "This Month", "Last Month", "This Year"]}
+                  options={[
+                    { key: "Today", label: t("dash_today") },
+                    { key: "Yesterday", label: t("home_yesterday") },
+                    { key: "Last 7 Days", label: t("home_last_7_days") },
+                    { key: "Last 30 Days", label: t("dash_last30") },
+                    { key: "This Month", label: t("dash_this_month_label") },
+                    { key: "Last Month", label: t("dash_last_month") },
+                    { key: "This Year", label: t("dash_this_year") },
+                  ]}
                   onChange={(v) => { setRangeLabel(v); setCustomRange(null); }}
                 />
-                <SelectDropdown value={granularity} options={["Daily", "Weekly", "Monthly"]} onChange={setGranularity} />
-                <CompareToggle value={comparePeriod} onChange={setComparePeriod} />
+                <SelectDropdown
+                  value={granularity}
+                  options={[
+                    { key: "Daily", label: t("home_daily") },
+                    { key: "Weekly", label: t("granularity_weekly") },
+                    { key: "Monthly", label: t("granularity_monthly") },
+                  ]}
+                  onChange={setGranularity}
+                />
+                <CompareToggle value={comparePeriod} onChange={setComparePeriod} t={t} />
                 <SelectDropdown
                   value={previousPeriod}
-                  options={["Previous Period", "Previous Year", "Custom Period"]}
+                  options={[
+                    { key: "Previous Period", label: t("home_previous_period") },
+                    { key: "Previous Year", label: t("compare_previous_year") },
+                    { key: "Custom Period", label: t("prev_period_custom") },
+                  ]}
                   onChange={setPreviousPeriod}
                 />
               </div>
               <div className="tulip-actions">
                 <button className="marigold-pill" onClick={() => fetchOrders(true)} disabled={loading}>
-                  <RefreshCw size={14} className={loading ? "spin" : ""} /> Refresh
+                  <RefreshCw size={14} className={loading ? "spin" : ""} /> {t("dash_refresh")}
                 </button>
                 <button className="marigold-pill" onClick={exportCSV} disabled={!filteredOrders.length}>
-                  <Download size={14} /> Export CSV
+                  <Download size={14} /> {t("dash_export_csv")}
                 </button>
               </div>
             </div>
 
             <div className="tulip-summary">
               <span className="tulip-summary-amount">{formatCurrency(totalRevenue.toFixed(2), currency)}</span>
-              <span className="tulip-summary-sub">{totalOrdersCount} orders · {effectiveGranularity} view</span>
+              <span className="tulip-summary-sub">{totalOrdersCount} {t("dash_orders_suffix")} · {effectiveGranularity} {t("dash_view_suffix")}</span>
             </div>
 
             {loading ? (
-              <div className="tulip-empty"><Loader2 size={18} className="spin" /> Loading orders...</div>
+              <div className="tulip-empty"><Loader2 size={18} className="spin" /> {t("dash_loading_orders")}</div>
             ) : !hasRevenue ? (
-              <div className="tulip-empty">No revenue yet for this period</div>
+              <div className="tulip-empty">{t("dash_no_revenue")}</div>
             ) : (
               <div className="revbar-wrap">
                 <div className="revbar-track">
@@ -837,13 +912,13 @@ export default function DashboardMainSetup() {
 
           <div className="iris-card">
             <div className="iris-head">
-              <h3 className="iris-title">Top Selling Items</h3>
-              <span className="iris-static-tag">{rangeLabel}</span>
+              <h3 className="iris-title">{t("dash_top_selling")}</h3>
+              <span className="iris-static-tag">{rangeLabelDisplay}</span>
             </div>
             {loading ? (
               <div className="tulip-empty" style={{ height: 120 }}><Loader2 size={16} className="spin" /></div>
             ) : topItems.length === 0 ? (
-              <div className="tulip-empty" style={{ height: 120 }}>No items sold in this period</div>
+              <div className="tulip-empty" style={{ height: 120 }}>{t("dash_no_items_sold")}</div>
             ) : (
               topItems.map((it, i) => (
                 <div className="topitem-row" key={it.name}>
@@ -858,7 +933,7 @@ export default function DashboardMainSetup() {
                     </div>
                   </div>
                   <div className="topitem-stats">
-                    <span className="topitem-qty">{it.qty} sold</span>
+                    <span className="topitem-qty">{it.qty} {t("dash_sold")}</span>
                     <span className="topitem-amount">{formatCurrency(it.revenue.toFixed(2), currency)}</span>
                   </div>
                 </div>
@@ -868,22 +943,22 @@ export default function DashboardMainSetup() {
 
           <div className="iris-card">
             <div className="iris-head">
-              <h3 className="iris-title">Recent Orders</h3>
-              <span className="pearl-live"><span className="pearl-dot pearl-dot--sm" /> Live</span>
+              <h3 className="iris-title">{t("dash_recent_orders")}</h3>
+              <span className="pearl-live"><span className="pearl-dot pearl-dot--sm" /> {t("dash_live")}</span>
             </div>
             {loading ? (
               <div className="tulip-empty" style={{ height: 120 }}><Loader2 size={16} className="spin" /></div>
             ) : recentOrders.length === 0 ? (
-              <div className="tulip-empty" style={{ height: 120 }}>No orders yet</div>
+              <div className="tulip-empty" style={{ height: 120 }}>{t("dash_no_orders_yet")}</div>
             ) : (
               recentOrders.map((o) => {
-                const meta = STATUS_META[o.orderStatus] || STATUS_META.PLACED;
+                const meta = statusMeta[o.orderStatus] || statusMeta.PLACED;
                 return (
                   <div className="recent-row" key={o.orderId}>
                     <div className="recent-avatar">{(o.customerName || "G")[0].toUpperCase()}</div>
                     <div className="recent-info">
-                      <div className="recent-name">{o.customerName || "Guest"} · #{o.orderNumber}</div>
-                      <div className="recent-meta">{(o.items || []).length} items · {timeAgo(o.createdAt)}</div>
+                      <div className="recent-name">{o.customerName || t("dash_guest")} · #{o.orderNumber}</div>
+                      <div className="recent-meta">{(o.items || []).length} {t("dash_items_suffix")} · {timeAgo(o.createdAt, t)}</div>
                     </div>
                     <div className="recent-right">
                       <span className="recent-amount">{formatCurrency(Number(o.grandTotal || 0).toFixed(2), currency)}</span>
@@ -899,18 +974,18 @@ export default function DashboardMainSetup() {
         <div className="peony-stack">
           <div className="iris-card">
             <div className="iris-head">
-              <h3 className="iris-title">Payment Methods</h3>
+              <h3 className="iris-title">{t("dash_payment_methods")}</h3>
             </div>
             {loading ? (
               <div className="tulip-empty" style={{ height: 120 }}><Loader2 size={16} className="spin" /></div>
             ) : paymentBreakdown.length === 0 ? (
-              <div className="tulip-empty" style={{ height: 120 }}>No payments yet</div>
+              <div className="tulip-empty" style={{ height: 120 }}>{t("dash_no_payments")}</div>
             ) : (
               <div className="donut-wrap">
                 <div className="donut-ring" style={{ background: donutGradient }}>
                   <div className="donut-center">
                     <span className="donut-center-value">{filteredOrders.length}</span>
-                    <span className="donut-center-label">orders</span>
+                    <span className="donut-center-label">{t("dash_orders_suffix")}</span>
                   </div>
                 </div>
                 <div className="donut-legend">
@@ -928,9 +1003,9 @@ export default function DashboardMainSetup() {
 
           <div className="iris-card">
             <div className="iris-head">
-              <h3 className="iris-title">Business Health</h3>
+              <h3 className="iris-title">{t("dash_business_health")}</h3>
             </div>
-            {Object.entries(STATUS_META).map(([key, meta]) => {
+            {Object.entries(statusMeta).map(([key, meta]) => {
               const count = statusBreakdown[key] || 0;
               const pct = (count / statusTotal) * 100;
               return (
@@ -948,34 +1023,34 @@ export default function DashboardMainSetup() {
           {showRecommendations && (
             <div className="peony-card">
               <div className="peony-head">
-                <h3 className="peony-title">Recommendations</h3>
+                <h3 className="peony-title">{t("home_recommendations")}</h3>
                 <button className="peony-close" onClick={() => setShowRecommendations(false)}>
                   <X size={15} />
                 </button>
               </div>
               <p className="peony-text">
-                Sell products, offer subscriptions, and collect tips or donations by creating a link—no code required.
+                {t("home_rec1")}
               </p>
-              <button className="peony-link">Create payment link</button>
+              <button className="peony-link">{t("home_rec1_link")}</button>
               <div className="peony-divider" />
               <p className="peony-text">
-                Offer subscriptions to drive predictable recurring revenue streams.
+                {t("home_rec2")}
               </p>
-              <button className="peony-link">Create a subscription</button>
+              <button className="peony-link">{t("home_rec2_link")}</button>
             </div>
           )}
 
           <div className="iris-card">
             <div className="iris-head">
-              <h3 className="iris-title">API keys</h3>
-              <button className="iris-link">View docs</button>
+              <h3 className="iris-title">{t("home_api_keys")}</h3>
+              <button className="iris-link">{t("home_view_docs")}</button>
             </div>
             <div className="iris-row">
-              <span className="iris-label">Publishable key</span>
+              <span className="iris-label">{t("home_publishable_key")}</span>
               <span className="iris-value">pk_test_51TnN162KHtN...</span>
             </div>
             <div className="iris-row">
-              <span className="iris-label">Secret key</span>
+              <span className="iris-label">{t("home_secret_key")}</span>
               <span className="iris-value">sk_test_51TnN162KHtN...</span>
             </div>
           </div>

@@ -11,41 +11,50 @@ import adminOrderService from "../services/adminOrderService";
 import { useCurrency } from "../context/CurrencyContext";
 import { formatCurrency } from "../utils/currencyHelper";
 import "../adminpaymentscomponent/AdminPayments.css";
+import { useLanguage } from "../context/LanguageContext";
 
 
 const ITEMS_PER_PAGE = 8;
 
-const STATUS_CFG = {
-  PAID:           { label: "Paid",        cls: "apay-status-paid" },
-  PENDING:        { label: "Pending",     cls: "apay-status-pending" },
-  FAILED:         { label: "Failed",      cls: "apay-status-failed" },
-  PAY_AT_COUNTER: { label: "In Progress", cls: "apay-status-progress" },
-};
+function buildStatusCfg(t) {
+  return {
+    PAID:           { label: t("ap_status_paid"),     cls: "apay-status-paid" },
+    PENDING:        { label: t("ap_status_pending"),  cls: "apay-status-pending" },
+    FAILED:         { label: t("ap_status_failed"),   cls: "apay-status-failed" },
+    PAY_AT_COUNTER: { label: t("ap_status_progress"), cls: "apay-status-progress" },
+  };
+}
 
-const STATUS_TABS = [
-  { key: "ALL",            label: "All" },
-  { key: "PAID",           label: "Paid" },
-  { key: "PENDING",        label: "Pending" },
-  { key: "PAY_AT_COUNTER", label: "In Progress" },
-  { key: "FAILED",         label: "Failed" },
-];
+function buildStatusTabs(t) {
+  return [
+    { key: "ALL",            label: t("ap_tab_all") },
+    { key: "PAID",           label: t("ap_status_paid") },
+    { key: "PENDING",        label: t("ap_status_pending") },
+    { key: "PAY_AT_COUNTER", label: t("ap_status_progress") },
+    { key: "FAILED",         label: t("ap_status_failed") },
+  ];
+}
 
-const METHOD_CFG = {
-  upi:            { label: "UPI",            icon: Smartphone },
-  razorpay:       { label: "Razorpay",       icon: CreditCard },
-  stripe:         { label: "Stripe",         icon: Globe },
-  paypal:         { label: "PayPal",         icon: Globe },
-  pay_at_counter: { label: "Pay at Counter", icon: Store },
-  cash:           { label: "Cash",           icon: Banknote },
-};
+function buildMethodCfg(t) {
+  return {
+    upi:            { label: t("ap_method_upi"),         icon: Smartphone },
+    razorpay:       { label: t("ap_method_razorpay"),     icon: CreditCard },
+    stripe:         { label: t("ap_method_stripe"),       icon: Globe },
+    paypal:         { label: t("ap_method_paypal"),       icon: Globe },
+    pay_at_counter: { label: t("ap_method_pay_counter"),  icon: Store },
+    cash:           { label: t("ap_method_cash"),         icon: Banknote },
+  };
+}
 
-const METHOD_OPTIONS = [
-  { key: "ALL",            label: "All Methods" },
-  { key: "upi",             label: "UPI" },
-  { key: "razorpay",        label: "Cards / Net Banking" },
-  { key: "stripe",          label: "International Card" },
-  { key: "pay_at_counter",  label: "Pay at Counter" },
-];
+function buildMethodOptions(t) {
+  return [
+    { key: "ALL",            label: t("ap_method_all") },
+    { key: "upi",             label: t("ap_method_upi") },
+    { key: "razorpay",        label: t("ap_method_cards_netbanking") },
+    { key: "stripe",          label: t("ap_method_intl_card") },
+    { key: "pay_at_counter",  label: t("ap_method_pay_counter") },
+  ];
+}
 
 const AVATAR_PALETTE = [
   { bg: "#EEE9FE", fg: "#6D3FD6" },
@@ -94,6 +103,11 @@ function useOutsideClose(ref, onClose) {
 }
 
 export default function AdminPayments() {
+  const { t } = useLanguage();
+  const STATUS_CFG = buildStatusCfg(t);
+  const STATUS_TABS = buildStatusTabs(t);
+  const METHOD_CFG = buildMethodCfg(t);
+  const METHOD_OPTIONS = buildMethodOptions(t);
   const { currencyCode } = useCurrency();
 
   const [orders, setOrders]   = useState([]);
@@ -128,10 +142,10 @@ export default function AdminPayments() {
       if (res.success) {
         setOrders(res.data || []);
       } else {
-        setError(res.message || "Failed to load payments");
+        setError(res.message || t("ap_couldnt_load"));
       }
     } catch (e) {
-      setError(e.response?.data?.message || e.message || "Failed to load payments");
+      setError(e.response?.data?.message || e.message || t("ap_couldnt_load"));
     } finally {
       setLoading(false);
     }
@@ -233,47 +247,47 @@ export default function AdminPayments() {
             <MdOutlinePayments color="#fff" size={26} />
           </div>
           <div>
-            <h1 className="apay-title">Payments</h1>
-            <p className="apay-subtitle">Every customer payment for your business, in one place</p>
+            <h1 className="apay-title">{t("ap_title")}</h1>
+            <p className="apay-subtitle">{t("ap_subtitle")}</p>
           </div>
         </div>
         <button className="apay-refresh-btn" onClick={loadOrders}>
-          <RefreshCw size={15} className={loading ? "apay-spin" : ""} /> Refresh
+          <RefreshCw size={15} className={loading ? "apay-spin" : ""} /> {t("ap_refresh")}
         </button>
       </div>
 
       {/* ── Stat cards ── */}
       <div className="apay-stats-grid">
         <StatCard
-          label="Total Volume"
+          label={t("ap_stat_total_volume")}
           icon={Wallet}
           amount={formatCurrency(stats.totalAmount, currencyCode)}
-          sub={`${stats.totalCount} orders`}
+          sub={`${stats.totalCount} ${t("ap_orders_word")}`}
           featured
         />
         <StatCard
-          label="Paid"
+          label={t("ap_stat_paid")}
           icon={CheckCircle2}
           amount={formatCurrency(stats.paidAmount, currencyCode)}
-          sub={`${stats.paidCount} payment${stats.paidCount === 1 ? "" : "s"}`}
+          sub={`${stats.paidCount} ${stats.paidCount === 1 ? t("ap_payment_word") : t("ap_payments_word")}`}
         />
         <StatCard
-          label="Pending"
+          label={t("ap_stat_pending")}
           icon={Clock}
           amount={formatCurrency(stats.pendAmount, currencyCode)}
-          sub={`${stats.pendCount} payment${stats.pendCount === 1 ? "" : "s"}`}
+          sub={`${stats.pendCount} ${stats.pendCount === 1 ? t("ap_payment_word") : t("ap_payments_word")}`}
         />
         <StatCard
-          label="In Progress"
+          label={t("ap_stat_progress")}
           icon={Loader2}
           amount={formatCurrency(stats.progAmount, currencyCode)}
-          sub={`${stats.progCount} pay-at-counter`}
+          sub={`${stats.progCount} ${t("ap_pay_at_counter_word")}`}
         />
         <StatCard
-          label="Failed"
+          label={t("ap_stat_failed")}
           icon={XCircle}
           amount={String(stats.failedCount)}
-          sub="payments"
+          sub={t("ap_payments_word")}
         />
       </div>
 
@@ -282,13 +296,13 @@ export default function AdminPayments() {
         {/* Row 1 — status tabs + search */}
         <div className="apay-filter-row1">
           <div className="apay-tabs">
-            {STATUS_TABS.map((t) => (
+            {STATUS_TABS.map((tab) => (
               <button
-                key={t.key}
-                className={`apay-tab ${statusTab === t.key ? "apay-active" : ""}`}
-                onClick={() => setStatusTab(t.key)}
+                key={tab.key}
+                className={`apay-tab ${statusTab === tab.key ? "apay-active" : ""}`}
+                onClick={() => setStatusTab(tab.key)}
               >
-                {t.label}
+                {tab.label}
               </button>
             ))}
           </div>
@@ -301,7 +315,7 @@ export default function AdminPayments() {
               className="apay-search-input"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search customer, phone, order ID..."
+              placeholder={t("ap_search_ph")}
             />
           </div>
         </div>
@@ -316,10 +330,10 @@ export default function AdminPayments() {
             </button>
             {dateOpen && (
               <div className="apay-dd-panel apay-dd-date">
-                <div className="apay-dd-title">Select date range</div>
+                <div className="apay-dd-title">{t("ap_select_date_range")}</div>
                 <div className="apay-date-row">
                   <div className="apay-date-field">
-                    <label className="apay-date-field-label">From</label>
+                    <label className="apay-date-field-label">{t("ap_from")}</label>
                     <input
                       type="date"
                       className="apay-date-input"
@@ -329,7 +343,7 @@ export default function AdminPayments() {
                     />
                   </div>
                   <div className="apay-date-field">
-                    <label className="apay-date-field-label">To</label>
+                    <label className="apay-date-field-label">{t("ap_to")}</label>
                     <input
                       type="date"
                       className="apay-date-input"
@@ -341,8 +355,8 @@ export default function AdminPayments() {
                   </div>
                 </div>
                 <div className="apay-dd-actions">
-                  <button className="apay-btn-text" onClick={() => setDateOpen(false)}>Cancel</button>
-                  <button className="apay-btn-dark" onClick={applyDateRange}>Apply</button>
+                  <button className="apay-btn-text" onClick={() => setDateOpen(false)}>{t("cancel")}</button>
+                  <button className="apay-btn-dark" onClick={applyDateRange}>{t("ap_apply")}</button>
                 </div>
               </div>
             )}
@@ -372,14 +386,14 @@ export default function AdminPayments() {
 
           {hasActiveFilters && (
             <button className="apay-clear-btn" onClick={clearFilters}>
-              <X size={14} /> Clear Filters
+              <X size={14} /> {t("ap_clear_filters")}
             </button>
           )}
 
           <div className="apay-spacer" />
           <div className="apay-count-text">
-            Showing <span className="apay-count-strong">{filtered.length === 0 ? 0 : (page - 1) * ITEMS_PER_PAGE + 1}
-            –{Math.min(page * ITEMS_PER_PAGE, filtered.length)}</span> of <span className="apay-count-strong">{filtered.length}</span>
+            {t("ap_showing")} <span className="apay-count-strong">{filtered.length === 0 ? 0 : (page - 1) * ITEMS_PER_PAGE + 1}
+            –{Math.min(page * ITEMS_PER_PAGE, filtered.length)}</span> {t("ap_of")} <span className="apay-count-strong">{filtered.length}</span>
           </div>
         </div>
 
@@ -388,12 +402,12 @@ export default function AdminPayments() {
           <table className="apay-table">
             <thead>
               <tr>
-                <th className="apay-th">Customer</th>
-                <th className="apay-th">Order ID</th>
-                <th className="apay-th">Method</th>
-                <th className="apay-th apay-right">Amount</th>
-                <th className="apay-th">Status</th>
-                <th className="apay-th">Created On</th>
+                <th className="apay-th">{t("ap_th_customer")}</th>
+                <th className="apay-th">{t("ap_th_order_id")}</th>
+                <th className="apay-th">{t("ap_th_method")}</th>
+                <th className="apay-th apay-right">{t("ap_th_amount")}</th>
+                <th className="apay-th">{t("ap_th_status")}</th>
+                <th className="apay-th">{t("ap_th_created_on")}</th>
               </tr>
             </thead>
             <tbody>
@@ -411,17 +425,17 @@ export default function AdminPayments() {
                 <tr>
                   <td colSpan={6} className="apay-state">
                     <XCircle className="apay-state-icon" size={36} color="#d33a3a" />
-                    <div className="apay-state-title">Couldn&apos;t load payments</div>
+                    <div className="apay-state-title">{t("ap_couldnt_load")}</div>
                     <div className="apay-state-sub">{error}</div>
-                    <button className="apay-retry-btn" onClick={loadOrders}>Try Again</button>
+                    <button className="apay-retry-btn" onClick={loadOrders}>{t("ap_try_again")}</button>
                   </td>
                 </tr>
               ) : pageRows.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="apay-state">
                     <Inbox className="apay-state-icon" size={40} strokeWidth={1.5} color="#c5c9d0" />
-                    <div className="apay-state-title">No payment in selected duration</div>
-                    <div className="apay-state-sub">Search using different keywords or time duration</div>
+                    <div className="apay-state-title">{t("ap_no_payment_found")}</div>
+                    <div className="apay-state-sub">{t("ap_no_payment_sub")}</div>
                   </td>
                 </tr>
               ) : (
@@ -435,17 +449,17 @@ export default function AdminPayments() {
                       <td className="apay-td">
                         <div className="apay-cust-cell">
                           <div className="apay-avatar" style={{ background: pal.bg, color: pal.fg }}>
-                            {initials(o.customerName || "Guest")}
+                            {initials(o.customerName || t("ap_guest"))}
                           </div>
                           <div>
-                            <div className="apay-cust-name">{o.customerName || "Guest"}</div>
+                            <div className="apay-cust-name">{o.customerName || t("ap_guest")}</div>
                             <div className="apay-cust-sub">{o.customerPhone || o.customerEmail || "—"}</div>
                           </div>
                         </div>
                       </td>
                       <td className="apay-td">
                         <div className="apay-order-id">{o.orderNumber || o.orderId}</div>
-                        <div className="apay-order-type">{o.orderType === "DINE_IN" ? "Dine In" : "Take Away"}</div>
+                        <div className="apay-order-type">{o.orderType === "DINE_IN" ? t("ap_dine_in") : t("ap_take_away")}</div>
                       </td>
                       <td className="apay-td">
                         {method ? (
@@ -481,7 +495,7 @@ export default function AdminPayments() {
         {!loading && !error && filtered.length > 0 && (
           <div className="apay-pagination">
             <div className="apay-page-info">
-              Page <strong>{page}</strong> of <strong>{totalPages}</strong>
+              {t("ap_page")} <strong>{page}</strong> {t("ap_of")} <strong>{totalPages}</strong>
             </div>
 
             <div className="apay-page-controls">
@@ -490,7 +504,7 @@ export default function AdminPayments() {
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
               >
-                <ChevronLeft size={16} /> Previous
+                <ChevronLeft size={16} /> {t("ap_previous")}
               </button>
 
               <div className="apay-page-nums">
@@ -512,7 +526,7 @@ export default function AdminPayments() {
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
               >
-                Next <ChevronRight size={16} />
+                {t("ap_next")} <ChevronRight size={16} />
               </button>
             </div>
           </div>
