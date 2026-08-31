@@ -35,6 +35,16 @@ export const updateProduct = async (productId, adminId, payload) => {
   return response.data;
 };
 
+// Quick in-stock / out-of-stock toggle — doesn't require resending the
+// whole item payload. availability must be "AVAILABLE" or "OUT_OF_STOCK".
+export const updateProductAvailability = async (productId, adminId, availability) => {
+  const response = await api.patch(
+    `/api/products/${productId}/availability?adminId=${adminId}`,
+    { itemAvailability: availability }
+  );
+  return response.data;
+};
+
 export const deleteProduct = async (productId, adminId) => {
   const response = await api.delete(`/api/products/${productId}?adminId=${adminId}`);
   return response.data;

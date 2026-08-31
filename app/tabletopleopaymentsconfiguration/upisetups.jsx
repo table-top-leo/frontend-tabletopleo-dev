@@ -3,80 +3,92 @@ import UPIPayments from "../tabletopleopaymentsconfiguration/upipayments";
 import RazorPayPayments from "../tabletopleopaymentsconfiguration/razorpaypayments";
 import StripePaypalPayments from "../tabletopleopaymentsconfiguration/stripepayments";
 import MobilePayPayments from "../tabletopleopaymentsconfiguration/mobilepaypayments";
+import CashfreePayments from "../tabletopleopaymentsconfiguration/cashfreepayments";
 import { SiRazorpay, SiStripe } from "react-icons/si";
+import { useLanguage } from "../context/LanguageContext";
 
-const PAYMENT_METHODS = [
-  {
-    id: "upi",
-    name: "UPI Payments",
-    desc: "Direct bank transfer via UPI",
-    icon: (
-      <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
-        <rect width="48" height="48" rx="10" fill="#FFF3EA" />
-        <path d="M24 8L36 16V32L24 40L12 32V16L24 8Z" fill="#ED752E" opacity="0.12" />
-        <path d="M18 20L24 14L30 20V30L24 34L18 30V20Z" fill="#ED752E" />
-        <path d="M24 14V34M18 20L30 30M30 20L18 30" stroke="white" strokeWidth="2" strokeLinecap="round" />
-      </svg>
-    ),
-    features: ["Direct bank transfer", "Instant settlement", "Zero platform fee"],
-    badge: "Popular in India",
-  },
-  {
-    id: "razorpay",
-    name: "Razorpay",
-    desc: "Cards, UPI, Net Banking, Wallets & more",
-    icon: (
-      <div style={{ width: 32, height: 32, borderRadius: 7, background: "#EAF3FF", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <SiRazorpay size={17} color="#0C2451" />
-      </div>
-    ),
-    features: ["Cards, UPI, Net Banking", "Wallets & EMI", "Secure & Reliable"],
-    badge: "Recommended",
-  },
-  {
-    id: "stripe",
-    name: "Stripe",
-    desc: "Accept global payments in 135+ currencies",
-    icon: (
-      <div style={{ width: 32, height: 32, borderRadius: 7, background: "#F0EEFF", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <SiStripe size={18} color="#635BFF" />
-      </div>
-    ),
-    features: ["Cards, Apple Pay", "Google Pay, Link", "Global payment support"],
-    badge: "International",
-  },
-  {
-    id: "mobilepay",
-    name: "Mobile Pay",
-    desc: "Tap-to-pay checkout via Apple Pay & Google Pay",
-    icon: (
-      <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
-        <rect width="48" height="48" rx="10" fill="#F5F0FF" />
-        <rect x="16" y="9" width="16" height="30" rx="4" fill="#7C3AED" opacity="0.15" />
-        <rect x="18" y="11" width="12" height="26" rx="2.5" fill="#7C3AED" />
-        <circle cx="24" cy="33.5" r="1.6" fill="white" />
-      </svg>
-    ),
-    features: ["Apple Pay & Google Pay", "Tap-to-pay ready", "Fast, tokenized checkout"],
-    badge: "New",
-  },
-  // {
-  //   id: "paypal",
-  //   name: "PayPal",
-  //   desc: "Accept payments globally via PayPal",
-  //   icon: (
-  //     <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
-  //       <rect width="48" height="48" rx="10" fill="#F0F4FF" />
-  //       <path d="M32 16c0 4-2.5 7-7.5 7H21l-1.5 9H16l3-18h7.5C29.5 14 32 13 32 16z" fill="#003087" />
-  //       <path d="M34 19c0 4.5-2.8 7.5-8 7.5h-3l-1.5 8.5H18l3-19h8C33 16 34 16.5 34 19z" fill="#009CDE" />
-  //     </svg>
-  //   ),
-  //   features: ["International payments", "Buyer protection", "Trusted worldwide"],
-  //   badge: "International",
-  // },
-];
+// Method metadata is now built from t() at render time (inside the
+// component) instead of as a static module-level array, so every label,
+// badge, description, and feature line re-renders in the selected
+// language — same pattern already used by AdminPayments / RazorPayPayments.
+function buildPaymentMethods(t) {
+  return [
+    {
+      id: "upi",
+      name: t("ps_method_upi_name"),
+      desc: t("ps_method_upi_desc"),
+      icon: (
+        <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
+          <rect width="48" height="48" rx="10" fill="#FFF3EA" />
+          <path d="M24 8L36 16V32L24 40L12 32V16L24 8Z" fill="#ED752E" opacity="0.12" />
+          <path d="M18 20L24 14L30 20V30L24 34L18 30V20Z" fill="#ED752E" />
+          <path d="M24 14V34M18 20L30 30M30 20L18 30" stroke="white" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+      ),
+      features: [t("ps_feat_upi_1"), t("ps_feat_upi_2"), t("ps_feat_upi_3")],
+      badge: t("ps_badge_popular_india"),
+    },
+    {
+      id: "razorpay",
+      name: t("ps_method_razorpay_name"),
+      desc: t("ps_method_razorpay_desc"),
+      icon: (
+        <div style={{ width: 32, height: 32, borderRadius: 7, background: "#EAF3FF", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <SiRazorpay size={17} color="#0C2451" />
+        </div>
+      ),
+      features: [t("ps_feat_razorpay_1"), t("ps_feat_razorpay_2"), t("ps_feat_razorpay_3")],
+      badge: t("pay_recommended_badge"),
+    },
+    {
+      id: "stripe",
+      name: t("ps_method_stripe_name"),
+      desc: t("ps_method_stripe_desc"),
+      icon: (
+        <div style={{ width: 32, height: 32, borderRadius: 7, background: "#F0EEFF", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <SiStripe size={18} color="#635BFF" />
+        </div>
+      ),
+      features: [t("ps_feat_stripe_1"), t("ps_feat_stripe_2"), t("ps_feat_stripe_3")],
+      badge: t("ps_badge_international"),
+    },
+    {
+      id: "mobilepay",
+      name: t("ps_method_mobilepay_name"),
+      desc: t("ps_method_mobilepay_desc"),
+      icon: (
+        <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
+          <rect width="48" height="48" rx="10" fill="#F5F0FF" />
+          <rect x="16" y="9" width="16" height="30" rx="4" fill="#7C3AED" opacity="0.15" />
+          <rect x="18" y="11" width="12" height="26" rx="2.5" fill="#7C3AED" />
+          <circle cx="24" cy="33.5" r="1.6" fill="white" />
+        </svg>
+      ),
+      features: [t("ps_feat_mobilepay_1"), t("ps_feat_mobilepay_2"), t("ps_feat_mobilepay_3")],
+      badge: t("ps_badge_new"),
+    },
+    {
+      id: "cashfree",
+      name: "Cashfree Payments",
+      desc: "Cards, UPI, Net Banking, Wallets & more",
+      icon: (
+        <div style={{ width: 32, height: 32, borderRadius: 7, background: "#EAFBF3", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <svg width="18" height="18" viewBox="0 0 48 48" fill="none">
+            <path d="M14 24c0-5.5 4.5-10 10-10s10 4.5 10 10-4.5 10-10 10c-3.2 0-6-1.5-7.8-3.8" stroke="#12B76A" strokeWidth="3.5" strokeLinecap="round" fill="none" />
+            <path d="M20 24l3 3 6-6" stroke="#12B76A" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </div>
+      ),
+      features: ["Cards, UPI, Net Banking", "Wallets & EMI", "Secure & Reliable"],
+      badge: "Popular in India",
+    },
+  ];
+}
 
 const PaymentSetup =() =>{
+  const { t } = useLanguage();
+  const PAYMENT_METHODS = buildPaymentMethods(t);
+
   const [activePage,         setActivePage]         = useState(null);
   const [enabledMethods,     setEnabledMethods]     = useState(["upi"]);
   const [payAtCounterSaved,  setPayAtCounterSaved]  = useState(false);
@@ -106,7 +118,7 @@ const PaymentSetup =() =>{
       } catch {
         // If this fails, fall back to showing every card enabled rather
         // than accidentally locking a merchant out of Payment Setup.
-        setAvailableGateways(["upi", "razorpay", "stripe", "mobilepay"]);
+        setAvailableGateways(["upi", "razorpay", "stripe", "mobilepay", "cashfree"]);
       }
     };
     loadAvailability();
@@ -150,11 +162,11 @@ const PaymentSetup =() =>{
         { method: "PUT", headers: { Authorization: `Bearer ${token}` } }
       );
       const data = await res.json();
-      if (!res.ok) throw new Error(data?.message || "Failed to save.");
+      if (!res.ok) throw new Error(data?.message || t("ps_pac_fail_msg"));
       setPayAtCounterSaved(payAtCounterDraft);
-      setPacMsg(data?.message || (payAtCounterDraft ? "Pay at Counter enabled." : "Pay at Counter disabled."));
+      setPacMsg(data?.message || (payAtCounterDraft ? t("ps_pac_enabled_msg") : t("ps_pac_disabled_msg")));
     } catch (e) {
-      setPacMsg(e.message || "Failed to update. Please try again.");
+      setPacMsg(e.message || t("ps_pac_fail_msg"));
     } finally {
       setPacLoading(false);
     }
@@ -171,25 +183,26 @@ const PaymentSetup =() =>{
   if (activePage === "stripe") return <StripePaypalPayments onBack={() => setActivePage(null)} initialTab="stripe" />;
   if (activePage === "paypal") return <StripePaypalPayments onBack={() => setActivePage(null)} initialTab="paypal" />;
   if (activePage === "mobilepay") return <MobilePayPayments onBack={() => setActivePage(null)} />;
+  if (activePage === "cashfree") return <CashfreePayments onBack={() => setActivePage(null)} />;
 
   return (
     <div className="ps-root">
       <div className="ps-header">
         <div>
-          <h1 className="ps-title">Payment Setup</h1>
-          <p className="ps-subtitle">Enable and configure the payment methods you want to accept.</p>
+          <h1 className="ps-title">{t("ps_title")}</h1>
+          <p className="ps-subtitle">{t("ps_subtitle")}</p>
         </div>
       </div>
 
       {availableGateways && countryLabel && (
         <div style={{ display:"flex", alignItems:"center", gap:8, background:"#eff6ff", border:"1px solid #bfdbfe", borderRadius:10, padding:"10px 14px", marginBottom:16, fontSize:12.5, color:"#1e40af", fontWeight:600 }}>
-          ℹ️ Showing gateways available for businesses in <strong>{countryLabel}</strong>.
+          ℹ️ {t("ps_country_banner")} <strong>&nbsp;{countryLabel}</strong>.
         </div>
       )}
 
       <div className="ps-section-label">
         <span className="ps-section-dot" />
-        Select Payment Methods
+        {t("ps_select_methods")}
       </div>
 
       <div className="ps-grid">
@@ -202,7 +215,7 @@ const PaymentSetup =() =>{
                 <div className="ps-card-icon">{m.icon}</div>
                 <div className="ps-card-meta">
                   <div className="ps-card-name">{m.name}</div>
-                  <span className="ps-card-badge">{isAvailable ? m.badge : "Not available in your country"}</span>
+                  <span className="ps-card-badge">{isAvailable ? m.badge : t("ps_badge_unavailable")}</span>
                 </div>
                 <label className="ps-toggle">
                   <input
@@ -232,7 +245,7 @@ const PaymentSetup =() =>{
                 disabled={!isAvailable}
                 style={!isAvailable ? { cursor:"not-allowed" } : undefined}
               >
-                {isAvailable ? "Get Started" : "Unavailable"}
+                {isAvailable ? t("ps_get_started") : t("ps_unavailable")}
               </button>
             </div>
           );
@@ -241,7 +254,7 @@ const PaymentSetup =() =>{
 
       {enabledMethods.length > 0 && (
         <div className="ps-summary">
-          <div className="ps-summary-label">Active payment methods</div>
+          <div className="ps-summary-label">{t("ps_active_methods")}</div>
           <div className="ps-summary-chips">
             {enabledMethods.map((id) => {
               const m = PAYMENT_METHODS.find((x) => x.id === id);
@@ -271,9 +284,9 @@ const PaymentSetup =() =>{
               🏪
             </div>
             <div>
-              <div style={{ fontSize:14, fontWeight:700, color:"#0f172a", marginBottom:3 }}>Pay at Counter</div>
+              <div style={{ fontSize:14, fontWeight:700, color:"#0f172a", marginBottom:3 }}>{t("ps_pac_title")}</div>
               <div style={{ fontSize:12, color:"#64748b", lineHeight:1.5 }}>
-                Allow customers to place an order now and pay cash or card at the counter. No online gateway needed.
+                {t("ps_pac_desc")}
               </div>
             </div>
           </div>
@@ -305,7 +318,7 @@ const PaymentSetup =() =>{
                 }}/>
               </div>
               <span style={{ fontSize:13, fontWeight:600, color: payAtCounterDraft ? "#16a34a" : "#6b7280" }}>
-                {pacInitialLoading ? "Loading..." : payAtCounterDraft ? "Enabled" : "Disabled"}
+                {pacInitialLoading ? t("mc_loading") : payAtCounterDraft ? t("enabled") : t("disabled")}
               </span>
             </label>
           </div>
@@ -314,7 +327,7 @@ const PaymentSetup =() =>{
         {payAtCounterDirty && !pacInitialLoading && (
           <div style={{ marginTop:14, display:"flex", alignItems:"center", justifyContent:"space-between", gap:12, background:"#fffbeb", border:"1px solid #fde68a", borderRadius:8, padding:"10px 12px" }}>
             <span style={{ fontSize:12, fontWeight:600, color:"#92400e" }}>
-              You have unsaved changes to Pay at Counter. Save to apply — customers won&apos;t see this until you do.
+              {t("ps_pac_unsaved")}
             </span>
             <div style={{ display:"flex", gap:8, flexShrink:0 }}>
               <button
@@ -323,7 +336,7 @@ const PaymentSetup =() =>{
                 disabled={pacLoading}
                 style={{ padding:"7px 14px", borderRadius:7, border:"1.5px solid #e2e8f0", background:"#fff", color:"#475569", fontSize:12.5, fontWeight:600, cursor:"pointer" }}
               >
-                Discard
+                {t("ps_discard")}
               </button>
               <button
                 type="button"
@@ -331,7 +344,7 @@ const PaymentSetup =() =>{
                 disabled={pacLoading}
                 style={{ padding:"7px 16px", borderRadius:7, border:"none", background:"#16a34a", color:"#fff", fontSize:12.5, fontWeight:600, cursor: pacLoading ? "default" : "pointer", opacity: pacLoading ? 0.7 : 1 }}
               >
-                {pacLoading ? "Saving..." : "Save"}
+                {pacLoading ? t("saving_dots") : t("mc_save")}
               </button>
             </div>
           </div>
@@ -345,13 +358,13 @@ const PaymentSetup =() =>{
       </div>
 
       <div className="ps-terms">
-        <div className="ps-terms-title">Terms &amp; Conditions</div>        <ol className="ps-terms-list">
-          <li>You are responsible for ensuring your payment provider accounts are active and compliant.</li>
-          <li>TableTop Leo does not store or process any card or bank details directly.</li>
-          <li>All transaction fees are charged by the respective payment providers.</li>
-          <li>Refunds and chargebacks are governed by the policies of each payment provider.</li>
-          <li>You must comply with applicable laws and regulations for accepting online payments.</li>
-          <li>TableTop Leo reserves the right to disable payment methods in case of misuse.</li>
+        <div className="ps-terms-title">{t("pay_terms_conditions")}</div>        <ol className="ps-terms-list">
+          <li>{t("ps_terms_1")}</li>
+          <li>{t("ps_terms_2")}</li>
+          <li>{t("ps_terms_3")}</li>
+          <li>{t("ps_terms_4")}</li>
+          <li>{t("ps_terms_5")}</li>
+          <li>{t("ps_terms_6")}</li>
         </ol>
       </div>
 

@@ -5,6 +5,7 @@ import { getItemDiscount, computeDiscountedPrice } from "../utils/discountHelper
 import { useState, useRef } from "react";
 import { ArrowLeft, Search, ShoppingCart, X, Plus, ImageOff, Tag } from "lucide-react";
 import { useCustomerLanguage } from "../context/CustomerLanguageProvider";
+import { CiSearch } from "react-icons/ci";
 
 const CustomerMenuPage = ({
   business,
@@ -98,6 +99,20 @@ const CustomerMenuPage = ({
           touch-action:manipulation;
         }
         .mp-item-row:active { background:var(--brand-bg); }
+
+        /* Out-of-stock row — dimmed, blocked pointer */
+        .mp-item-row.mp-row-oos { cursor:not-allowed; opacity:0.6; }
+        .mp-item-row.mp-row-oos:active { background:transparent; }
+        .mp-item-row.mp-row-oos .mp-item-img { filter: grayscale(60%); }
+
+        .mp-avail-tag {
+          display:inline-flex; align-items:center; gap:3px;
+          font-size:9px; font-weight:800; letter-spacing:0.02em;
+          padding:1.5px 7px; border-radius:20px; text-transform:uppercase;
+          line-height:1.6; margin-top:3px;
+        }
+        .mp-avail-tag.mp-avail-in  { background:#dcfce7; color:#15803d; }
+        .mp-avail-tag.mp-avail-out { background:#fee2e2; color:#b91c1c; }
 
         .mp-item-img {
           width:58px; height:58px;
@@ -239,8 +254,8 @@ const CustomerMenuPage = ({
       {/* ── SCROLLABLE ITEMS ONLY ─────────────────── */}
       <div className="mp-items" style={{ flex:1, overflowY:"auto", overflowX:"hidden", WebkitOverflowScrolling:"touch" }}>
         {filtered.length === 0 ? (
-          <div style={{ padding:"40px 20px", textAlign:"center" }}>
-            <div style={{ fontSize:34, marginBottom:10 }}>🔍</div>
+          <div style={{ padding:"40px 20px", textAlign:"center" }}> 
+            <div style={{ fontSize:34, marginBottom:10 }}><CiSearch/></div>
             <div style={{ fontSize:14, fontWeight:700, color:"var(--text-secondary)", marginBottom:4 }}>
               {search ? t("menu.noResultsFor", { search }) : t("menu.noItemsHere")}
             </div>
@@ -255,10 +270,11 @@ const CustomerMenuPage = ({
           const qty = getCartQty(item.id);
           const discount = getItemDiscount(item, activeDiscounts);
           const discountedPrice = discount ? computeDiscountedPrice(item.price, discount) : null;
+          const isOOS = item.availability === "OUT_OF_STOCK";
           return (
             <div
               key={item.id}
-              className="mp-item-row"
+              className={`mp-item-row${isOOS ? " mp-row-oos" : ""}`}
               onClick={() => onItemClick(item)}
               style={{ animation:`mp-fade 0.18s ease ${Math.min(idx,10)*0.025}s both` }}
             >
@@ -307,22 +323,28 @@ const CustomerMenuPage = ({
                         {item.desc}
                       </div>
                     )}
-                    {(search.trim() || activecat === 0) && item.catName && (
-                      <span style={{ fontSize:9, fontWeight:700, color:"var(--brand)", background:"var(--brand-muted)", borderRadius:20, padding:"1px 6px", display:"inline-block", marginTop:2 }}>
-                        {item.catName}
+                    <div style={{ display:"flex", alignItems:"center", gap:5, flexWrap:"wrap" }}>
+                      {(search.trim() || activecat === 0) && item.catName && (
+                        <span style={{ fontSize:9, fontWeight:700, color:"var(--brand)", background:"var(--brand-muted)", borderRadius:20, padding:"1px 6px", display:"inline-block", marginTop:2 }}>
+                          {item.catName}
+                        </span>
+                      )}
+                      {/* Availability tag — Zomato-style in-stock/out-of-stock */}
+                      <span className={`mp-avail-tag ${isOOS ? "mp-avail-out" : "mp-avail-in"}`}>
+                        {isOOS ? t("menu.outOfStock") : t("menu.available")}
                       </span>
-                    )}
+                    </div>
                   </div>
                   {/* Add button — clean text pill instead of a cramped icon */}
                   <div style={{
                     flexShrink:0, minWidth:52, height:26, borderRadius:8, padding:"0 12px",
-                    border:"1.5px solid var(--brand)", display:"flex", alignItems:"center", justifyContent:"center",
-                    background: qty>0 ? "var(--brand)" : "transparent",
-                    color: qty>0 ? "#fff" : "var(--brand)",
+                    border:`1.5px solid ${isOOS ? "var(--border)" : "var(--brand)"}`, display:"flex", alignItems:"center", justifyContent:"center",
+                    background: isOOS ? "var(--surface-2)" : (qty>0 ? "var(--brand)" : "transparent"),
+                    color: isOOS ? "var(--text-muted)" : (qty>0 ? "#fff" : "var(--brand)"),
                     fontSize:11.5, fontWeight:800, letterSpacing:"0.02em",
                     transition:"background 0.15s, color 0.15s",
                   }}>
-                    {qty>0 ? t("menu.added") : t("menu.add")}
+                    {isOOS ? t("menu.outOfStockShort") : (qty>0 ? t("menu.added") : t("menu.add"))}
                   </div>
                 </div>
 

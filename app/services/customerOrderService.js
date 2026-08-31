@@ -33,6 +33,14 @@ const customerOrderService = {
     return res.data;
   },
 
+  // Full itemized invoice — used by the "Know about your order" popup on
+  // the standalone tracking page (and anywhere else a full price/item
+  // breakdown is needed), not just the email flow.
+  getInvoice: async (orderId) => {
+    const res = await pub.get(`${API}/order/${orderId}/invoice`);
+    return res.data;
+  },
+
   // ── My Orders — customer app hamburger menu ─────────────────
   getMyOrders: async (businessId, phone) => {
     const res = await pub.get(`${API}/orders`, { params: { businessId, phone } });

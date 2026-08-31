@@ -30,6 +30,12 @@ export default function AccountSetup({ onNext, initialData }) {
     setErrors((er) => ({ ...er, [field]: "" }));
   };
 
+  // react-phone-number-input stores the value in E.164 format
+  // (e.g. "+918877445522") — the backend's mobileNumber validator
+  // expects digits only, so the leading "+" (and any stray formatting
+  // characters, defensively) needs stripping before it's sent.
+  const toBackendMobile = (phone) => (phone ? phone.replace(/\D/g, "") : "");
+
   const validate = () => {
     const e = {};
     if (!form.fullName.trim()) e.fullName = "Full name is required.";
@@ -68,7 +74,7 @@ export default function AccountSetup({ onNext, initialData }) {
     }
     setVerifyLoading(true);
     try {
-      const mobileNumber = form.phone;
+      const mobileNumber = toBackendMobile(form.phone);
       await registerUser(form.fullName, form.email, mobileNumber);
       setShowOtp(true);
       setOtp(["", "", "", "", "", ""]);
@@ -152,7 +158,7 @@ export default function AccountSetup({ onNext, initialData }) {
     }
     setVerifyLoading(true);
     try {
-      const mobileNumber = form.phone;
+      const mobileNumber = toBackendMobile(form.phone);
       await registerUser(form.fullName, form.email, mobileNumber);
       setTimeout(() => otpRefs.current[0]?.focus(), 50);
     } catch {

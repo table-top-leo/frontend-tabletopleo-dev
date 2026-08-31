@@ -53,9 +53,19 @@ const CustomerWrapperInner = ({ businessId }) => {
   const [confirmedData, setConfirmedData] = useState(null);
   const [payAtCounterAvailable, setPayAtCounterAvailable] = useState(false);
   const [activeDiscounts, setActiveDiscounts] = useState([]);
+  // Landing page highlights — Trending Today / Most Popular / Special
+  // Items. Always defaults to empty arrays so the UI never has to guard
+  // against undefined; a failed/slow fetch just means empty sections
+  // (which render their own "nothing yet" empty state) rather than a
+  // broken landing page.
+  const [highlights, setHighlights] = useState({ trendingToday: [], mostPopular: [], specialItems: [] });
+  const [highlightsLoading, setHighlightsLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [identity, setIdentity] = useState(null);
   const [screenBeforeMyOrders, setScreenBeforeMyOrders] = useState(SCREENS.LANDING);
+  // Small inline toast shown when a customer taps an out-of-stock item on
+  // the landing/menu pages — auto-dismisses itself.
+  const [oosToast, setOosToast] = useState(false);
 
   const cartCount = useMemo(() => {
     const comboGroups = new Set();
@@ -129,6 +139,9 @@ const CustomerWrapperInner = ({ businessId }) => {
             desc:     p.itemDescription || "",
             price:    Number(p.itemPrice),
             img:      p.itemImageUrl || null,
+            // "AVAILABLE" or "OUT_OF_STOCK" — drives the in-stock tag and
+            // whether the item can be tapped/added on the customer side.
+            availability: p.itemAvailability || "AVAILABLE",
           }))
         );
         setItems(allItems);
@@ -147,6 +160,29 @@ const CustomerWrapperInner = ({ businessId }) => {
         } catch (discErr) {
           console.error("[Discounts] Failed to fetch active discounts:", discErr);
           setActiveDiscounts([]);
+        }
+
+        // Landing page highlights (Trending Today / Most Popular / Special
+        // Items) — same defensive pattern as discounts: never blocks the
+        // menu from loading, always logs the real failure reason.
+        setHighlightsLoading(true);
+        try {
+          const hlRes = await qrService.getLandingHighlights(businessId);
+          if (hlRes.success && hlRes.data) {
+            setHighlights({
+              trendingToday: hlRes.data.trendingToday || [],
+              mostPopular:   hlRes.data.mostPopular   || [],
+              specialItems:  hlRes.data.specialItems  || [],
+            });
+          } else {
+            console.error("[Highlights] API responded but success=false:", hlRes.message);
+            setHighlights({ trendingToday: [], mostPopular: [], specialItems: [] });
+          }
+        } catch (hlErr) {
+          console.error("[Highlights] Failed to fetch landing highlights:", hlErr);
+          setHighlights({ trendingToday: [], mostPopular: [], specialItems: [] });
+        } finally {
+          setHighlightsLoading(false);
         }
 
         const sessionRes = await customerOrderService.createSession(businessId, null);
@@ -173,6 +209,17 @@ const CustomerWrapperInner = ({ businessId }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Guards item taps from the landing/menu pages — out-of-stock items
+  // can't be opened into the product popup; show a small toast instead.
+  const handleItemClick = (item) => {
+    if (item?.availability === "OUT_OF_STOCK") {
+      setOosToast(true);
+      setTimeout(() => setOosToast(false), 2200);
+      return;
+    }
+    setPopupItem(item);
   };
 
   const addToCart = (item, qty) => {
@@ -435,10 +482,12 @@ const CustomerWrapperInner = ({ businessId }) => {
           <CustomerLandingPage
             business={business} categories={categories} items={items}
             activeDiscounts={activeDiscounts}
+            highlights={highlights}
+            highlightsLoading={highlightsLoading}
             currencyCode={business?.currencyCode}
             onStart={() => setScreen(SCREENS.MENU)}
             onViewOffers={() => { setOffersOrigin(SCREENS.LANDING); setScreen(SCREENS.OFFERS); }}
-            onItemClick={setPopupItem}
+            onItemClick={handleItemClick}
             onOpenMenu={() => setSidebarOpen(true)}
           />
         )}
@@ -465,7 +514,7 @@ const CustomerWrapperInner = ({ businessId }) => {
             activeDiscounts={activeDiscounts}
             currencyCode={business?.currencyCode}
             cart={cart} cartCount={cartCount} cartTotal={total}
-            onItemClick={setPopupItem}
+            onItemClick={handleItemClick}
             onViewOffers={() => { setOffersOrigin(SCREENS.MENU); setScreen(SCREENS.OFFERS); }}
             onViewCart={() => setScreen(SCREENS.CART)}
             onBack={() => setScreen(SCREENS.LANDING)}
@@ -557,6 +606,21 @@ const CustomerWrapperInner = ({ businessId }) => {
             onClose={() => setPopupItem(null)}
             onAddToCart={addToCart}
           />
+        )}
+
+        {/* Out-of-stock tap feedback — small, professional, auto-dismissing */}
+        {oosToast && (
+          <div style={{
+            position: "absolute", left: "50%", bottom: 92, transform: "translateX(-50%)",
+            background: "#18181b", color: "#fff", padding: "10px 18px", borderRadius: 30,
+            fontSize: 13, fontWeight: 600, zIndex: 9999, whiteSpace: "nowrap",
+            boxShadow: "0 6px 20px rgba(0,0,0,0.22)", display: "flex", alignItems: "center", gap: 8,
+            animation: "cw-oos-in 0.2s ease",
+          }}>
+            <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#ef4444", flexShrink: 0 }} />
+            {t("menu.outOfStockToastMsg")}
+            <style>{`@keyframes cw-oos-in{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}`}</style>
+          </div>
         )}
       </div>
     </div>

@@ -4,12 +4,13 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import {
   Plus, ChevronRight, ChevronDown, ChevronUp, ChevronLeft,
   Search, Filter, Pencil, Trash2, Upload, Send, RotateCcw,
-  Coffee, X, Check, RefreshCw, Loader2, Image,
+  Coffee, X, Check, RefreshCw, Loader2, Image, Star,
 } from "lucide-react";
 import "../menucategorypage/designmenucategorypage.css";
 import {
   createCategory, getCategoriesByAdmin, updateCategory, deleteCategory,
   createProduct, getProductsByCategory, updateProduct, deleteProduct,
+  updateProductAvailability,
 } from "../services/menuService";
 import { uploadCategoryImage, uploadProductImage } from "../services/imageservice";
 import api from "../services/axiosInterceptor";
@@ -18,6 +19,7 @@ import { getCurrencySymbol, formatCurrency } from "../utils/currencyHelper";
 import { useLanguage } from "../context/LanguageContext";
 
 const ITEMS_PER_PAGE = 5;
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5MB
 
 function getUser() {
   try { const s = localStorage.getItem("ttl_user"); return s ? JSON.parse(s) : null; }
@@ -116,6 +118,8 @@ const MenuCategory = () => {
   const [deleting,           setDeleting]           = useState(false);
   const [toast,              setToast]              = useState(null);
   const [prodImgUploading,   setProdImgUploading]   = useState(false);
+  const [availabilitySavingId, setAvailabilitySavingId] = useState(null); // productId currently being toggled
+  const [specialSavingId, setSpecialSavingId] = useState(null); // productId currently having "special" toggled
 
   // ── Suggestion states ───────────────────────────────────
   const [catSuggestions,    setCatSuggestions]    = useState([]);  // [{categoryName, categoryEmoji}]
@@ -129,7 +133,8 @@ const MenuCategory = () => {
 
   const [form, setForm] = useState({
     categoryId: "", newCategoryName: "", name: "", description: "",
-    price: "", status: "ACTIVE", imageUrl: null,
+    price: "", status: "ACTIVE", imageUrl: null, itemAvailability: "AVAILABLE",
+    specialItem: false,
   });
   const [formErrors, setFormErrors] = useState({});
 
@@ -225,6 +230,7 @@ const MenuCategory = () => {
   };
 
   const handleEditCatImageUpload = async (file) => {
+    if (file.size > MAX_IMAGE_BYTES) { showToast("Image must be smaller than 5MB.", "error"); return; }
     setEditCatImgUploading(true);
     try {
       const res = await uploadCategoryImage(file);
@@ -234,10 +240,15 @@ const MenuCategory = () => {
   };
 
   const handleSelectCategory = (catId) => {
-    setSelectedCatId(catId); setCurrentPage(1); setSearchQuery(""); setStatusFilter("All Status"); resetForm();
+    setSelectedCatId(catId); setCurrentPage(1); setSearchQuery(""); setStatusFilter("All Status");
+    // Pre-fill the item form's Category field with whichever category was
+    // just clicked in the sidebar — the merchant already told us which
+    // category they're working in, so the form shouldn't ask again.
+    resetItemFieldsKeepCategory(catId);
   };
 
   const handleCatImageUpload = async (file) => {
+    if (file.size > MAX_IMAGE_BYTES) { showToast("Image must be smaller than 5MB.", "error"); return; }
     setNewCatImgUploading(true);
     try { const res = await uploadCategoryImage(file); setNewCatImageUrl(res.data?.data?.imageUrl || res.data?.imageUrl || null); }
     catch { showToast(t("mc_could_not_upload_image"), "error"); }
@@ -245,6 +256,7 @@ const MenuCategory = () => {
   };
 
   const handleProdImageUpload = async (file) => {
+    if (file.size > MAX_IMAGE_BYTES) { showToast("Image must be smaller than 5MB.", "error"); return; }
     setProdImgUploading(true);
     try { const res = await uploadProductImage(file); setForm(prev => ({ ...prev, imageUrl: res.data?.data?.imageUrl || res.data?.imageUrl || null })); }
     catch { showToast(t("mc_could_not_upload_image"), "error"); }
@@ -259,6 +271,10 @@ const MenuCategory = () => {
       const created = res.data;
       setCategories(prev => [created, ...prev]);
       setSelectedCatId(created.categoryId);
+      // Pre-fill the item form's Category field too — the merchant just
+      // created this category specifically to add items to it, so the
+      // form shouldn't make them pick it again from the dropdown.
+      resetItemFieldsKeepCategory(created.categoryId);
       setNewCatName(""); setNewCatImageUrl(null); setShowAddCatInline(false);
       showToast(t("mc_category_created"));
     } catch (err) {
@@ -278,8 +294,17 @@ const MenuCategory = () => {
     } finally { setDeleting(false); setShowDeleteModal(false); setDeleteTarget(null); }
   };
 
+  const resetItemFieldsKeepCategory = useCallback((keepCatId) => {
+    setForm({
+      categoryId: keepCatId ? String(keepCatId) : "",
+      newCategoryName: "", name: "", description: "", price: "", status: "ACTIVE", imageUrl: null,
+      itemAvailability: "AVAILABLE", specialItem: false,
+    });
+    setFormErrors({}); setEditingItem(null); setItemSuggestions([]);
+  }, []);
+
   const resetForm = useCallback(() => {
-    setForm({ categoryId: "", newCategoryName: "", name: "", description: "", price: "", status: "ACTIVE", imageUrl: null });
+    setForm({ categoryId: "", newCategoryName: "", name: "", description: "", price: "", status: "ACTIVE", imageUrl: null, itemAvailability: "AVAILABLE", specialItem: false });
     setFormErrors({}); setEditingItem(null); setItemSuggestions([]);
   }, []);
 
@@ -321,6 +346,8 @@ const MenuCategory = () => {
         itemName: form.name.trim(), itemDescription: form.description.trim() || null,
         itemPrice: parseFloat(form.price), itemImageUrl: form.imageUrl || null,
         productStatus: form.status,
+        itemAvailability: form.itemAvailability || "AVAILABLE",
+        specialItem: !!form.specialItem,
       };
 
       if (editingItem) {
@@ -334,7 +361,11 @@ const MenuCategory = () => {
         setCategories(prev => prev.map(c => c.categoryId === targetCatId ? { ...c, productCount: c.productCount + 1 } : c));
         showToast(t("mc_item_saved"));
       }
-      resetForm(); setCurrentPage(1);
+      // Keep the category the merchant just used pre-selected, instead of
+      // wiping the whole form — whether they typed a brand-new category
+      // name or picked one from the dropdown, adding the next item to the
+      // same category shouldn't require re-entering it every time.
+      resetItemFieldsKeepCategory(targetCatId); setCurrentPage(1);
     } catch (err) {
       showToast(err.response?.data?.message || t("mc_could_not_save_item"), "error");
     } finally { setFormSaving(false); }
@@ -342,9 +373,49 @@ const MenuCategory = () => {
 
   const handleEdit = (item) => {
     setEditingItem(item);
-    setForm({ categoryId: String(item.categoryId), newCategoryName: "", name: item.itemName, description: item.itemDescription || "", price: String(item.itemPrice), status: item.productStatus, imageUrl: item.itemImageUrl || null });
+    setForm({ categoryId: String(item.categoryId), newCategoryName: "", name: item.itemName, description: item.itemDescription || "", price: String(item.itemPrice), status: item.productStatus, imageUrl: item.itemImageUrl || null, itemAvailability: item.itemAvailability || "AVAILABLE", specialItem: !!item.specialItem });
     setFormErrors({}); setFormCollapsed(false);
     window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  // Quick in-stock / out-of-stock toggle straight from the items table —
+  // no need to open the edit form just to flip availability.
+  const handleToggleAvailability = async (item) => {
+    const next = item.itemAvailability === "OUT_OF_STOCK" ? "AVAILABLE" : "OUT_OF_STOCK";
+    setAvailabilitySavingId(item.productId);
+    try {
+      const res = await updateProductAvailability(item.productId, adminId, next);
+      setProducts(prev => prev.map(p => p.productId === item.productId ? { ...p, itemAvailability: res.data?.itemAvailability || next } : p));
+      showToast(next === "OUT_OF_STOCK" ? t("mc_marked_out_of_stock") : t("mc_marked_available"));
+    } catch (err) {
+      showToast(err.response?.data?.message || t("mc_could_not_update_availability"), "error");
+    } finally {
+      setAvailabilitySavingId(null);
+    }
+  };
+
+  // Quick "Special Item" (⭐) toggle straight from the items table — sends
+  // the item's existing full payload with just the flag flipped, since
+  // there's no dedicated PATCH endpoint for this field (unlike availability).
+  const handleToggleSpecial = async (item) => {
+    const nextSpecial = !item.specialItem;
+    setSpecialSavingId(item.productId);
+    try {
+      const payload = {
+        adminId, businessId, categoryId: item.categoryId,
+        itemName: item.itemName, itemDescription: item.itemDescription || null,
+        itemPrice: item.itemPrice, itemImageUrl: item.itemImageUrl || null,
+        productStatus: item.productStatus, itemAvailability: item.itemAvailability || "AVAILABLE",
+        specialItem: nextSpecial,
+      };
+      const res = await updateProduct(item.productId, adminId, payload);
+      setProducts(prev => prev.map(p => p.productId === item.productId ? { ...p, specialItem: !!res.data?.specialItem } : p));
+      showToast(nextSpecial ? t("mc_marked_special") : t("mc_unmarked_special"));
+    } catch (err) {
+      showToast(err.response?.data?.message || t("mc_could_not_update_special"), "error");
+    } finally {
+      setSpecialSavingId(null);
+    }
   };
 
   const openDeleteModal = (target) => { setDeleteTarget(target); setShowDeleteModal(true); };
@@ -445,9 +516,6 @@ const MenuCategory = () => {
             <h1 className="mc-page-title">{t("mc_page_title")}</h1>
             <p className="mc-page-sub">{t("mc_page_sub")}</p>
           </div>
-          <button className="mc-btn-dark mc-add-btn" onClick={() => setShowAddCatInline(true)} type="button">
-            <Plus size={16} /> {t("mc_add_new_category")}
-          </button>
         </div>
       </div>
 
@@ -510,7 +578,7 @@ const MenuCategory = () => {
               <ImageUploadBox imageUrl={newCatImageUrl} onUpload={handleCatImageUpload} onRemove={() => setNewCatImageUrl(null)} uploading={newCatImgUploading} compact t={t} />
               <div className="mc-inline-actions">
                 <button className="mc-btn-ghost" onClick={() => { setShowAddCatInline(false); setNewCatName(""); setNewCatImageUrl(null); setShowCatSuggDrop(false); }} disabled={catSaving} type="button">{t("mc_cancel")}</button>
-                <button className="mc-btn-dark" onClick={handleAddCategory} disabled={catSaving || !newCatName.trim()} type="button">
+                <button className="mc-btn-dark shadow-sm hover:shadow-md active:translate-y-0 transition-all duration-200" onClick={handleAddCategory} disabled={catSaving || !newCatName.trim()} type="button">
                   {catSaving ? <><Loader2 size={14} style={{ animation: "spin .7s linear infinite" }} /> {t("mc_creating")}</> : <><Check size={14} /> {t("mc_create")}</>}
                 </button>
               </div>
@@ -532,7 +600,7 @@ const MenuCategory = () => {
             ) : (
               categories.map(cat => (
                 <div key={cat.categoryId}
-                  className={`mc-cat-item ${selectedCatId === cat.categoryId ? "mc-cat-active" : ""}`}
+                  className={`mc-cat-item ${selectedCatId === cat.categoryId ? "mc-cat-active" : ""} transition-all duration-200 hover:shadow-sm hover:-translate-y-0.5 rounded-xl`}
                   onClick={() => editingCatId !== cat.categoryId && handleSelectCategory(cat.categoryId)}
                   role="button" tabIndex={0}
                   style={{ position:"relative" }}
@@ -628,7 +696,7 @@ const MenuCategory = () => {
 
         {/* ── MAIN CONTENT ─────────────────────────────────── */}
         <div className="mc-main">
-          <div className="mc-form-panel">
+          <div className="mc-form-panel shadow-sm hover:shadow-md transition-shadow duration-300 rounded-2xl">
             <div className="mc-form-head">
               <h2 className="mc-form-title">{editingItem ? `${t("mc_edit_prefix")} ${editingItem.itemName}` : t("mc_add_new_item")}</h2>
               <button className="mc-collapse-btn" onClick={() => setFormCollapsed(v => !v)} type="button">
@@ -807,12 +875,52 @@ const MenuCategory = () => {
                       </select>
                       <ChevronDown size={15} className="mc-select-icon" />
                     </div>
+
+                    {/* ── Item Availability (In Stock / Out of Stock) ──
+                        Separate from productStatus above: status controls
+                        whether the item shows on the menu at all; this
+                        controls whether a visible item can be ordered. */}
+                    <label className="mc-label" style={{ marginTop: 14 }}>{t("mc_item_availability")}</label>
+                    <div className="mc-select-wrap">
+                      <select
+                        className={`mc-select ${form.itemAvailability === "OUT_OF_STOCK" ? "mc-select-oos" : "mc-select-available"}`}
+                        value={form.itemAvailability}
+                        onChange={e => handleFieldChange("itemAvailability", e.target.value)}
+                      >
+                        <option value="AVAILABLE">{t("mc_available")}</option>
+                        <option value="OUT_OF_STOCK">{t("mc_out_of_stock")}</option>
+                      </select>
+                      <ChevronDown size={15} className="mc-select-icon" />
+                    </div>
+
+                    {/* ── Special Item (Chef's Special / Signature Dish) ──
+                        Merchant-curated highlight shown on the customer
+                        landing page's "Special Items" section. */}
+                    <label
+                      className="mc-special-checkbox"
+                      style={{ marginTop: 14 }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={!!form.specialItem}
+                        onChange={e => handleFieldChange("specialItem", e.target.checked)}
+                      />
+                      <span className="mc-special-checkbox-box">
+                        <Check size={12} />
+                      </span>
+                      <span className="mc-special-checkbox-label">
+                        ⭐ {t("mc_special_item")}
+                      </span>
+                    </label>
+                    <span style={{ fontSize: 11, color: "#a1a1aa", marginTop: 3, display: "block" }}>
+                      {t("mc_special_item_hint")}
+                    </span>
                   </div>
                 </div>
 
                 <div className="mc-form-actions">
                   <button className="mc-btn-reset" onClick={resetForm} type="button" disabled={formSaving}><RotateCcw size={14} /> {t("mc_reset")}</button>
-                  <button className="mc-btn-dark mc-save-btn" onClick={handleSaveItem} type="button" disabled={formSaving || prodImgUploading}>
+                  <button className="mc-btn-dark mc-save-btn shadow-sm hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm transition-all duration-200" onClick={handleSaveItem} type="button" disabled={formSaving || prodImgUploading}>
                     {formSaving
                       ? <><Loader2 size={14} style={{ animation: "spin .7s linear infinite" }} /> {editingItem ? t("mc_updating") : t("mc_saving")}</>
                       : <><Send size={14} /> {editingItem ? t("mc_update_item") : t("mc_save_item")}</>}
@@ -823,7 +931,7 @@ const MenuCategory = () => {
           </div>
 
           {/* ── ITEMS TABLE ──────────────────────────────── */}
-          <div className="mc-items-panel">
+          <div className="mc-items-panel shadow-sm hover:shadow-md transition-shadow duration-300 rounded-2xl">
             <div className="mc-items-head">
               <h3 className="mc-items-title">
                 {selectedCategory ? `${t("mc_items_in")} ${selectedCategory.categoryName}` : t("mc_select_category_short")} ({totalItems})
@@ -844,24 +952,30 @@ const MenuCategory = () => {
               </div>
             </div>
 
-            <div className="mc-table-wrap">
+            <div className="mc-table-wrap rounded-xl overflow-hidden">
               <table className="mc-table">
                 <thead>
                   <tr>
                     <th className="mc-th">{t("mc_item_th")}</th><th className="mc-th">{t("mc_description_th")}</th>
                     <th className="mc-th">{t("mc_price_th")}</th><th className="mc-th">{t("mc_status_th")}</th>
+                    <th className="mc-th">{t("mc_availability_th")}</th>
+                    <th className="mc-th">{t("mc_special_th")}</th>
                     <th className="mc-th mc-th-right">{t("mc_actions_th")}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {prodsLoading ? (
-                    <tr><td colSpan={5} className="mc-empty"><div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}><Loader2 size={16} style={{ animation: "spin .7s linear infinite" }} /> {t("mc_loading")}</div></td></tr>
+                    <tr><td colSpan={7} className="mc-empty"><div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}><Loader2 size={16} style={{ animation: "spin .7s linear infinite" }} /> {t("mc_loading")}</div></td></tr>
                   ) : !selectedCatId ? (
-                    <tr><td colSpan={5} className="mc-empty">{t("mc_select_category_hint")}</td></tr>
+                    <tr><td colSpan={7} className="mc-empty">{t("mc_select_category_hint")}</td></tr>
                   ) : pagedProducts.length === 0 ? (
-                    <tr><td colSpan={5} className="mc-empty">{searchQuery || statusFilter !== "All Status" ? t("mc_no_items_match") : t("mc_no_items_yet")}</td></tr>
+                    <tr><td colSpan={7} className="mc-empty">{searchQuery || statusFilter !== "All Status" ? t("mc_no_items_match") : t("mc_no_items_yet")}</td></tr>
                   ) : (
-                    pagedProducts.map(item => (
+                    pagedProducts.map(item => {
+                      const isOOS = item.itemAvailability === "OUT_OF_STOCK";
+                      const togglingThis = availabilitySavingId === item.productId;
+                      const togglingSpecial = specialSavingId === item.productId;
+                      return (
                       <tr key={item.productId} className="mc-tr">
                         <td className="mc-td">
                           <div className="mc-item-cell">
@@ -879,12 +993,41 @@ const MenuCategory = () => {
                             <span className="mc-status-dot" />{item.productStatus === "ACTIVE" ? t("mc_active") : t("mc_inactive")}
                           </span>
                         </td>
+                        <td className="mc-td">
+                          <button
+                            type="button"
+                            className={`mc-avail-badge ${isOOS ? "mc-avail-oos" : "mc-avail-available"}`}
+                            onClick={() => handleToggleAvailability(item)}
+                            disabled={togglingThis}
+                            title={isOOS ? t("mc_tap_to_mark_available") : t("mc_tap_to_mark_out_of_stock")}
+                          >
+                            {togglingThis
+                              ? <Loader2 size={12} style={{ animation: "spin .7s linear infinite" }} />
+                              : <span className="mc-avail-dot" />}
+                            {isOOS ? t("mc_out_of_stock") : t("mc_available")}
+                          </button>
+                        </td>
+                        <td className="mc-td">
+                          <button
+                            type="button"
+                            className={`mc-special-badge ${item.specialItem ? "mc-special-on" : "mc-special-off"}`}
+                            onClick={() => handleToggleSpecial(item)}
+                            disabled={togglingSpecial}
+                            title={item.specialItem ? t("mc_tap_to_unmark_special") : t("mc_tap_to_mark_special")}
+                          >
+                            {togglingSpecial
+                              ? <Loader2 size={12} style={{ animation: "spin .7s linear infinite" }} />
+                              : <Star size={12} fill={item.specialItem ? "currentColor" : "none"} />}
+                            {item.specialItem ? t("mc_special") : t("mc_regular")}
+                          </button>
+                        </td>
                         <td className="mc-td mc-td-actions">
                           <button className="mc-action-edit" onClick={() => handleEdit(item)} type="button"><Pencil size={13} /> {t("mc_edit_action")}</button>
                           <button className="mc-action-delete" onClick={() => openDeleteModal({ type: "product", id: item.productId })} type="button"><Trash2 size={13} /> {t("mc_delete_action")}</button>
                         </td>
                       </tr>
-                    ))
+                      );
+                    })
                   )}
                 </tbody>
               </table>

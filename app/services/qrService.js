@@ -46,6 +46,22 @@ const qrService = {
     const response = await axios.get(`${BASE_URL}${MENU_BASE}/${businessId}`);
     return response.data;
   },
+
+  /**
+   * Landing page highlights — Trending Today / Most Popular / Special
+   * Items. Public — NO JWT required. Never throws on partial backend
+   * failure (each section defaults to an empty list server-side), but
+   * this call itself can still fail on network issues, so callers should
+   * still handle rejection.
+   *
+   * @param {string} businessId
+   * @returns {Promise} - ApiResponse<LandingHighlightsResponse>
+   *   { trendingToday: [...], mostPopular: [...], specialItems: [...] }
+   */
+  getLandingHighlights: async (businessId) => {
+    const response = await axios.get(`${BASE_URL}${MENU_BASE}/${businessId}/highlights`);
+    return response.data;
+  },
 };
 
 export default qrService;

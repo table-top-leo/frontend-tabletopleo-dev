@@ -104,6 +104,38 @@ const gatewayPaymentService = {
     return res.data;
   },
 
+  // ── CASHFREE ────────────────────────────────────────────
+
+  saveCashfree: async (data) => {
+    const res = await api.post(`${BASE}/cashfree/save`, {
+      clientId: data.clientId,
+      clientSecret: data.clientSecret,
+      webhookSecret: data.webhookSecret || "",
+      environment: data.environment || "sandbox",
+    });
+    return res.data;
+  },
+
+  updateCashfree: async (data) => {
+    const res = await api.put(`${BASE}/cashfree/update`, {
+      clientId: data.clientId,
+      clientSecret: data.clientSecret,
+      webhookSecret: data.webhookSecret || "",
+      environment: data.environment || "sandbox",
+    });
+    return res.data;
+  },
+
+  getCashfree: async () => {
+    const res = await api.get(`${BASE}/cashfree`);
+    return res.data;
+  },
+
+  deleteCashfree: async () => {
+    const res = await api.delete(`${BASE}/cashfree/delete`);
+    return res.data;
+  },
+
   // ── ALL ─────────────────────────────────────────────────
 
   getAllGateways: async () => {

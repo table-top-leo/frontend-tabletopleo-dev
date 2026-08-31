@@ -3,8 +3,11 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Bell, ShoppingBag, CreditCard, CheckCircle2, ChefHat, Package,
   Truck, TrendingUp, Zap, X, Trash2, ArrowRight, RefreshCw, Loader2,
+  XCircle,
 } from "lucide-react";
 import notificationService from "../services/notificationService";
+import adminOrderService from "../services/adminOrderService";
+import AcceptOrderPopup from "../orderstabletopleo/AcceptOrderPopup";
 import useWebSocket from "../hooks/useWebSocket";
 
 /* ── Icon / color config per notification type ── */
@@ -53,88 +56,121 @@ function amountLabel(amount) {
 }
 
 /* ── SINGLE NOTIFICATION CARD ── */
-const NotifCard = ({ notif, dark, dismissing, onDismiss, onNavigate }) => {
+const NotifCard = ({ notif, dark, dismissing, onDismiss, onNavigate, onAccept, onReject, acting }) => {
   const t = T(dark);
   const cfg = TYPE_CFG[notif.type] || TYPE_CFG.SYSTEM;
   const Icon = cfg.icon;
+  // Only a still-pending new order gets Accept/Reject — once acted on
+  // (from here, the bell, or the Orders page) the backend's live status
+  // lookup stops sending PLACED for it, so this naturally disappears.
+  // Any notification tied to a still-pending order gets Accept/Reject —
+  // not restricted to a specific notification "type" (NEW_ORDER is the
+  // only type today, but this stays correct even if more are added
+  // later, and avoids excluding anything on a type-string mismatch).
+  const needsAction = !!notif.orderId && (!notif.orderStatus || notif.orderStatus === "PLACED");
 
   return (
     <div
-      onClick={() => onDismiss(notif.notificationId)}
       style={{
-        display: "flex", alignItems: "center", gap: 10,
+        display: "flex", flexDirection: "column", gap: 8,
         padding: "10px 11px",
         background: t.unreadBg,
         border: `1px solid ${t.unreadBdr}`,
         borderRadius: 10,
         marginBottom: 5,
-        cursor: "pointer",
         transition: "opacity 0.18s ease, transform 0.18s ease",
         opacity: dismissing ? 0 : 1,
         transform: dismissing ? "translateX(12px)" : "translateX(0)",
       }}
     >
-      <div style={{
-        width: 30, height: 30, borderRadius: 8,
-        background: cfg.bg,
-        display: "flex", alignItems: "center", justifyContent: "center",
-        flexShrink: 0,
-      }}>
-        <Icon size={14} color={cfg.color} />
-      </div>
-
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-          <span style={{ fontSize: 12, fontWeight: 700, color: t.text }}>{notif.title}</span>
-          {notif.orderNumber && (
-            <span style={{ fontSize: 10, fontWeight: 600, color: cfg.color, background: cfg.bg, padding: "1px 6px", borderRadius: 20 }}>
-              {notif.orderNumber}
-            </span>
-          )}
-          {amountLabel(notif.amount) && (
-            <span style={{ fontSize: 11, fontWeight: 700, color: t.text, marginLeft: "auto" }}>
-              {amountLabel(notif.amount)}
-            </span>
-          )}
-        </div>
-        <div style={{ fontSize: 10.5, color: t.sub, marginTop: 2, lineHeight: 1.4 }}>
-          {notif.message}
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
-          <span style={{ fontSize: 9.5, color: t.sub }}>{formatTimeAgo(notif.createdAt)}</span>
-          {notif.orderId && (
-            <button
-              onClick={(e) => { e.stopPropagation(); onNavigate(notif.orderNumber || notif.orderId); }}
-              style={{
-                display: "flex", alignItems: "center", gap: 3,
-                fontSize: 9.5, fontWeight: 600, color: "#635bff",
-                background: "rgba(99,91,255,0.1)",
-                border: "none", borderRadius: 6, padding: "2px 7px",
-                cursor: "pointer",
-              }}
-            >
-              View Order <ArrowRight size={9} />
-            </button>
-          )}
-        </div>
-      </div>
-
-      <button
-        onClick={(e) => { e.stopPropagation(); onDismiss(notif.notificationId); }}
-        title="Dismiss"
-        style={{
-          background: "none", border: "none", cursor: "pointer",
-          color: t.sub, padding: "3px", borderRadius: 4, display: "flex", flexShrink: 0,
-        }}
+      <div
+        onClick={() => onDismiss(notif.notificationId)}
+        style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}
       >
-        <X size={13} />
-      </button>
+        <div style={{
+          width: 30, height: 30, borderRadius: 8,
+          background: cfg.bg,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          flexShrink: 0,
+        }}>
+          <Icon size={14} color={cfg.color} />
+        </div>
+
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: t.text }}>{notif.title}</span>
+            {notif.orderNumber && (
+              <span style={{ fontSize: 10, fontWeight: 600, color: cfg.color, background: cfg.bg, padding: "1px 6px", borderRadius: 20 }}>
+                {notif.orderNumber}
+              </span>
+            )}
+            {amountLabel(notif.amount) && (
+              <span style={{ fontSize: 11, fontWeight: 700, color: t.text, marginLeft: "auto" }}>
+                {amountLabel(notif.amount)}
+              </span>
+            )}
+          </div>
+          <div style={{ fontSize: 10.5, color: t.sub, marginTop: 2, lineHeight: 1.4 }}>
+            {notif.message}
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
+            <span style={{ fontSize: 9.5, color: t.sub }}>{formatTimeAgo(notif.createdAt)}</span>
+            {notif.orderId && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onNavigate(notif.orderNumber || notif.orderId); }}
+                style={{
+                  display: "flex", alignItems: "center", gap: 3,
+                  fontSize: 9.5, fontWeight: 600, color: "#635bff",
+                  background: "rgba(99,91,255,0.1)",
+                  border: "none", borderRadius: 6, padding: "2px 7px",
+                  cursor: "pointer",
+                }}
+              >
+                View Order <ArrowRight size={9} />
+              </button>
+            )}
+          </div>
+        </div>
+
+        <button
+          onClick={(e) => { e.stopPropagation(); onDismiss(notif.notificationId); }}
+          title="Dismiss"
+          style={{
+            background: "none", border: "none", cursor: "pointer",
+            color: t.sub, padding: "3px", borderRadius: 4, display: "flex", flexShrink: 0,
+          }}
+        >
+          <X size={13} />
+        </button>
+      </div>
+
+      {/* ── Accept / Reject — the merchant's first decision on a new
+          order, right on the notification, no need to open Orders ── */}
+      {needsAction && (
+        <div style={{ display: "flex", alignItems: "center", gap: 6, paddingLeft: 40 }}>
+          <button
+            onClick={(e) => { e.stopPropagation(); onAccept(notif); }}
+            disabled={acting}
+            style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 5, padding: "6px 0", borderRadius: 7, border: "none", background: "#16a34a", color: "#fff", fontSize: 11.5, fontWeight: 700, cursor: acting ? "not-allowed" : "pointer", opacity: acting ? 0.7 : 1, fontFamily: "inherit" }}
+          >
+            {acting ? <Loader2 size={12} style={{ animation: "ntlSpin 0.7s linear infinite" }} /> : <CheckCircle2 size={12} />}
+            Accept
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); onReject(notif); }}
+            disabled={acting}
+            style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 5, padding: "6px 0", borderRadius: 7, border: "1.5px solid #ef4444", background: "transparent", color: "#ef4444", fontSize: 11.5, fontWeight: 700, cursor: acting ? "not-allowed" : "pointer", opacity: acting ? 0.7 : 1, fontFamily: "inherit" }}
+          >
+            <XCircle size={12} /> Reject
+          </button>
+        </div>
+      )}
     </div>
   );
 };
 
 /* ── MAIN COMPONENT ── */
-const NotificationTableTopLeo = ({ dark = false }) => {
+const NotificationTableTopLeo = ({ dark = false, onNavigateToOrder }) => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState("");
@@ -142,6 +178,8 @@ const NotificationTableTopLeo = ({ dark = false }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [dismissingIds, setDismissingIds] = useState(new Set());
   const [clearing, setClearing]   = useState(false);
+  const [actingId, setActingId]   = useState(null); // notificationId currently being Accepted/Rejected
+  const [acceptPopupNotif, setAcceptPopupNotif] = useState(null);
 
   const adminId = useRef(null);
   useEffect(() => {
@@ -226,9 +264,43 @@ const NotificationTableTopLeo = ({ dark = false }) => {
     }
   };
 
+  // "View Order" — prefer the real navigation callback from the parent
+  // dashboard (it owns the tab/selected-order state); fall back to the
+  // CustomEvent for any host that doesn't pass the prop, so nothing
+  // breaks if this component is ever rendered somewhere else.
   const handleNavigate = (orderNo) => {
+    if (onNavigateToOrder) {
+      onNavigateToOrder(orderNo);
+      return;
+    }
     if (typeof window !== "undefined") {
       window.dispatchEvent(new CustomEvent("ttl_navigate", { detail: { page: "orders", highlight: orderNo } }));
+    }
+  };
+
+  // ── Accept opens the order-details + prep-time popup, same as the
+  // bell and the Orders page. Reject stays instant. ──
+  const handleAccept = (notif) => {
+    setAcceptPopupNotif(notif);
+  };
+
+  const handleAcceptedFromPopup = (updatedOrder, notif) => {
+    setNotifications((prev) => prev.filter((n) => n.notificationId !== notif.notificationId));
+    handleNavigate(notif.orderNumber || notif.orderId);
+  };
+
+  const handleReject = async (notif) => {
+    if (actingId) return;
+    setActingId(notif.notificationId);
+    try {
+      const res = await adminOrderService.updateOrderStatus(notif.orderId, "CANCELLED");
+      if (res.success) {
+        setNotifications((prev) => prev.filter((n) => n.notificationId !== notif.notificationId));
+      }
+    } catch (e) {
+      console.error("Failed to reject order:", e);
+    } finally {
+      setActingId(null);
     }
   };
 
@@ -328,6 +400,9 @@ const NotificationTableTopLeo = ({ dark = false }) => {
               dismissing={dismissingIds.has(notif.notificationId)}
               onDismiss={handleDismiss}
               onNavigate={handleNavigate}
+              onAccept={handleAccept}
+              onReject={handleReject}
+              acting={actingId === notif.notificationId}
             />
           ))
         )}
@@ -337,6 +412,14 @@ const NotificationTableTopLeo = ({ dark = false }) => {
         @keyframes ntlSpin  { to { transform: rotate(360deg); } }
         @keyframes ntlPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
       `}</style>
+
+      {acceptPopupNotif && (
+        <AcceptOrderPopup
+          orderId={acceptPopupNotif.orderId}
+          onClose={() => setAcceptPopupNotif(null)}
+          onAccepted={(updatedOrder) => handleAcceptedFromPopup(updatedOrder, acceptPopupNotif)}
+        />
+      )}
     </div>
   );
 };

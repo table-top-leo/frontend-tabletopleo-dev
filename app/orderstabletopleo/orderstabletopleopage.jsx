@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import "../orderstabletopleo/designorderspage.css";
 import adminOrderService from "../services/adminOrderService";
+import AcceptOrderPopup from "../orderstabletopleo/AcceptOrderPopup";
 import { useCurrency } from "../context/CurrencyContext";
 import { formatCurrency } from "../utils/currencyHelper";
 import { useLanguage } from "../context/LanguageContext";
@@ -162,6 +163,7 @@ const MyOrderTableTopleoPage = ({ highlightOrder = null, isDark: darkProp = fals
   const [filterType,   setFilterType]   = useState("all");
   const [filterPay,    setFilterPay]    = useState("all");
   const [updatingId,   setUpdatingId]   = useState(null);
+  const [acceptPopupOrderId, setAcceptPopupOrderId] = useState(null);
   const [showStatusDd, setShowStatusDd] = useState(false);
   const [showInvoiceDd,setShowInvoiceDd]= useState(false);
   const [invoiceLoading,setInvoiceLoading]=useState(false);
@@ -243,6 +245,13 @@ const MyOrderTableTopleoPage = ({ highlightOrder = null, isDark: darkProp = fals
         setPage(1);
       }
     } catch {} finally { setUpdatingId(null); }
+  };
+
+  const handleAcceptedFromPopup = (updatedOrder) => {
+    setOrders(prev=>prev.map(o=>o.orderId===updatedOrder.orderId?{...o,orderStatus:updatedOrder.orderStatus,estimatedMinutes:updatedOrder.estimatedMinutes,acceptedAt:updatedOrder.acceptedAt}:o));
+    if(selected?.orderId===updatedOrder.orderId) setSelected(prev=>({...prev,orderStatus:updatedOrder.orderStatus,estimatedMinutes:updatedOrder.estimatedMinutes,acceptedAt:updatedOrder.acceptedAt}));
+    setActiveTab(STATUS_CFG.ACCEPTED?.tabKey || "all");
+    setPage(1);
   };
 
   // ── Invoice download — same capture/JPG/PDF logic as the customer
@@ -654,7 +663,30 @@ const MyOrderTableTopleoPage = ({ highlightOrder = null, isDark: darkProp = fals
             <div className="mor-detail-header" style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 16px",borderBottom:"1px solid #f3f4f6",flexShrink:0}}>
               <span className="mor-detail-title">{t("mor_order_details")}</span>
               <div style={{display:"flex",alignItems:"center",gap:8}}>
-                {/* UPDATE STATUS BUTTON + DROPDOWN — right of Order Details */}
+                {selected.orderStatus==="PLACED" ? (
+                  /* ── PENDING DECISION — Accept / Reject front and center,
+                      replacing the generic dropdown until the merchant
+                      decides. Same handleUpdateStatus() used everywhere
+                      else, so behavior (WebSocket push, notification
+                      cleanup, etc.) stays perfectly in sync. ── */
+                  <div style={{display:"flex",alignItems:"center",gap:8}}>
+                    <button
+                      onClick={()=>setAcceptPopupOrderId(selected.orderId)}
+                      disabled={updatingId===selected.orderId}
+                      style={{display:"flex",alignItems:"center",gap:6,padding:"7px 14px",background:"#16a34a",color:"#fff",border:"none",borderRadius:8,fontSize:12.5,fontWeight:700,cursor:updatingId===selected.orderId?"not-allowed":"pointer",opacity:updatingId===selected.orderId?0.7:1,fontFamily:"inherit"}}
+                    >
+                      <CheckCircle2 size={14}/> {t("mor_accept_order")}
+                    </button>
+                    <button
+                      onClick={()=>handleUpdateStatus(selected.orderId,"CANCELLED")}
+                      disabled={updatingId===selected.orderId}
+                      style={{display:"flex",alignItems:"center",gap:6,padding:"7px 14px",background:"#fff",color:"#ef4444",border:"1.5px solid #ef4444",borderRadius:8,fontSize:12.5,fontWeight:700,cursor:updatingId===selected.orderId?"not-allowed":"pointer",opacity:updatingId===selected.orderId?0.7:1,fontFamily:"inherit"}}
+                    >
+                      <XCircle size={14}/> {t("mor_reject_order")}
+                    </button>
+                  </div>
+                ) : (
+                /* UPDATE STATUS BUTTON + DROPDOWN — right of Order Details */
                 <div ref={statusRef} style={{position:"relative"}}>
                   <button
                     onClick={()=>setShowStatusDd(o=>!o)}
@@ -692,6 +724,7 @@ const MyOrderTableTopleoPage = ({ highlightOrder = null, isDark: darkProp = fals
                     </div>
                   )}
                 </div>
+                )}
 
                 <button className="mor-close-btn" onClick={()=>setSelected(null)}><X size={14}/></button>
               </div>
@@ -936,6 +969,14 @@ const MyOrderTableTopleoPage = ({ highlightOrder = null, isDark: darkProp = fals
           </div>
         );
       })()}
+
+      {acceptPopupOrderId && (
+        <AcceptOrderPopup
+          orderId={acceptPopupOrderId}
+          onClose={()=>setAcceptPopupOrderId(null)}
+          onAccepted={handleAcceptedFromPopup}
+        />
+      )}
     </div>
   );
 };

@@ -12,8 +12,10 @@ const adminOrderService = {
     return res.data;
   },
 
-  updateOrderStatus: async (orderId, status) => {
-    const res = await api.put(`/api/admin/orders/${orderId}/status?status=${status}`);
+  updateOrderStatus: async (orderId, status, estimatedMinutes) => {
+    let url = `/api/admin/orders/${orderId}/status?status=${status}`;
+    if (estimatedMinutes != null) url += `&estimatedMinutes=${estimatedMinutes}`;
+    const res = await api.put(url);
     return res.data;
   },
 };

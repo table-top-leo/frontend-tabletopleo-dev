@@ -9,7 +9,7 @@ import {
   User, LogOut, Moon, Sun, MessageSquare, Rocket,
   Building2, UtensilsCrossed, Wallet,
   X, Pencil, RotateCcw, PlusCircle, ChevronRight as ChevRight,
-  AlertTriangle, ShoppingBag, CheckCircle2, ArrowRight,
+  AlertTriangle, ShoppingBag, CheckCircle2, ArrowRight, XCircle, Loader2,
 } from 'lucide-react';
 import '../tabletopleodashboard/adminagedummydesign.css';
 import AdminPayments from '../adminpaymentscomponent/AdminPayments'
@@ -24,6 +24,8 @@ import PaymentSetup             from '../tabletopleopaymentsconfiguration/upiset
 import MyOrderTableTopleoPage   from '../orderstabletopleo/orderstabletopleopage';
 import useWebSocket             from '../hooks/useWebSocket';
 import notificationService      from '../services/notificationService';
+import adminOrderService        from '../services/adminOrderService';
+import AcceptOrderPopup         from '../orderstabletopleo/AcceptOrderPopup';
 import { useCurrency }          from '../context/CurrencyContext';
 import { formatCurrency }       from '../utils/currencyHelper';
 import DashboardMainSetup from '../ApplicationMainLayout/dashboardsetup'
@@ -39,6 +41,51 @@ const PAY_COLOR = { upi:'#7c3aed', razorpay:'#3395ff', stripe:'#635bff', paypal:
 
 function getInitials(name) { if(!name) return 'AD'; return name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2); }
 function getGreeting() { const h=new Date().getHours(); return h<12?'Good Morning':h<17?'Good Afternoon':'Good Evening'; }
+
+// ── New-order notification sound — a short two-tone chime synthesized
+// with the Web Audio API (no external audio file to host or that could
+// fail to load). Plays once each time a NEW_ORDER event arrives. ──
+let sharedAdminAudioCtx = null;
+function playNewOrderChime() {
+  try {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return;
+    if (!sharedAdminAudioCtx) sharedAdminAudioCtx = new Ctx();
+    if (sharedAdminAudioCtx.state === 'suspended') sharedAdminAudioCtx.resume();
+
+    const now = sharedAdminAudioCtx.currentTime;
+    [[988, now, 0.13], [1318.5, now + 0.1, 0.18]].forEach(([freq, start, dur]) => {
+      const osc  = sharedAdminAudioCtx.createOscillator();
+      const gain = sharedAdminAudioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(0.25, start + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+      osc.connect(gain).connect(sharedAdminAudioCtx.destination);
+      osc.start(start);
+      osc.stop(start + dur + 0.02);
+    });
+  } catch {
+    // Sound is a nice-to-have — never worth breaking the dashboard over.
+  }
+}
+
+// Same relative-time logic used on the full Notifications page, so the
+// bell dropdown and that page always agree on what "2m ago" means.
+function formatTimeAgo(iso) {
+  if (!iso) return '';
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const min = Math.floor(diffMs / 60000);
+  if (min < 1) return 'Just now';
+  if (min < 60) return `${min}m ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}h ago`;
+  const day = Math.floor(hr / 24);
+  if (day === 1) return 'Yesterday';
+  if (day < 7) return `${day}d ago`;
+  return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+}
 
 function buildMenuItems(t) {
   return [
@@ -84,6 +131,8 @@ const AdminDashboardNew = () => {
   const [bellOpen,       setBellOpen]       = useState(false);
   const [newOrders,      setNewOrders]      = useState([]); // persisted notifications (backend-backed)
   const [bellLoading,    setBellLoading]    = useState(true);
+  const [actingId,       setActingId]       = useState(null); // notificationId currently being Accepted/Rejected
+  const [acceptPopupOrder, setAcceptPopupOrder] = useState(null); // order pending Accept-popup decision
 
   const userRef = useRef(null);
   const bellRef = useRef(null);
@@ -136,6 +185,7 @@ const AdminDashboardNew = () => {
       // persisted a notification for it, so simply re-fetch the
       // real list rather than fabricating a local-only entry.
       if (event.eventType === 'NEW_ORDER') {
+        playNewOrderChime();
         loadBellNotifications();
       }
     },
@@ -155,6 +205,45 @@ const AdminDashboardNew = () => {
     e.stopPropagation();
     setNewOrders(prev => prev.filter(o => o.notificationId !== notificationId));
     notificationService.markAsRead(notificationId).catch(err => console.error('Failed to dismiss notification:', err));
+  };
+
+  // ── Accept an incoming order — opens the Accept popup (order details +
+  // dynamic prep-time selector + print), same as accepting from the
+  // Orders page. Reject stays instant (no popup needed for that path). ──
+  const handleAcceptOrder = (e, order) => {
+    e.stopPropagation();
+    setAcceptPopupOrder(order);
+  };
+
+  const handleAcceptedFromBellPopup = (updatedOrder, order) => {
+    setNewOrders(prev => prev.filter(o => o.notificationId !== order.notificationId));
+    setBellOpen(false);
+    setHighlightOrder(order.orderNumber || order.orderId);
+    setActiveMenu('orders');
+  };
+
+  const handleRejectOrder = async (e, order) => {
+    e.stopPropagation();
+    if (actingId) return;
+    setActingId(order.notificationId);
+    try {
+      const res = await adminOrderService.updateOrderStatus(order.orderId, 'CANCELLED');
+      if (res.success) {
+        setNewOrders(prev => prev.filter(o => o.notificationId !== order.notificationId));
+      } else {
+        setBellActionError(order.notificationId, res.message || t('bell_reject_failed'));
+      }
+    } catch (err) {
+      setBellActionError(order.notificationId, err.response?.data?.message || t('bell_reject_failed'));
+    } finally {
+      setActingId(null);
+    }
+  };
+
+  const [bellActionErrors, setBellActionErrorsState] = useState({});
+  const setBellActionError = (notificationId, msg) => {
+    setBellActionErrorsState(prev => ({ ...prev, [notificationId]: msg }));
+    setTimeout(() => setBellActionErrorsState(prev => { const next = { ...prev }; delete next[notificationId]; return next; }), 4000);
   };
 
   const clearAllBell = () => {
@@ -195,7 +284,7 @@ const AdminDashboardNew = () => {
       );
     }
     if (activeMenu === 'notifications') {
-      return <div data-afd-theme={dark?'dark':'light'}><NotificationTableTopLeo dark={dark}/></div>;
+      return <div data-afd-theme={dark?'dark':'light'}><NotificationTableTopLeo dark={dark} onNavigateToOrder={(orderNoOrId)=>{setHighlightOrder(orderNoOrId);setActiveMenu('orders');}}/></div>;
     }
     const PAGE_MAP = { 'menu-category':MenuCategory, 'business-info':BusinessInformation, 'settings':SettingsPage, 'help-desk':HelpDeskPage, 'payment-setup':PaymentSetup,'home':DashboardMainSetup,'payments':AdminPayments,'billing':AdminBilling,'inventory':InventoryPage,'discount-management':AdminDiscountManagement,'tax-billing':TaxBillingSetup };
     const ActivePage = PAGE_MAP[activeMenu];
@@ -269,6 +358,7 @@ const AdminDashboardNew = () => {
       <style>{`
         @keyframes bellShake{0%,100%{transform:rotate(0)}15%{transform:rotate(14deg)}30%{transform:rotate(-12deg)}45%{transform:rotate(8deg)}60%{transform:rotate(-6deg)}75%{transform:rotate(3deg)}}
         @keyframes ddSlide{from{opacity:0;transform:translateY(-8px) scale(0.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+        @keyframes spin{to{transform:rotate(360deg)}}
         .bell-new{animation:bellShake 0.7s ease}
       `}</style>
 
@@ -346,17 +436,19 @@ const AdminDashboardNew = () => {
                 </button>
 
                 {bellOpen&&(
-                  <div style={{position:'absolute',top:'calc(100% + 10px)',right:0,width:280,background:dk?'#1e2130':'#ffffff',border:`1px solid ${dk?'rgba(255,255,255,0.08)':'#e5e7eb'}`,borderRadius:12,boxShadow:dk?'0 16px 48px rgba(0,0,0,0.5)':'0 16px 48px rgba(0,0,0,0.14)',zIndex:9999,animation:'ddSlide 0.18s cubic-bezier(0.34,1.2,0.64,1)',overflow:'hidden'}} onClick={e=>e.stopPropagation()}>
-                    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'11px 13px 10px',borderBottom:`1px solid ${dk?'rgba(255,255,255,0.06)':'#f3f4f6'}`}}>
-                      <div style={{display:'flex',alignItems:'center',gap:6}}>
-                        <Bell size={13} color="#635bff"/>
-                        <span style={{fontSize:12.5,fontWeight:700,color:dk?'#e2e8f0':'#111827'}}>{t('bell_new_orders')}</span>
-                        {newOrders.length>0&&<span style={{fontSize:9.5,fontWeight:800,background:'#635bff',color:'#fff',borderRadius:20,padding:'1px 6px'}}>{newOrders.length}</span>}
-                      </div>
-                      {newOrders.length>0&&<button onClick={clearAllBell} style={{fontSize:10.5,color:dk?'#6b7280':'#9ca3af',background:'none',border:'none',cursor:'pointer',fontFamily:'inherit'}}>{t('bell_clear')}</button>}
+                  <div style={{position:'absolute',top:'calc(100% + 10px)',right:0,width:320,background:dk?'#1e2130':'#ffffff',border:`1px solid ${dk?'rgba(255,255,255,0.08)':'#eef0f4'}`,borderRadius:16,boxShadow:dk?'0 20px 56px rgba(0,0,0,0.5)':'0 20px 56px rgba(17,24,39,0.12)',zIndex:9999,animation:'ddSlide 0.18s cubic-bezier(0.34,1.2,0.64,1)',overflow:'hidden'}} onClick={e=>e.stopPropagation()}>
+                    {/* ── Header: title + Mark all read (matches the reference popup) ── */}
+                    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'16px 18px 14px'}}>
+                      <span style={{fontSize:15,fontWeight:700,color:dk?'#f1f5f9':'#111827',letterSpacing:'-0.01em'}}>{t('bell_new_orders')}</span>
+                      {newOrders.length>0&&(
+                        <button onClick={clearAllBell} style={{fontSize:12,fontWeight:600,color:dk?'#8b92a9':'#9ca3af',background:'none',border:'none',cursor:'pointer',fontFamily:'inherit',padding:0}}>
+                          {t('Mark as Read')}
+                        </button>
+                      )}
                     </div>
 
-                    <div style={{maxHeight:320,overflowY:'auto'}}>
+                    {/* ── List: purple dot + bold title + gray time-ago, tinted rows for the (all-unread) items ── */}
+                    <div style={{maxHeight:340,overflowY:'auto',padding:'0 8px 8px'}}>
                       {bellLoading?(
                         <div style={{padding:'28px 16px',textAlign:'center'}}>
                           <div style={{fontSize:11.5,color:dk?'#6b7280':'#9ca3af'}}>{t('bell_loading')}</div>
@@ -367,49 +459,85 @@ const AdminDashboardNew = () => {
                           <div style={{fontSize:12,fontWeight:600,color:dk?'#9ca3af':'#6b7280'}}>{t('bell_no_orders')}</div>
                           <div style={{fontSize:10.5,color:dk?'#6b7280':'#9ca3af',marginTop:3}}>{t('bell_caught_up')}</div>
                         </div>
-                      ):newOrders.map((order,idx)=>{
+                      ):newOrders.map((order)=>{
                         const amount=Number(order.amount||0).toLocaleString('en-IN');
                         const isPac  = order.paymentStatus==='PAY_AT_COUNTER';
                         const isPaid = !isPac && order.paymentStatus==='PAID';
+                        const payWord = isPac ? t('bell_at_counter') : isPaid ? t('bell_paid') : t('bell_pending_status');
+                        // Only orders still awaiting the merchant's first
+                        // decision get Accept/Reject — anything already
+                        // moved along (from here, the Orders page, or
+                        // another admin session) just shows its info.
+                        const needsAction = !order.orderStatus || order.orderStatus === 'PLACED';
+                        const isActing = actingId === order.notificationId;
+                        const actionError = bellActionErrors[order.notificationId];
                         return (
                           <div key={order.notificationId} onClick={()=>handleBellOrderClick(order)}
-                            style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,padding:'9px 13px',cursor:'pointer',borderBottom:`1px solid ${dk?'rgba(255,255,255,0.04)':'#f9fafb'}`,background:dk?'rgba(99,91,255,0.07)':'rgba(99,91,255,0.03)',transition:'background 0.12s'}}
-                            onMouseOver={e=>e.currentTarget.style.background=dk?'rgba(255,255,255,0.06)':'#f8fafc'}
-                            onMouseOut={e=>e.currentTarget.style.background=dk?'rgba(99,91,255,0.07)':'rgba(99,91,255,0.03)'}
+                            className="ttl-bell-row"
+                            style={{position:'relative',display:'flex',flexDirection:'column',gap:8,padding:'10px 10px',borderRadius:10,cursor:'pointer',background:dk?'rgba(99,91,255,0.10)':'rgba(99,91,255,0.055)',marginBottom:3,transition:'background 0.12s'}}
                           >
-                            <div style={{display:'flex',alignItems:'center',gap:8,minWidth:0}}>
-                              <div style={{width:7,height:7,borderRadius:'50%',background:'#635bff',flexShrink:0}}/>
-                              <div style={{minWidth:0}}>
-                                <div style={{fontSize:11,fontWeight:700,color:'#635bff',marginBottom:2}}>🔔 {t('bell_new_order_received')}</div>
-                                <div style={{fontSize:13,fontWeight:800,color:dk?'#e2e8f0':'#111827',fontFamily:'monospace',lineHeight:1}}>{order.orderNumber||order.orderId?.slice(0,14)}</div>
-                              </div>
-                            </div>
-                            <div style={{display:'flex',alignItems:'center',gap:8,flexShrink:0}}>
-                              <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:4}}>
-                                <span style={{fontSize:14,fontWeight:800,color:'#635bff'}}>{formatCurrency(amount, currencyCode)}</span>
-                                <span style={{fontSize:10,fontWeight:600,color:isPac?'#b45309':isPaid?'#16a34a':'#f59e0b'}}>{isPac?`🏪 ${t('bell_at_counter')}`:isPaid?`✓ ${t('bell_paid')}`:t('bell_pending_status')}</span>
+                            <div style={{display:'flex',alignItems:'flex-start',gap:10}}>
+                              <span style={{width:7,height:7,marginTop:5,borderRadius:'50%',background:'#635bff',flexShrink:0}}/>
+                              <div style={{flex:1,minWidth:0}}>
+                                <div style={{fontSize:12.5,fontWeight:600,color:dk?'#e2e8f0':'#1f2937',lineHeight:1.35}}>
+                                  {t('bell_new_order_received')}: <span style={{fontFamily:'monospace',fontWeight:700}}>{order.orderNumber||order.orderId?.slice(0,14)}</span> · {formatCurrency(amount, currencyCode)}
+                                </div>
+                                <div style={{fontSize:11,color:dk?'#7d879c':'#9aa1b0',marginTop:3}}>
+                                  {formatTimeAgo(order.createdAt)} · {payWord}
+                                </div>
                               </div>
                               <button
                                 onClick={(e)=>handleDismissOrder(e, order.notificationId)}
                                 title={t('bell_dismiss')}
-                                style={{background:'none',border:'none',cursor:'pointer',color:dk?'#6b7280':'#9ca3af',padding:2,display:'flex',flexShrink:0}}
+                                className="ttl-bell-row-dismiss"
+                                style={{background:'none',border:'none',cursor:'pointer',color:dk?'#6b7280':'#c4c9d2',padding:2,display:'flex',flexShrink:0,opacity:0,transition:'opacity 0.12s'}}
                               >
                                 <X size={13}/>
                               </button>
                             </div>
+
+                            {/* ── Accept / Reject — the merchant's first decision,
+                                right here in the bell, no need to open Orders ── */}
+                            {needsAction && (
+                              <div style={{display:'flex',alignItems:'center',gap:6,paddingLeft:17}}>
+                                <button
+                                  onClick={(e)=>handleAcceptOrder(e, order)}
+                                  disabled={isActing}
+                                  style={{flex:1,display:'flex',alignItems:'center',justifyContent:'center',gap:5,padding:'6px 0',borderRadius:7,border:'none',background:'#16a34a',color:'#fff',fontSize:11.5,fontWeight:700,cursor:isActing?'not-allowed':'pointer',opacity:isActing?0.7:1,fontFamily:'inherit'}}
+                                >
+                                  {isActing ? <Loader2 size={12} style={{animation:'spin .7s linear infinite'}}/> : <CheckCircle2 size={12}/>}
+                                  {t('bell_accept')}
+                                </button>
+                                <button
+                                  onClick={(e)=>handleRejectOrder(e, order)}
+                                  disabled={isActing}
+                                  style={{flex:1,display:'flex',alignItems:'center',justifyContent:'center',gap:5,padding:'6px 0',borderRadius:7,border:'1.5px solid #ef4444',background:'transparent',color:'#ef4444',fontSize:11.5,fontWeight:700,cursor:isActing?'not-allowed':'pointer',opacity:isActing?0.7:1,fontFamily:'inherit'}}
+                                >
+                                  <XCircle size={12}/> {t('bell_reject')}
+                                </button>
+                              </div>
+                            )}
+                            {actionError && (
+                              <div style={{fontSize:10.5,color:'#ef4444',paddingLeft:17}}>{actionError}</div>
+                            )}
                           </div>
                         );
                       })}
                     </div>
 
                     {newOrders.length>0&&(
-                      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'8px 13px',borderTop:`1px solid ${dk?'rgba(255,255,255,0.06)':'#f3f4f6'}`}}>
+                      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 16px',borderTop:`1px solid ${dk?'rgba(255,255,255,0.06)':'#f3f4f6'}`}}>
                         <span style={{fontSize:10.5,color:dk?'#6b7280':'#9ca3af'}}>{newOrders.length} {t('bell_pending')}</span>
                         <button onClick={()=>{setBellOpen(false);setActiveMenu('orders');}} style={{fontSize:11,fontWeight:700,color:'#635bff',background:'none',border:'none',cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',gap:3}}>
                           {t('bell_view_all')} <ArrowRight size={10}/>
                         </button>
                       </div>
                     )}
+
+                    <style>{`
+                      .ttl-bell-row:hover { background: ${dk?'rgba(99,91,255,0.16)':'rgba(99,91,255,0.09)'} !important; }
+                      .ttl-bell-row:hover .ttl-bell-row-dismiss { opacity: 1; }
+                    `}</style>
                   </div>
                 )}
               </div>
@@ -449,6 +577,13 @@ const AdminDashboardNew = () => {
           <main className="afd-content">{renderContent()}</main>
         </div>
       </div>
+      {acceptPopupOrder && (
+        <AcceptOrderPopup
+          orderId={acceptPopupOrder.orderId}
+          onClose={()=>setAcceptPopupOrder(null)}
+          onAccepted={(updatedOrder)=>handleAcceptedFromBellPopup(updatedOrder, acceptPopupOrder)}
+        />
+      )}
     </div>
   );
 };

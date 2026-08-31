@@ -164,11 +164,16 @@ export default function MerchantsTab() {
                 </td>
               </tr>
             ) : (
-              pageRows.map((u) => {
+              pageRows.map((u, idx) => {
                 const st = STATUS_CFG[u.accountStatus] || STATUS_CFG.ACTIVE;
                 const pal = paletteFor(u.fullName || u.adminId);
+                // Fall back to a positional key when adminId is missing —
+                // a handful of legacy/orphaned rows in tabletop_leo_users
+                // can have a null adminId, and React requires unique keys
+                // even for rows that are themselves data-incomplete.
+                const rowKey = u.adminId || `row-${(page - 1) * PAGE_SIZE + idx}`;
                 return (
-                  <tr key={u.adminId} className="ttlp-row">
+                  <tr key={rowKey} className="ttlp-row">
                     <td className="ttlp-td">
                       <div className="ttlp-merchant-cell">
                         <div className="ttlp-merchant-avatar" style={{ background: pal.bg, color: pal.fg }}>
@@ -179,7 +184,7 @@ export default function MerchantsTab() {
                         </div>
                       </div>
                     </td>
-                    <td className="ttlp-td"><span className="ttlp-mono" title={u.adminId}>{(u.adminId || "").slice(0, 10)}…</span></td>
+                    <td className="ttlp-td"><span className="ttlp-mono" title={u.adminId}>{(u.adminId || "—").slice(0, 10)}{u.adminId ? "…" : ""}</span></td>
                     <td className="ttlp-td">{u.email}</td>
                     <td className="ttlp-td">{u.mobileNumber}</td>
                     <td className="ttlp-td">{u.languageName || u.languageCode || "—"}</td>

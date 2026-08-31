@@ -518,6 +518,8 @@ const CustomerPaymentPage = ({ total, business, diningInfo, onBack, onInitiatePa
       apps: [{ name:"PhonePe" },{ name:"Google Pay" },{ name:"Paytm" },{ name:"BHIM" }] },
     { id: "razorpay", label: t("payment.razorpay"), sub: t("payment.payUsingApps"),
       apps: [{ name:"PhonePe" },{ name:"Google Pay" },{ name:"Paytm" },{ name:"Visa" }] },
+    { id: "cashfree", label: "Cashfree", sub: "Cards, UPI, Net Banking & more",
+      apps: [{ name:"PhonePe" },{ name:"Google Pay" },{ name:"Visa" },{ name:"Other Cards & Net Banking", generic:true }] },
     { id: "stripe", label: t("payment.internationalCards"), sub: t("payment.stripeApps"),
       apps: [{ name:"Apple Pay" },{ name:"Mobile Pay" },{ name:"Google Pay" },{ name:"Other Cards & Net Banking", generic:true }] },
     { id: "mobilepay", label: t("payment.mobilePay"), sub: t("payment.mobilePayDesc"),
@@ -546,6 +548,18 @@ const CustomerPaymentPage = ({ total, business, diningInfo, onBack, onInitiatePa
   const [showMobilePayModal, setShowMobilePayModal] = useState(false);
   const [mobilePayConfigured, setMobilePayConfigured] = useState(null);
   const [checkingMobilePayConfig, setCheckingMobilePayConfig] = useState(false);
+
+  // Load the Cashfree checkout SDK imperatively (once), same guarded
+  // pattern as Razorpay's script tag — never executed if rendered
+  // directly in JSX, and this avoids loading it twice on re-render.
+  useEffect(() => {
+    if (window.Cashfree || document.getElementById("cashfree-checkout-js")) return;
+    const script = document.createElement("script");
+    script.id = "cashfree-checkout-js";
+    script.src = "https://sdk.cashfree.com/js/v3/cashfree.js";
+    script.async = true;
+    document.body.appendChild(script);
+  }, []);
 
   // NEW: Check MobilePay configuration before showing modal
   const checkMobilePayConfiguration = async () => {
@@ -677,6 +691,38 @@ const CustomerPaymentPage = ({ total, business, diningInfo, onBack, onInitiatePa
     } else {
       setError(t("errors.sdkNotLoaded"));
     }
+  };
+
+  const handleCashfreePay = () => {
+    if (!paymentData?.cashfreePaymentSessionId) { setError(t("errors.gatewayNotInitialized")); return; }
+    if (!window.Cashfree) { setError(t("errors.sdkNotLoaded")); return; }
+
+    const cashfree = window.Cashfree({
+      mode: paymentData.cashfreeEnvironment === "live" ? "production" : "sandbox",
+    });
+
+    cashfree.checkout({
+      paymentSessionId: paymentData.cashfreePaymentSessionId,
+      redirectTarget: "_modal",
+    }).then(async (result) => {
+      // The customer closed the modal without completing a payment
+      // attempt — nothing to verify, just let them retry.
+      if (result?.error && !result?.paymentDetails) {
+        setError(result.error.message || t("errors.paymentFailed"));
+        return;
+      }
+      setConfirming(true); setError("");
+      try {
+        await onConfirmPayment({
+          paymentId:        paymentData.paymentId,
+          orderId:          paymentData.orderId,
+          gatewayName:      "cashfree",
+          cashfreeOrderId:  paymentData.cashfreeOrderId,
+          transactionId:    paymentData.cashfreeOrderId,
+          gatewayResponse:  JSON.stringify(result),
+        });
+      } catch (e) { setError(e.message); } finally { setConfirming(false); }
+    }).catch((e) => setError(e.message || t("errors.paymentFailed")));
   };
 
   const handleStripePay = async () => {
@@ -811,7 +857,7 @@ const CustomerPaymentPage = ({ total, business, diningInfo, onBack, onInitiatePa
               </div>
               <div style={{ fontSize:12, color:"var(--text-muted)", textAlign:"center" }}>{t("payment.scanUsingAnyUpi")}</div>
               <div style={{ display:"flex", gap:10, flexWrap:"wrap", justifyContent:"center" }}>
-                {METHODS[0].apps.map(a => (
+                {METHODS.find(m => m.id === "upi").apps.map(a => (
                   <a key={a.name} href={paymentData.upiString} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:3, textDecoration:"none" }}>
                     <PaymentIcon name={a.name} size={36} />
                     <span style={{ fontSize:10, color:"var(--text-muted)", fontWeight:600 }}>{a.name}</span>
@@ -847,7 +893,7 @@ const CustomerPaymentPage = ({ total, business, diningInfo, onBack, onInitiatePa
               <div style={{ fontSize:13, color:"var(--text-muted)", marginBottom:6 }}>{t("payment.payUsingApps")}</div>
               <div style={{ fontSize:26, fontWeight:900, color:"var(--brand)", marginBottom:12 }}>{formatCurrency(total, _currCode)}</div>
               <div style={{ display:"flex", gap:8, justifyContent:"center", marginBottom:16, flexWrap:"wrap" }}>
-                {METHODS[1].apps.map(a => (
+                {METHODS.find(m => m.id === "razorpay").apps.map(a => (
                   <PaymentIcon key={a.name} name={a.name} size={36} />
                 ))}
               </div>
@@ -860,6 +906,24 @@ const CustomerPaymentPage = ({ total, business, diningInfo, onBack, onInitiatePa
           </div>
         )}
 
+        {/* Cashfree Section */}
+        {selectedMethod==="cashfree" && paymentData && !loading && (
+          <div style={{ margin:"0 16px", animation:"fadeIn 0.22s ease" }}>
+            <div style={{ background:"var(--surface-2)", border:"1.5px solid var(--border)", borderRadius:"var(--radius-lg)", padding:20, textAlign:"center" }}>
+              <div style={{ fontSize:13, color:"var(--text-muted)", marginBottom:6 }}>{t("payment.payUsingApps")}</div>
+              <div style={{ fontSize:26, fontWeight:900, color:"var(--brand)", marginBottom:12 }}>{formatCurrency(total, _currCode)}</div>
+              <div style={{ display:"flex", gap:8, justifyContent:"center", marginBottom:16, flexWrap:"wrap" }}>
+                {METHODS.find(m => m.id === "cashfree").apps.map(a => renderAppIcon(a, 36))}
+              </div>
+            </div>
+            <div style={{ marginTop:12 }}>
+              <button style={s.payBtn(confirming)} disabled={confirming} onClick={handleCashfreePay}>
+                {confirming ? t("payment.processingPayment") : t("payment.payAmount", { amount: formatCurrency(total, _currCode) })}
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Stripe Section - UNCHANGED */}
         {selectedMethod==="stripe" && paymentData && !loading && (
           <div style={{ margin:"0 16px", animation:"fadeIn 0.22s ease" }}>
@@ -867,7 +931,7 @@ const CustomerPaymentPage = ({ total, business, diningInfo, onBack, onInitiatePa
               <div style={{ fontSize:13, color:"var(--text-muted)", marginBottom:6 }}>{t("payment.stripeApps")}</div>
               <div style={{ fontSize:26, fontWeight:900, color:"var(--brand)", marginBottom:12 }}>{formatCurrency(total, _currCode)}</div>
               <div style={{ display:"flex", gap:8, justifyContent:"center", marginBottom:16, flexWrap:"wrap" }}>
-                {METHODS[2].apps.map(a => renderAppIcon(a, 36))}
+                {METHODS.find(m => m.id === "stripe").apps.map(a => renderAppIcon(a, 36))}
               </div>
             </div>
             <div style={{ marginTop:12 }}>
