@@ -34,7 +34,7 @@ const SCREENS = {
 // one restaurant leaking into another's sidebar.
 const identityKey = (businessId) => `ttl_customer_identity_${businessId}`;
 
-const CustomerWrapperInner = ({ businessId }) => {
+const CustomerWrapperInner = ({ businessId, locationId }) => {
   const { t } = useTranslation();
   const [screen,        setScreen]        = useState(SCREENS.SPLASH);
   const [offersOrigin,  setOffersOrigin]   = useState(SCREENS.LANDING);
@@ -46,6 +46,7 @@ const CustomerWrapperInner = ({ businessId }) => {
   const [diningInfo,    setDiningInfo]    = useState({ type: null, name: "", phone: "", email: "", table: "", note: "" });
   const [loading,       setLoading]       = useState(false);
   const [error,         setError]         = useState("");
+  const [branchName,    setBranchName]    = useState("");
 
   const [sessionId,     setSessionId]     = useState(null);
   const [orderData,     setOrderData]     = useState(null);
@@ -110,6 +111,25 @@ const CustomerWrapperInner = ({ businessId }) => {
   useEffect(() => {
     if (businessId) loadMenu();
   }, [businessId]);
+
+  // If this menu was reached via a branch-specific QR code
+  // (/menu/{businessId}/{locationId}), fetch just that branch's name —
+  // a small, public, unauthenticated lookup — to show "Ordering from:
+  // {branchName}" so the customer knows which physical location their
+  // order is going to. Best-effort: if it fails, the ordinary
+  // Head-Office-only flow continues completely unaffected.
+  useEffect(() => {
+    if (!locationId) return;
+    (async () => {
+      try {
+        const res = await fetch(`http://localhost:6163/api/locations/public/${locationId}`);
+        const data = await res.json();
+        if (data?.success && data?.data?.branchName) {
+          setBranchName(data.data.branchName);
+        }
+      } catch { /* silently falls back to the ordinary Head Office flow */ }
+    })();
+  }, [locationId]);
 
   // Load any previously-saved identity for this business (set after their
   // last order). If none exists yet, the sidebar shows them as a Guest.
@@ -323,6 +343,7 @@ const CustomerWrapperInner = ({ businessId }) => {
         const orderPayload = {
           sessionId:    sessionId,
           businessId:   businessId,
+          locationId:   locationId || null,
           orderType:    diningInfo.type === "dine-in" ? "DINE_IN" : "TAKE_AWAY",
           tableNumber:  diningInfo.table  || null,
           customerName: diningInfo.name   || null,
@@ -360,6 +381,7 @@ const CustomerWrapperInner = ({ businessId }) => {
         const orderPayload = {
           sessionId:    sessionId,
           businessId:   businessId,
+          locationId:   locationId || null,
           orderType:    diningInfo.type === "dine-in" ? "DINE_IN" : "TAKE_AWAY",
           tableNumber:  diningInfo.table  || null,
           customerName: diningInfo.name   || null,
@@ -470,6 +492,17 @@ const CustomerWrapperInner = ({ businessId }) => {
   return (
     <div className="cw-root">
       <div className="cw-phone">
+
+        {branchName && screen !== SCREENS.SPLASH && (
+          <div style={{
+            position: "sticky", top: 0, zIndex: 50,
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+            padding: "7px 12px", background: "#f5f3ff", borderBottom: "1px solid #ede9fe",
+            fontSize: 11.5, fontWeight: 700, color: "#6d28d9",
+          }}>
+            📍 Ordering from: {branchName}
+          </div>
+        )}
 
         {screen === SCREENS.SPLASH && (
           <CustomerSplashScreen
@@ -627,10 +660,10 @@ const CustomerWrapperInner = ({ businessId }) => {
   );
 };
 
-export default function CustomerWrapper({ businessId }) {
+export default function CustomerWrapper({ businessId, locationId }) {
   return (
     <CustomerLanguageProvider businessId={businessId}>
-      <CustomerWrapperInner businessId={businessId} />
+      <CustomerWrapperInner businessId={businessId} locationId={locationId} />
     </CustomerLanguageProvider>
   );
 }

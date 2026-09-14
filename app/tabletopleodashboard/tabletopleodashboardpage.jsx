@@ -7,7 +7,7 @@ import {
   CreditCard, FileText, BarChart2, Grid, MoreHorizontal,
   Search, LayoutGrid, Bell, Settings,
   User, LogOut, Moon, Sun, MessageSquare, Rocket,
-  Building2, UtensilsCrossed, Wallet,
+  Building2, UtensilsCrossed, Wallet, MapPin,
   X, Pencil, RotateCcw, PlusCircle, ChevronRight as ChevRight,
   AlertTriangle, ShoppingBag, CheckCircle2, ArrowRight, XCircle, Loader2,
 } from 'lucide-react';
@@ -18,6 +18,7 @@ import AdminDiscountManagement from '../discountmanagement/AdminDiscountManageme
 import NotificationTableTopLeo from '../notificationstabletopleo/notificationtabletopleopage';
 import MenuCategory             from '../menucategorypage/menucategorypage';
 import BusinessInformation      from '../businessinformationpage/businessinformationpage';
+import LocationsPage            from '../locationspage/locationspage';
 import SettingsPage             from '../ApplicationMainLayout/settingspage';
 import HelpDeskPage             from '../ApplicationMainLayout/helpdesk';
 import PaymentSetup             from '../tabletopleopaymentsconfiguration/upisetups';
@@ -87,16 +88,26 @@ function formatTimeAgo(iso) {
   return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 }
 
-function buildMenuItems(t) {
+function buildMenuItems(t, multiLocation) {
+  const adminChildren = [
+    { id:'business-info', label:t('nav_business_info'), icon:Building2 },
+  ];
+  // Only shown at all for merchants who've turned on "multiple locations"
+  // in Business Information — invisible by default, so a single-location
+  // merchant's sidebar looks exactly as it always has.
+  if (multiLocation) {
+    adminChildren.push({ id:'locations', label:'Locations', icon:MapPin });
+  }
+  adminChildren.push(
+    { id:'menu-category', label:t('nav_menu_category'),      icon:UtensilsCrossed },
+    { id:'payment-setup', label:t('nav_payment_setup'),        icon:Wallet },
+    { id:'tax-billing',   label:t('nav_tax_billing'),        icon:FileText },
+  );
+
   return [
     { id:'home',    label:t('nav_home'),    icon:Home },
     { id:'orders',  label:t('nav_orders'),  icon:ShoppingCart },
-    { id:'admin-setup', label:t('nav_admin_setup'), icon:Settings2, children:[
-        { id:'business-info', label:t('nav_business_info'), icon:Building2 },
-        { id:'menu-category', label:t('nav_menu_category'),      icon:UtensilsCrossed },
-        { id:'payment-setup', label:t('nav_payment_setup'),        icon:Wallet },
-        { id:'tax-billing',   label:t('nav_tax_billing'),        icon:FileText },
-    ]},
+    { id:'admin-setup', label:t('nav_admin_setup'), icon:Settings2, children:adminChildren },
     { id:'inventory', label:t('nav_inventory'), icon:Package },
     { id:'help-desk', label:t('nav_help_desk'), icon:HelpCircle },
     { id:'discount-management', label:t('nav_discounts'), icon:HelpCircle },
@@ -116,7 +127,6 @@ const AdminDashboardNew = () => {
   const router = useRouter();
   const { currencyCode } = useCurrency();
   const { t } = useLanguage();
-  const MENU_ITEMS = buildMenuItems(t);
   const PRODUCT_ITEMS = buildProductItems(t);
 
   const [collapsed,      setCollapsed]      = useState(false);
@@ -127,6 +137,7 @@ const AdminDashboardNew = () => {
   const [userDropOpen,   setUserDropOpen]   = useState(false);
   const [showLogout,     setShowLogout]     = useState(false);
   const [user,           setUser]           = useState(null);
+  const MENU_ITEMS = buildMenuItems(t, user?.multiLocation);
   const [highlightOrder, setHighlightOrder] = useState(null);
   const [bellOpen,       setBellOpen]       = useState(false);
   const [newOrders,      setNewOrders]      = useState([]); // persisted notifications (backend-backed)
@@ -286,7 +297,7 @@ const AdminDashboardNew = () => {
     if (activeMenu === 'notifications') {
       return <div data-afd-theme={dark?'dark':'light'}><NotificationTableTopLeo dark={dark} onNavigateToOrder={(orderNoOrId)=>{setHighlightOrder(orderNoOrId);setActiveMenu('orders');}}/></div>;
     }
-    const PAGE_MAP = { 'menu-category':MenuCategory, 'business-info':BusinessInformation, 'settings':SettingsPage, 'help-desk':HelpDeskPage, 'payment-setup':PaymentSetup,'home':DashboardMainSetup,'payments':AdminPayments,'billing':AdminBilling,'inventory':InventoryPage,'discount-management':AdminDiscountManagement,'tax-billing':TaxBillingSetup };
+    const PAGE_MAP = { 'menu-category':MenuCategory, 'business-info':BusinessInformation, 'locations':LocationsPage, 'settings':SettingsPage, 'help-desk':HelpDeskPage, 'payment-setup':PaymentSetup,'home':DashboardMainSetup,'payments':AdminPayments,'billing':AdminBilling,'inventory':InventoryPage,'discount-management':AdminDiscountManagement,'tax-billing':TaxBillingSetup };
     const ActivePage = PAGE_MAP[activeMenu];
     if (ActivePage) return <div data-afd-theme={dark?'dark':'light'}><ActivePage/></div>;
     if (activeMenu === 'admin-setup') return null;
@@ -379,11 +390,25 @@ const AdminDashboardNew = () => {
 
       <div className="afd-body">
         <aside className={`afd-sidebar${collapsed?' collapsed':''}`}>
-          <div className="afd-sidebar__header">
-            {!collapsed && <div className="afd-sidebar__brand"><span className="afd-sidebar__brand-name">TableTopLeo</span></div>}
-            <button className="afd-collapse-btn" onClick={()=>setCollapsed(c=>!c)} title={collapsed?t('expand_sidebar'):t('collapse_sidebar')}>
-              {collapsed?<ChevronRight size={15}/>:<ChevronLeft size={15}/>}
-            </button>
+          <div className="afd-sidebar__header" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              {!collapsed && <div className="afd-sidebar__brand"><span className="afd-sidebar__brand-name">TableTopLeo</span></div>}
+              <button className="afd-collapse-btn" onClick={()=>setCollapsed(c=>!c)} title={collapsed?t('expand_sidebar'):t('collapse_sidebar')}>
+                {collapsed?<ChevronRight size={15}/>:<ChevronLeft size={15}/>}
+              </button>
+            </div>
+            {!collapsed && (user?.businessName || user?.branchName) && (
+              <div style={{
+                marginTop: 6, fontSize: 11, fontWeight: 600, color: dk ? '#a1a1aa' : '#71717a',
+                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                display: 'flex', alignItems: 'center', gap: 5,
+              }}>
+                <Building2 size={11} style={{ flexShrink: 0, opacity: 0.7 }} />
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {user?.businessName || 'Business'}{user?.branchName ? ` · ${user.branchName}` : ''}
+                </span>
+              </div>
+            )}
           </div>
           <nav className="afd-sidebar__nav">
             {MENU_ITEMS.map(({id,label,icon:Icon,children})=>(

@@ -105,6 +105,7 @@ const EMPTY = {
   hasTableService: false,
   dineInEnabled: true,
   takeawayEnabled: true,
+  multiLocation: false,
 };
 
 const BusinessInformation = () => {
@@ -174,6 +175,7 @@ const BusinessInformation = () => {
         hasTableService: Boolean(b.hasTableService),
         dineInEnabled: b.dineInEnabled === undefined || b.dineInEnabled === null ? true : Boolean(b.dineInEnabled),
         takeawayEnabled: b.takeawayEnabled === undefined || b.takeawayEnabled === null ? true : Boolean(b.takeawayEnabled),
+        multiLocation: Boolean(b.multiLocation),
       };
       setData(mapped);
       setDraft(mapped);
@@ -260,15 +262,20 @@ const BusinessInformation = () => {
         hasTableService:     draft.hasTableService,
         dineInEnabled:       draft.dineInEnabled,
         takeawayEnabled:     draft.takeawayEnabled,
+        multiLocation:       draft.multiLocation,
       };
       await updateBusinessInformation(adminId, payload);
       setData({ ...draft });
-      // Update currency in localStorage
+      // Update currency AND multiLocation in localStorage — the dashboard
+      // sidebar reads multiLocation from here (not a fresh API call) to
+      // decide whether to show the "Locations" menu item, so this needs
+      // to be current the moment the merchant refreshes the page.
       try {
         const stored2 = localStorage.getItem("ttl_user");
         if (stored2) {
           const u = JSON.parse(stored2);
           u.currencyCode = draft.currencyCode || u.currencyCode;
+          u.multiLocation = draft.multiLocation;
           localStorage.setItem("ttl_user", JSON.stringify(u));
         }
       } catch {}
@@ -706,6 +713,31 @@ const BusinessInformation = () => {
                   style={{ width:46, height:26, borderRadius:999, background: d.hasTableService ? "#16a34a" : "#d1d5db", position:"relative", border:"none", cursor: editing ? "pointer" : "default", flexShrink:0, opacity: editing ? 1 : 0.7 }}
                 >
                   <span style={{ position:"absolute", top:3, left: d.hasTableService ? 23 : 3, width:20, height:20, borderRadius:"50%", background:"#fff", transition:"left 0.15s" }} />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Multiple Locations toggle ── */}
+          <div className="bi-col-full">
+            <div className="bi-field-group">
+              <label className="bi-label">Multiple Locations</label>
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"14px 16px", background: editing ? "#fff" : "#f9fafb", border:"1.5px solid #e4e4e7", borderRadius:10 }}>
+                <div style={{ paddingRight:16 }}>
+                  <div style={{ fontSize:13, fontWeight:700, color:"#18181b" }}>Does your business have more than one location?</div>
+                  <div style={{ fontSize:11.5, color:"#71717a", marginTop:3, lineHeight:1.5 }}>
+                    Turn this ON if you run more than one branch under this business. You'll get a
+                    "Locations" section in your dashboard sidebar to manage each branch. Leave it OFF
+                    if you only have this one location.
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  disabled={!editing}
+                  onClick={() => handleFieldChange("multiLocation", !draft.multiLocation)}
+                  style={{ width:46, height:26, borderRadius:999, background: d.multiLocation ? "#16a34a" : "#d1d5db", position:"relative", border:"none", cursor: editing ? "pointer" : "default", flexShrink:0, opacity: editing ? 1 : 0.7 }}
+                >
+                  <span style={{ position:"absolute", top:3, left: d.multiLocation ? 23 : 3, width:20, height:20, borderRadius:"50%", background:"#fff", transition:"left 0.15s" }} />
                 </button>
               </div>
             </div>

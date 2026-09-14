@@ -38,8 +38,8 @@ const TableTopLeoLoginPage = () => {
 
   const validate = () => {
     const newErrors = {};
-    if (!email.trim()) newErrors.email = "Email address is required.";
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) newErrors.email = "Enter a valid email address.";
+    if (!email.trim()) newErrors.email = "Email or Staff ID is required.";
+    else if (email.includes("@") && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) newErrors.email = "Enter a valid email address.";
     if (!password) newErrors.password = "Password is required.";
     return newErrors;
   };
@@ -63,10 +63,14 @@ const TableTopLeoLoginPage = () => {
           fullName:     data.fullName,
           email:        data.email,
           businessId:   data.businessId,
+          businessName: data.businessName || null,
           logoUrl:      data.logoUrl || null,
           currencyCode: data.currencyCode || "INR",
           languageCode: data.languageCode || "en",
           languageName: data.languageName || "English",
+          multiLocation: Boolean(data.multiLocation),
+          role: data.role || "OWNER",
+          branchName: data.branchName || null,
         })
       );
       const sessionToken = generateSessionToken();
@@ -208,7 +212,7 @@ const TableTopLeoLoginPage = () => {
             )}
 
             <div className={`ttl-field ${errors.email ? "ttl-field--error" : ""}`}>
-              <label>Email Address</label>
+              <label>Email or Staff ID</label>
               <div className="ttl-input-wrap">
                 <span className="ttl-input-icon">
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -217,12 +221,12 @@ const TableTopLeoLoginPage = () => {
                   </svg>
                 </span>
                 <input
-                  type="email"
-                  placeholder="Enter your email address"
+                  type="text"
+                  placeholder="Enter your email or staff ID"
                   value={email}
                   onChange={(e) => { setEmail(e.target.value); setErrors((p) => ({ ...p, email: "" })); setApiError(""); }}
                   onKeyDown={handleKeyDown}
-                  autoComplete="email"
+                  autoComplete="username"
                 />
               </div>
               {errors.email && <span className="ttl-error-msg">{errors.email}</span>}

@@ -5,7 +5,68 @@ import StripePaypalPayments from "../tabletopleopaymentsconfiguration/stripepaym
 import MobilePayPayments from "../tabletopleopaymentsconfiguration/mobilepaypayments";
 import CashfreePayments from "../tabletopleopaymentsconfiguration/cashfreepayments";
 import { SiRazorpay, SiStripe } from "react-icons/si";
+import { Lock, Phone, Building2, X } from "lucide-react";
 import { useLanguage } from "../context/LanguageContext";
+import { getMyPaymentLockStatus } from "../services/locationService";
+
+// Popup shown when a branch whose payments are managed by Head Office
+// tries to interact with a payment method card or the Pay at Counter
+// toggle — the underlying page stays fully visible (so staff can still
+// see what's configured), only the interaction itself is blocked.
+const HeadOfficeAccessDeniedPopup = ({ headOfficePhone, onClose }) => (
+  <div
+    onClick={onClose}
+    style={{ position: "fixed", inset: 0, background: "rgba(24,24,27,0.55)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}
+  >
+    <div
+      onClick={(e) => e.stopPropagation()}
+      style={{
+        background: "#fff", width: "100%", maxWidth: 420, borderRadius: 20,
+        padding: "32px 28px", textAlign: "center", position: "relative",
+        boxShadow: "0 30px 80px rgba(0,0,0,0.35)",
+        animation: "popLockIn 0.2s cubic-bezier(0.34,1.35,0.64,1)",
+      }}
+    >
+      <button
+        onClick={onClose}
+        style={{ position: "absolute", top: 14, right: 14, background: "#f4f4f5", border: "none", borderRadius: 8, width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#71717a" }}
+      >
+        <X size={15} />
+      </button>
+      <div style={{
+        width: 64, height: 64, borderRadius: 18, margin: "0 auto 18px",
+        background: "linear-gradient(135deg,#6d28d9,#a855f7)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        boxShadow: "0 10px 30px rgba(109,40,217,0.28)",
+      }}>
+        <Lock size={28} color="#fff" />
+      </div>
+      <h2 style={{ fontSize: 18, fontWeight: 800, color: "#18181b", margin: "0 0 10px" }}>
+        Access Denied
+      </h2>
+      <p style={{ fontSize: 13, color: "#71717a", lineHeight: 1.6, margin: "0 0 20px" }}>
+        Payments for this branch are managed by Head Office, so there's nothing to change here.
+        Please contact Head Office if you need access.
+      </p>
+      {headOfficePhone && (
+        <a
+          href={`tel:${headOfficePhone}`}
+          style={{
+            display: "inline-flex", alignItems: "center", gap: 8, padding: "12px 22px", borderRadius: 12,
+            background: "linear-gradient(135deg,#6d28d9,#7c3aed)", color: "#fff", fontSize: 13.5, fontWeight: 700,
+            textDecoration: "none", boxShadow: "0 6px 16px rgba(124,58,237,0.28)",
+          }}
+        >
+          <Phone size={15} /> Call Head Office — {headOfficePhone}
+        </a>
+      )}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 16, fontSize: 11, color: "#a1a1aa" }}>
+        <Building2 size={12} /> Managed centrally for all branches
+      </div>
+    </div>
+    <style>{`@keyframes popLockIn { from{opacity:0;transform:scale(0.94)} to{opacity:1;transform:scale(1)} }`}</style>
+  </div>
+);
 
 // Method metadata is now built from t() at render time (inside the
 // component) instead of as a static module-level array, so every label,
@@ -88,6 +149,40 @@ function buildPaymentMethods(t) {
 const PaymentSetup =() =>{
   const { t } = useLanguage();
   const PAYMENT_METHODS = buildPaymentMethods(t);
+
+  // A branch/staff login whose location has "Use Head Office's payment
+  // settings" turned on has nothing to configure here. This is fetched
+  // FRESH on every page load (not read from cached ttl_user) — the owner
+  // can toggle this at any time while a branch is already logged in, and
+  // a stale localStorage snapshot would never reflect that change until
+  // the next login.
+  const currentUser = (() => {
+    try {
+      const stored = localStorage.getItem("ttl_user");
+      return stored ? JSON.parse(stored) : null;
+    } catch { return null; }
+  })();
+  const isStaffAccount = !!(currentUser?.role && currentUser.role !== "OWNER");
+  const [isLockedToHeadOffice, setIsLockedToHeadOffice] = useState(false);
+  const [lockHeadOfficePhone, setLockHeadOfficePhone] = useState("");
+  const [showDeniedPopup, setShowDeniedPopup] = useState(false);
+
+  useEffect(() => {
+    if (!isStaffAccount) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await getMyPaymentLockStatus();
+        if (cancelled || !res.success) return;
+        setIsLockedToHeadOffice(!!res.data.locked);
+        setLockHeadOfficePhone(res.data.headOfficePhone || "");
+      } catch {
+        // Network hiccup — stay unlocked rather than falsely blocking a
+        // branch that's actually allowed to manage its own payments.
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [isStaffAccount]);
 
   const [activePage,         setActivePage]         = useState(null);
   const [enabledMethods,     setEnabledMethods]     = useState(["upi"]);
@@ -173,6 +268,7 @@ const PaymentSetup =() =>{
   };
 
   const toggleMethod = (id) => {
+    if (isLockedToHeadOffice) { setShowDeniedPopup(true); return; }
     setEnabledMethods((prev) =>
       prev.includes(id) ? prev.filter((m) => m !== id) : [...prev, id]
     );
@@ -187,6 +283,13 @@ const PaymentSetup =() =>{
 
   return (
     <div className="ps-root">
+      {showDeniedPopup && (
+        <HeadOfficeAccessDeniedPopup
+          headOfficePhone={lockHeadOfficePhone}
+          onClose={() => setShowDeniedPopup(false)}
+        />
+      )}
+
       <div className="ps-header">
         <div>
           <h1 className="ps-title">{t("ps_title")}</h1>
@@ -210,14 +313,27 @@ const PaymentSetup =() =>{
           const enabled = enabledMethods.includes(m.id);
           const isAvailable = !availableGateways || availableGateways.includes(m.id);
           return (
-            <div key={m.id} className={`ps-card ${enabled ? "ps-card--active" : ""}`} style={!isAvailable ? { opacity:0.45, filter:"grayscale(1)", pointerEvents:"none" } : undefined}>
+            <div
+              key={m.id}
+              className={`ps-card ${enabled ? "ps-card--active" : ""}`}
+              onClick={() => { if (isLockedToHeadOffice) setShowDeniedPopup(true); }}
+              style={{
+                ...(!isAvailable ? { opacity:0.45, filter:"grayscale(1)", pointerEvents:"none" } : undefined),
+                ...(isLockedToHeadOffice && isAvailable ? { cursor:"not-allowed", position:"relative" } : undefined),
+              }}
+            >
+              {isLockedToHeadOffice && isAvailable && (
+                <div style={{ position:"absolute", top:10, right:10, width:26, height:26, borderRadius:8, background:"rgba(109,40,217,0.1)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:2 }}>
+                  <Lock size={13} color="#7c3aed" />
+                </div>
+              )}
               <div className="ps-card-top">
                 <div className="ps-card-icon">{m.icon}</div>
                 <div className="ps-card-meta">
                   <div className="ps-card-name">{m.name}</div>
                   <span className="ps-card-badge">{isAvailable ? m.badge : t("ps_badge_unavailable")}</span>
                 </div>
-                <label className="ps-toggle">
+                <label className="ps-toggle" onClick={(e) => { if (isLockedToHeadOffice) e.preventDefault(); }}>
                   <input
                     type="checkbox"
                     checked={enabled}
@@ -241,7 +357,11 @@ const PaymentSetup =() =>{
               </ul>
               <button
                 className="ps-configure-btn"
-                onClick={() => isAvailable && setActivePage(m.id)}
+                onClick={() => {
+                  if (!isAvailable) return;
+                  if (isLockedToHeadOffice) { setShowDeniedPopup(true); return; }
+                  setActivePage(m.id);
+                }}
                 disabled={!isAvailable}
                 style={!isAvailable ? { cursor:"not-allowed" } : undefined}
               >
@@ -284,7 +404,10 @@ const PaymentSetup =() =>{
               🏪
             </div>
             <div>
-              <div style={{ fontSize:14, fontWeight:700, color:"#0f172a", marginBottom:3 }}>{t("ps_pac_title")}</div>
+              <div style={{ fontSize:14, fontWeight:700, color:"#0f172a", marginBottom:3, display:"flex", alignItems:"center", gap:6 }}>
+                {t("ps_pac_title")}
+                {isLockedToHeadOffice && <Lock size={12} color="#7c3aed" />}
+              </div>
               <div style={{ fontSize:12, color:"#64748b", lineHeight:1.5 }}>
                 {t("ps_pac_desc")}
               </div>
@@ -295,6 +418,7 @@ const PaymentSetup =() =>{
               <div
                 onClick={() => {
                   if (pacInitialLoading || pacLoading) return;
+                  if (isLockedToHeadOffice) { setShowDeniedPopup(true); return; }
                   // Only stage the change locally — nothing is sent to the
                   // backend here. The DB value changes only when the admin
                   // clicks "Save" below.
@@ -304,7 +428,7 @@ const PaymentSetup =() =>{
                 style={{
                   width:44, height:24, borderRadius:12,
                   background: payAtCounterDraft ? "#16a34a" : "#d1d5db",
-                  position:"relative", cursor: pacInitialLoading ? "default" : "pointer",
+                  position:"relative", cursor: (pacInitialLoading || isLockedToHeadOffice) ? (isLockedToHeadOffice ? "not-allowed" : "default") : "pointer",
                   transition:"background 0.2s",
                   flexShrink:0,
                   opacity: pacInitialLoading ? 0.6 : 1,

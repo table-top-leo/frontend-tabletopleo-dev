@@ -96,6 +96,10 @@ export default function BusinessInformation({ onNext, onBack, initialData, busin
     // explicitly turn on whichever ones apply to their business.
     dineInEnabled: initialData?.dineInEnabled ?? false,
     takeawayEnabled: initialData?.takeawayEnabled ?? false,
+    // Off by default — most merchants signing up have a single location.
+    // Turning this on is what makes the "Locations" menu appear in their
+    // dashboard sidebar after setup.
+    multiLocation: initialData?.multiLocation ?? false,
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -211,6 +215,7 @@ export default function BusinessInformation({ onNext, onBack, initialData, busin
         hasTableService: form.hasTableService,
         dineInEnabled: form.dineInEnabled,
         takeawayEnabled: form.takeawayEnabled,
+        multiLocation: form.multiLocation,
       };
 
       const res = await setupBusiness(payload);
@@ -576,6 +581,27 @@ export default function BusinessInformation({ onNext, onBack, initialData, busin
               style={{ width:46, height:26, borderRadius:999, background: form.hasTableService ? "#16a34a" : "#d1d5db", position:"relative", border:"none", cursor:"pointer", flexShrink:0, marginLeft:16 }}
             >
               <span style={{ position:"absolute", top:3, left: form.hasTableService ? 23 : 3, width:20, height:20, borderRadius:"50%", background:"#fff", transition:"left 0.15s" }} />
+            </button>
+          </div>
+        </div>
+
+        <div className="form-group biz-col-full">
+          <label className="form-label">Multiple Locations</label>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"14px 16px", background:"#f9fafb", border:"1.5px solid #e5e7eb", borderRadius:10 }}>
+            <div>
+              <div style={{ fontSize:13, fontWeight:700, color:"#18181b" }}>Does your business have more than one location?</div>
+              <div style={{ fontSize:11.5, color:"#71717a", marginTop:3, lineHeight:1.5 }}>
+                Turn this ON if you run more than one branch under this business. You'll get a
+                "Locations" section in your dashboard to set up each branch. Leave it OFF if you
+                only have this one location — you can always turn it on later from Business Information.
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setForm((f) => ({ ...f, multiLocation: !f.multiLocation }))}
+              style={{ width:46, height:26, borderRadius:999, background: form.multiLocation ? "#16a34a" : "#d1d5db", position:"relative", border:"none", cursor:"pointer", flexShrink:0, marginLeft:16 }}
+            >
+              <span style={{ position:"absolute", top:3, left: form.multiLocation ? 23 : 3, width:20, height:20, borderRadius:"50%", background:"#fff", transition:"left 0.15s" }} />
             </button>
           </div>
         </div>

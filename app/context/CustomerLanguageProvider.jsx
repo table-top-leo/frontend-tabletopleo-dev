@@ -84,8 +84,13 @@ export function CustomerLanguageProvider({ businessId, children }) {
 
 // Convenience hook: gives components both the active language metadata AND
 // the `t()` translate function in one place, without importing two hooks.
+// Also exposes `ready` — react-i18next's own signal for "resources are
+// actually loaded and safe to render" — so a page can wait for it instead
+// of briefly showing raw keys like "tracking.orderLabel" on first paint
+// (which can happen on a fresh page load, e.g. a tracking link opened
+// straight from an email, before i18next has finished initializing).
 export function useCustomerLanguage() {
   const ctx = useContext(CustomerLanguageContext);
-  const { t } = useTranslation();
-  return { ...ctx, t };
+  const { t, ready } = useTranslation();
+  return { ...ctx, t, ready };
 }

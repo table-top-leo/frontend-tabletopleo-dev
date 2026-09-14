@@ -7,7 +7,7 @@ import {
   User, Shield, Smartphone, Globe, QrCode, Crown, HeadphonesIcon,
   AlertCircle, Check, Upload, Camera, Mail, Lock, Eye, EyeOff,
   Copy, RefreshCw, BookOpen, Key, Trash2, CheckCircle2, Download,
-  Sparkles, Loader2, ChevronRight, Zap, Star, LogOut,
+  Sparkles, Loader2, ChevronRight, Zap, Star, LogOut, Info,
 } from "lucide-react";
 import QRCode from "react-qr-code";
 import "../designdashboardcomponent/settings.css";
@@ -76,7 +76,10 @@ export default function SettingsPage() {
   const email      = user?.email      || "";
   const businessId = user?.businessId || "";
   const initials   = fullName.split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,2);
-  const QR_DATA    = businessId ? `http://localhost:3000/menu/${businessId}` : `http://localhost:3000/menu/${adminId}`;
+  const locationId  = user?.locationId || "";
+  const QR_DATA    = businessId
+    ? (locationId ? `http://localhost:3000/menu/${businessId}/${locationId}` : `http://localhost:3000/menu/${businessId}`)
+    : `http://localhost:3000/menu/${adminId}`;
 
   useEffect(() => {
     if (!adminId) return;
@@ -303,6 +306,16 @@ export default function SettingsPage() {
         <div className="stg-sec-wrap">
           <div className="stg-card">
             <div className="stg-card-head"><QrCode size={14}/><span>{t("qr_title")}</span></div>
+            {user?.role && user.role !== "OWNER" && (
+              <div style={{ display: "flex", gap: 10, padding: "12px 14px", borderRadius: 10, background: "#f5f3ff", border: "1px solid #ede9fe", margin: "0 0 16px", fontSize: 12, color: "#4c1d95", lineHeight: 1.6 }}>
+                <Info size={15} style={{ flexShrink: 0, marginTop: 1 }} />
+                <span>
+                  This QR code is shared across every branch, including {user?.branchName || "yours"} — Head
+                  Office's menu, orders, and QR code are one combined system for now. Each branch getting
+                  its own independent menu is planned as a future update.
+                </span>
+              </div>
+            )}
             <div className="stg-qr-center">
               <div className="stg-qr-frame">
                 <div className="stg-qr-inner"><QRCode value={QR_DATA} size={190} fgColor="#18181b"/></div>

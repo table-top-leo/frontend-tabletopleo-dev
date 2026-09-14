@@ -16,7 +16,7 @@
 }
 
 .mc-page-header {
-  padding: 24px 32px 20px;
+  padding: 18px 28px 16px;
   background: #fff;
   border-bottom: 1px solid #ebebeb;
 }
@@ -47,17 +47,17 @@
 }
 
 .mc-page-title {
-  font-size: 26px;
+  font-size: 22px;
   font-weight: 800;
   color: #18181b;
-  letter-spacing: -0.5px;
+  letter-spacing: -0.4px;
   line-height: 1.15;
 }
 
 .mc-page-sub {
-  font-size: 13.5px;
+  font-size: 12.5px;
   color: #71717a;
-  margin-top: 4px;
+  margin-top: 3px;
 }
 
 .mc-btn-dark {
@@ -83,8 +83,8 @@
 
 .mc-layout {
   display: flex;
-  gap: 20px;
-  padding: 24px 32px;
+  gap: 18px;
+  padding: 18px 28px;
   align-items: flex-start;
 }
 

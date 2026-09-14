@@ -375,7 +375,7 @@ const OrderDetailsPopup = ({ orderId, currencyCode, onClose }) => {
 // Kept separate from the exported default so it can sit *inside*
 // CustomerLanguageProvider and use useCustomerLanguage() from the start. ──
 const StandaloneTrackingInner = ({ orderId, onBusinessResolved }) => {
-  const { t } = useCustomerLanguage();
+  const { t, ready: langReady } = useCustomerLanguage();
   const [statusData, setStatusData] = useState(null);
   const [loading,     setLoading]   = useState(true);
   const [loadError,   setLoadError] = useState("");
@@ -464,7 +464,7 @@ const StandaloneTrackingInner = ({ orderId, onBusinessResolved }) => {
     ? new Date(acceptedAtMs + totalMs).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
     : null;
 
-  if (loading) {
+  if (loading || !langReady) {
     return (
       <div className="cw-root">
         <div className="cw-phone">

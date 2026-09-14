@@ -73,19 +73,15 @@ const CustomerMenuPage = ({
   return (
     <div className="cw-screen" style={{ overflow:"hidden" }}>
       <style>{`
-        /* Visible, slim, brand-colored scrollbar for the categories row —
-           plus click-and-drag support for desktop mouse users. */
         .mp-cats { scrollbar-width: thin; scrollbar-color: var(--border) transparent; cursor: grab; }
-        .mp-cats::-webkit-scrollbar  { height: 5px; }
+        .mp-cats::-webkit-scrollbar  { height: 4px; }
         .mp-cats::-webkit-scrollbar-track { background: transparent; }
         .mp-cats::-webkit-scrollbar-thumb { background: var(--border); border-radius: 999px; }
-        .mp-cats::-webkit-scrollbar-thumb:hover { background: var(--brand); }
         .mp-cats.mp-dragging { cursor: grabbing; scroll-behavior: auto; }
         .mp-items::-webkit-scrollbar { width:2px }
         .mp-items::-webkit-scrollbar-track { background:transparent }
         .mp-items::-webkit-scrollbar-thumb { background:var(--border); border-radius:99px }
 
-        /* Item card responsive */
         .mp-item-row {
           display:flex;
           align-items:center;
@@ -100,40 +96,37 @@ const CustomerMenuPage = ({
         }
         .mp-item-row:active { background:var(--brand-bg); }
 
-        /* Out-of-stock row — dimmed, blocked pointer */
-        .mp-item-row.mp-row-oos { cursor:not-allowed; opacity:0.6; }
+        .mp-item-row.mp-row-oos { cursor:not-allowed; opacity:0.55; }
         .mp-item-row.mp-row-oos:active { background:transparent; }
-        .mp-item-row.mp-row-oos .mp-item-img { filter: grayscale(60%); }
+        .mp-item-row.mp-row-oos .mp-item-img { filter: grayscale(70%); }
 
         .mp-avail-tag {
           display:inline-flex; align-items:center; gap:3px;
-          font-size:9px; font-weight:800; letter-spacing:0.02em;
+          font-size:9px; font-weight:700; letter-spacing:0.02em;
           padding:1.5px 7px; border-radius:20px; text-transform:uppercase;
           line-height:1.6; margin-top:3px;
         }
-        .mp-avail-tag.mp-avail-in  { background:#dcfce7; color:#15803d; }
-        .mp-avail-tag.mp-avail-out { background:#fee2e2; color:#b91c1c; }
+        .mp-avail-tag.mp-avail-in  { background:#f0fdf4; color:#16a34a; }
+        .mp-avail-tag.mp-avail-out { background:#fef2f2; color:#dc2626; }
 
         .mp-item-img {
           width:58px; height:58px;
-          border-radius:9px;
+          border-radius:8px;
           object-fit:cover;
           border:1px solid var(--border-light);
           display:block;
           flex-shrink:0;
         }
 
-        /* Slightly bigger image on larger phones */
         @media (min-width:375px) {
           .mp-item-img { width:62px; height:62px; }
           .mp-item-name { font-size:13px !important; }
         }
         @media (min-width:420px) {
-          .mp-item-img { width:66px; height:66px; border-radius:10px; }
+          .mp-item-img { width:64px; height:64px; border-radius:9px; }
           .mp-item-row { padding:10px 16px; }
         }
 
-        /* Small phones */
         @media (max-width:320px) {
           .mp-item-img   { width:52px; height:52px; }
           .mp-item-name  { font-size:11.5px !important; }
@@ -148,31 +141,30 @@ const CustomerMenuPage = ({
         @keyframes mp-fade { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
       `}</style>
 
-      {/* ── FIXED HEADER ─────────────────────────── */}
+      {/* ── FIXED HEADER — stays put; only the items list below scrolls ── */}
       <div style={{ flexShrink:0 }}>
 
-        {/* Topbar */}
-        <div className="cx-topbar" style={{ padding:"12px 14px 10px" }}>
+        <div className="cx-topbar" style={{ padding:"11px 14px 9px" }}>
           <button className="back-btn cx-topbar-action" onClick={onBack} style={{ touchAction:"manipulation" }}>
-            <ArrowLeft size={20}/>
+            <ArrowLeft size={19}/>
           </button>
-          <span className="cx-topbar-title" style={{ fontSize:15 }}>
+          <span className="cx-topbar-title" style={{ fontSize:14.5 }}>
             {business?.businessName || t("menu.title")}
           </span>
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
             <button onClick={onViewOffers} className="cx-topbar-action" style={{ position: "relative", touchAction: "manipulation" }} aria-label={t("menu.offersAria")}>
-              <Tag size={18} />
+              <Tag size={17} />
               {activeDiscounts.length > 0 && (
-                <span style={{ position:"absolute", top:-4, right:-4, background:"#dc2626", color:"#fff", fontSize:10, fontWeight:700, borderRadius:"9999px", minWidth:16, height:16, display:"flex", alignItems:"center", justifyContent:"center", padding:"0 3px", lineHeight:1 }}>
+                <span style={{ position:"absolute", top:-4, right:-4, background:"#dc2626", color:"#fff", fontSize:9.5, fontWeight:700, borderRadius:"9999px", minWidth:15, height:15, display:"flex", alignItems:"center", justifyContent:"center", padding:"0 3px", lineHeight:1 }}>
                   {activeDiscounts.length > 9 ? "9+" : activeDiscounts.length}
                 </span>
               )}
             </button>
             <button className="cx-topbar-action" onClick={onViewCart}
               style={{ position:"relative", touchAction:"manipulation" }}>
-              <ShoppingCart size={18}/>
+              <ShoppingCart size={17}/>
               {cartCount > 0 && (
-                <span style={{ position:"absolute", top:-4, right:-4, background:"var(--brand)", color:"#fff", fontSize:10, fontWeight:700, borderRadius:"9999px", minWidth:16, height:16, display:"flex", alignItems:"center", justifyContent:"center", padding:"0 3px", lineHeight:1 }}>
+                <span style={{ position:"absolute", top:-4, right:-4, background:"var(--brand)", color:"#fff", fontSize:9.5, fontWeight:700, borderRadius:"9999px", minWidth:15, height:15, display:"flex", alignItems:"center", justifyContent:"center", padding:"0 3px", lineHeight:1 }}>
                   {cartCount > 9 ? "9+" : cartCount}
                 </span>
               )}
@@ -180,9 +172,8 @@ const CustomerMenuPage = ({
           </div>
         </div>
 
-        {/* Search */}
-        <div style={{ padding:"7px 14px 0" }}>
-          <div style={{ display:"flex", alignItems:"center", gap:8, background:"var(--surface-2)", border:"1.5px solid var(--border-light)", borderRadius:9999, padding:"7px 12px", position:"relative" }}>
+        <div style={{ padding:"6px 14px 0" }}>
+          <div style={{ display:"flex", alignItems:"center", gap:8, background:"var(--surface-2)", border:"1px solid var(--border-light)", borderRadius:9999, padding:"7px 12px", position:"relative" }}>
             <Search size={13} color="var(--text-muted)" style={{ flexShrink:0 }}/>
             <input
               ref={searchRef}
@@ -200,8 +191,7 @@ const CustomerMenuPage = ({
           </div>
         </div>
 
-        {/* Category pills */}
-        <div className="mp-cats" onMouseDown={handleDragStart} style={{ display:"flex", gap:5, overflowX:"auto", padding:"7px 14px 6px", borderBottom:"1px solid var(--border-light)", WebkitOverflowScrolling:"touch" }}>
+        <div className="mp-cats" onMouseDown={handleDragStart} style={{ display:"flex", gap:5, overflowX:"auto", padding:"6px 14px 6px", borderBottom:"1px solid var(--border-light)", WebkitOverflowScrolling:"touch" }}>
           {allCats.map(cat => {
             const isActive = activecat === cat.id;
             const hasImg   = cat.id !== 0 && cat.imageUrl;
@@ -216,22 +206,22 @@ const CustomerMenuPage = ({
                   gap: cat.id !== 0 ? 4 : 0,
                   padding: hasImg ? "3px 9px 3px 3px" : "4px 11px",
                   borderRadius:9999,
-                  border:`1.5px solid ${isActive?"var(--brand)":"var(--border)"}`,
+                  border:`1px solid ${isActive?"var(--brand)":"var(--border)"}`,
                   background: isActive ? "var(--brand)" : "transparent",
                   color: isActive ? "#fff" : "var(--text-secondary)",
-                  fontSize:11.5, fontWeight:600,
+                  fontSize:11, fontWeight:600,
                   cursor:"pointer", whiteSpace:"nowrap",
                   transition:"all 0.15s", touchAction:"manipulation",
                 }}
               >
                 {hasImg && (
-                  <div style={{ width:19, height:19, borderRadius:"50%", overflow:"hidden", flexShrink:0 }}>
+                  <div style={{ width:18, height:18, borderRadius:"50%", overflow:"hidden", flexShrink:0 }}>
                     <img src={cat.imageUrl} alt={cat.name} style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }}/>
                   </div>
                 )}
                 {noImg && (
-                  <div style={{ width:19, height:19, borderRadius:"50%", background:"#fef2f2", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                    <ImageOff size={10} color="#ef4444"/>
+                  <div style={{ width:18, height:18, borderRadius:"50%", background:"#f4f4f5", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                    <ImageOff size={9} color="#a1a1aa"/>
                   </div>
                 )}
                 {cat.name}
@@ -240,28 +230,27 @@ const CustomerMenuPage = ({
           })}
         </div>
 
-        {/* Results bar */}
         <div style={{ padding:"5px 14px 4px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-          <span style={{ fontSize:10.5, fontWeight:700, color:"var(--text-muted)", textTransform:"uppercase", letterSpacing:"0.05em" }}>
+          <span style={{ fontSize:10, fontWeight:700, color:"var(--text-muted)", textTransform:"uppercase", letterSpacing:"0.05em" }}>
             {search.trim() ? `"${search}"` : activeCatName}
           </span>
-          <span style={{ fontSize:10.5, color:"var(--text-muted)" }}>
+          <span style={{ fontSize:10, color:"var(--text-muted)" }}>
             {filtered.length} {filtered.length === 1 ? t("common.item") : t("common.items")}
           </span>
         </div>
       </div>
 
       {/* ── SCROLLABLE ITEMS ONLY ─────────────────── */}
-      <div className="mp-items" style={{ flex:1, overflowY:"auto", overflowX:"hidden", WebkitOverflowScrolling:"touch" }}>
+      <div className="mp-items" style={{ flex:1, minHeight:0, overflowY:"auto", overflowX:"hidden", WebkitOverflowScrolling:"touch" }}>
         {filtered.length === 0 ? (
           <div style={{ padding:"40px 20px", textAlign:"center" }}> 
-            <div style={{ fontSize:34, marginBottom:10 }}><CiSearch/></div>
-            <div style={{ fontSize:14, fontWeight:700, color:"var(--text-secondary)", marginBottom:4 }}>
+            <div style={{ fontSize:32, marginBottom:10, color:"#d4d4d8" }}><CiSearch/></div>
+            <div style={{ fontSize:13.5, fontWeight:700, color:"var(--text-secondary)", marginBottom:4 }}>
               {search ? t("menu.noResultsFor", { search }) : t("menu.noItemsHere")}
             </div>
             {search && (
               <button onClick={() => setSearch("")}
-                style={{ fontSize:13, color:"var(--brand)", background:"none", border:"none", cursor:"pointer", fontWeight:600, marginTop:6, touchAction:"manipulation" }}>
+                style={{ fontSize:12.5, color:"var(--brand)", background:"none", border:"none", cursor:"pointer", fontWeight:600, marginTop:6, touchAction:"manipulation" }}>
                 {t("menu.clearSearch")}
               </button>
             )}
@@ -278,7 +267,6 @@ const CustomerMenuPage = ({
               onClick={() => onItemClick(item)}
               style={{ animation:`mp-fade 0.18s ease ${Math.min(idx,10)*0.025}s both` }}
             >
-              {/* Image or no-image box */}
               <div style={{ position:"relative", flexShrink:0 }}>
                 {item.img ? (
                   <>
@@ -288,15 +276,13 @@ const CustomerMenuPage = ({
                       alt={item.name}
                       onError={e => { e.target.style.display="none"; e.target.nextSibling.style.display="flex"; }}
                     />
-                    <div className="mp-item-img" style={{ display:"none", background:"#fef2f2", border:"1.5px solid #fecaca", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:2 }}>
-                      <ImageOff size={16} color="#ef4444" strokeWidth={1.5}/>
-                      <span style={{ fontSize:7.5, fontWeight:700, color:"#ef4444" }}>NO IMAGE</span>
+                    <div className="mp-item-img" style={{ display:"none", background:"#f4f4f5", alignItems:"center", justifyContent:"center" }}>
+                      <ImageOff size={16} color="#a1a1aa" strokeWidth={1.5}/>
                     </div>
                   </>
                 ) : (
-                  <div className="mp-item-img" style={{ display:"flex", background:"#fef2f2", border:"1.5px solid #fecaca", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:2 }}>
-                    <ImageOff size={16} color="#ef4444" strokeWidth={1.5}/>
-                    <span style={{ fontSize:7.5, fontWeight:700, color:"#ef4444" }}>NO IMAGE</span>
+                  <div className="mp-item-img" style={{ display:"flex", background:"#f4f4f5", alignItems:"center", justifyContent:"center" }}>
+                    <ImageOff size={16} color="#a1a1aa" strokeWidth={1.5}/>
                   </div>
                 )}
                 {qty > 0 && (
@@ -311,7 +297,6 @@ const CustomerMenuPage = ({
                 )}
               </div>
 
-              {/* Text info */}
               <div style={{ flex:1, minWidth:0 }}>
                 <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:6 }}>
                   <div style={{ minWidth:0, flex:1 }}>
@@ -329,26 +314,23 @@ const CustomerMenuPage = ({
                           {item.catName}
                         </span>
                       )}
-                      {/* Availability tag — Zomato-style in-stock/out-of-stock */}
                       <span className={`mp-avail-tag ${isOOS ? "mp-avail-out" : "mp-avail-in"}`}>
                         {isOOS ? t("menu.outOfStock") : t("menu.available")}
                       </span>
                     </div>
                   </div>
-                  {/* Add button — clean text pill instead of a cramped icon */}
                   <div style={{
-                    flexShrink:0, minWidth:52, height:26, borderRadius:8, padding:"0 12px",
-                    border:`1.5px solid ${isOOS ? "var(--border)" : "var(--brand)"}`, display:"flex", alignItems:"center", justifyContent:"center",
+                    flexShrink:0, minWidth:52, height:26, borderRadius:7, padding:"0 12px",
+                    border:`1px solid ${isOOS ? "var(--border)" : "var(--brand)"}`, display:"flex", alignItems:"center", justifyContent:"center",
                     background: isOOS ? "var(--surface-2)" : (qty>0 ? "var(--brand)" : "transparent"),
                     color: isOOS ? "var(--text-muted)" : (qty>0 ? "#fff" : "var(--brand)"),
-                    fontSize:11.5, fontWeight:800, letterSpacing:"0.02em",
+                    fontSize:11, fontWeight:800, letterSpacing:"0.02em",
                     transition:"background 0.15s, color 0.15s",
                   }}>
                     {isOOS ? t("menu.outOfStockShort") : (qty>0 ? t("menu.added") : t("menu.add"))}
                   </div>
                 </div>
 
-                {/* Price + in-cart */}
                 <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginTop:4 }}>
                   <span style={{ display:"flex", alignItems:"baseline", gap:5 }}>
                     <span className="mp-item-price" style={{ fontSize:13, fontWeight:800, color: discount ? "#dc2626" : "var(--brand)" }}>

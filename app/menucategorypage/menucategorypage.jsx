@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import {
   Plus, ChevronRight, ChevronDown, ChevronUp, ChevronLeft,
   Search, Filter, Pencil, Trash2, Upload, Send, RotateCcw,
-  Coffee, X, Check, RefreshCw, Loader2, Image, Star,
+  Coffee, X, Check, RefreshCw, Loader2, Image, Star, Copy,
 } from "lucide-react";
 import "../menucategorypage/designmenucategorypage.css";
 import {
@@ -13,6 +13,7 @@ import {
   updateProductAvailability,
 } from "../services/menuService";
 import { uploadCategoryImage, uploadProductImage } from "../services/imageservice";
+import CopyHeadOfficeMenuPopup from "../menucategorypage/Copyheadofficemenupopup";
 import api from "../services/axiosInterceptor";
 import { useCurrency } from "../context/CurrencyContext";
 import { getCurrencySymbol, formatCurrency } from "../utils/currencyHelper";
@@ -90,6 +91,11 @@ const MenuCategory = () => {
   const user       = getUser();
   const adminId    = user?.adminId    || "";
   const businessId = user?.businessId || "";
+  // Only a branch/staff login can copy Head Office's menu — Head Office
+  // itself never sees this button, since copying its own menu into
+  // itself makes no sense.
+  const isBranchLogin = !!(user?.role && user.role !== "OWNER");
+  const [showCopyMenuPopup, setShowCopyMenuPopup] = useState(false);
   const { currencyCode, currencyReady } = useCurrency();
 
   const [businessType,       setBusinessType]       = useState("");
@@ -475,11 +481,12 @@ const MenuCategory = () => {
         .mc-btn-danger:hover{background:#dc2626}.mc-btn-danger:disabled{opacity:.6;cursor:not-allowed}
         .mc-add-cat-inline{padding:14px 16px;border-bottom:1px solid #f4f4f5;display:flex;flex-direction:column;gap:10px}
         .mc-inline-actions{display:flex;gap:8px;justify-content:flex-end}
-        .mc-no-category{display:flex;flex-direction:column;align-items:center;text-align:center;padding:32px 20px;gap:10px;color:#71717a}
-        .mc-no-category .mc-no-icon{font-size:36px}
-        .mc-no-category h3{font-size:14px;font-weight:700;color:#18181b;margin:0}
-        .mc-no-category p{font-size:12.5px;margin:0}
-        .mc-no-category button{display:inline-flex;align-items:center;gap:6px;background:#3b1f0a;color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:700;cursor:pointer;margin-top:4px}
+        .mc-no-category{display:flex;flex-direction:column;align-items:center;text-align:center;padding:30px 18px;gap:6px;color:#71717a}
+        .mc-no-category .mc-no-icon-wrap{width:38px;height:38px;border-radius:10px;background:#f4f4f5;display:flex;align-items:center;justify-content:center;margin-bottom:4px}
+        .mc-no-category h3{font-size:13px;font-weight:700;color:#18181b;margin:0}
+        .mc-no-category p{font-size:11.5px;margin:0;color:#9ca3af}
+        .mc-no-category button{display:inline-flex;align-items:center;gap:6px;background:#111827;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;margin-top:6px}
+        .mc-no-category button:hover{background:#1f2937}
         .mc-cat-row-actions{display:flex;align-items:center;gap:2px;margin-left:auto;padding-left:6px;flex-shrink:0}
         .mc-cat-icon-btn{background:none;border:none;color:#d4d4d8;cursor:pointer;padding:5px;border-radius:5px;display:flex;align-items:center;transition:color .18s,background .18s}
         .mc-cat-icon-btn:hover{color:#ef4444;background:#fee2e2}
@@ -516,6 +523,19 @@ const MenuCategory = () => {
             <h1 className="mc-page-title">{t("mc_page_title")}</h1>
             <p className="mc-page-sub">{t("mc_page_sub")}</p>
           </div>
+          {isBranchLogin && (
+            <button
+              type="button"
+              onClick={() => setShowCopyMenuPopup(true)}
+              style={{
+                display: "flex", alignItems: "center", gap: 6, flexShrink: 0,
+                padding: "8px 14px", borderRadius: 8, border: "1px solid #e5e7eb", cursor: "pointer",
+                background: "#fff", color: "#111827", fontSize: 12, fontWeight: 700,
+              }}
+            >
+              <Copy size={13} /> Copy Head Office Menu
+            </button>
+          )}
         </div>
       </div>
 
@@ -592,10 +612,10 @@ const MenuCategory = () => {
               </div>
             ) : categories.length === 0 ? (
               <div className="mc-no-category">
-                <span className="mc-no-icon">📪</span>
+                <div className="mc-no-icon-wrap"><Coffee size={18} color="#71717a" /></div>
                 <h3>{t("mc_no_categories_title")}</h3>
                 <p>{t("mc_no_categories_sub")}</p>
-                <button onClick={() => setShowAddCatInline(true)} type="button"><Plus size={14} /> {t("mc_add_new_category")}</button>
+                <button onClick={() => setShowAddCatInline(true)} type="button"><Plus size={13} /> {t("mc_add_new_category")}</button>
               </div>
             ) : (
               categories.map(cat => (
@@ -1050,6 +1070,20 @@ const MenuCategory = () => {
           </div>
         </div>
       </div>
+
+      {showCopyMenuPopup && (
+        <CopyHeadOfficeMenuPopup
+          onClose={() => setShowCopyMenuPopup(false)}
+          onCopied={(result) => {
+            setShowCopyMenuPopup(false);
+            showToast(
+              `${result.itemsCopied} item${result.itemsCopied === 1 ? "" : "s"} copied${result.categoriesCreated ? ` (${result.categoriesCreated} new categor${result.categoriesCreated === 1 ? "y" : "ies"})` : ""}`,
+              "success"
+            );
+            fetchCategories();
+          }}
+        />
+      )}
     </div>
   );
 };
