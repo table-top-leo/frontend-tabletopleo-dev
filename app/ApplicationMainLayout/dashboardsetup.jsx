@@ -19,10 +19,14 @@ import {
   RefreshCw,
   Download,
   Soup,
+  Clock,
+  Utensils,
+  MapPin,
 } from "lucide-react";
 
 import "../designdashboardcomponent/designdashboardpage.css";
 import adminOrderService from "../services/adminOrderService";
+import { getBusinessInformation } from "../services/businessService";
 import { formatCurrency } from "../utils/currencyHelper";
 import { useLanguage } from "../context/LanguageContext";
 
@@ -50,6 +54,98 @@ function getGreeting(t) {
   if (h < 17) return t("dash_greeting_afternoon");
   return t("dash_greeting_evening");
 }
+
+// A payment is counted toward revenue the moment it's actually
+// successful — whether that's an online gateway payment (paymentStatus
+// "PAID") or a pay-at-counter order (paymentStatus "PAY_AT_COUNTER",
+// which in this app's model IS the completed/collected state for that
+// payment type, not a "still waiting" state). This is deliberately
+// independent of the order's own fulfillment status — an order sitting
+// at PLACED or ACCEPTED with a successful payment already counts; it
+// doesn't need to reach COMPLETED first.
+function isRevenueCounted(o) {
+  return o.paymentStatus === "PAID" || o.paymentStatus === "PAY_AT_COUNTER";
+}
+
+// Curated, known-stable images for common merchant cities — same proven
+// technique already used for business-type cover photos on the customer
+// landing page. Falls back to a generic city-skyline image for any city
+// not in this list, via the same fuzzy partial-match approach.
+// Same proven, real, business-type cover images already used on the
+// customer landing page — reused here (bumped to a higher resolution
+// since this banner is larger) so a restaurant always gets a genuine
+// restaurant photo, an ice cream parlour gets an ice cream photo, and so
+// on — never a mismatched or generic image.
+const COVER_BY_TYPE = {
+  "Restaurant":        "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1400&q=85",
+  "Cafe":              "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=1400&q=85",
+  "Coffee":            "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=1400&q=85",
+  "Coffee Shop":       "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=1400&q=85",
+  "Bakery":            "https://images.unsplash.com/photo-1517433670267-08bbd4be890f?w=1400&q=85",
+  "Fast Food":         "https://images.unsplash.com/photo-1561758033-48d52648ae8b?w=1400&q=85",
+  "Pizza":             "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=1400&q=85",
+  "Biryani":           "https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=1400&q=85",
+  "South Indian":      "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=1400&q=85",
+  "North Indian":      "https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=1400&q=85",
+  "Chinese":           "https://images.unsplash.com/photo-1563245372-f21724e3856d?w=1400&q=85",
+  "Continental":       "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1400&q=85",
+  "Juice Bar":         "https://images.unsplash.com/photo-1589733955941-5eeaf752f6dd?w=1400&q=85",
+  "Ice Cream Parlour": "https://images.unsplash.com/photo-1497034825429-c343d7c6a68f?w=1400&q=85",
+  "Ice Cream":         "https://images.unsplash.com/photo-1497034825429-c343d7c6a68f?w=1400&q=85",
+  "Sweet Shop":        "https://images.unsplash.com/photo-1587314168485-3236d6710814?w=1400&q=85",
+  "Dhaba":             "https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=1400&q=85",
+  "Food Truck":        "https://images.unsplash.com/photo-1565123409695-7b5ef63a2efb?w=1400&q=85",
+  "Bar":               "https://images.unsplash.com/photo-1572116469696-31de0f17cc34?w=1400&q=85",
+  "Pub":               "https://images.unsplash.com/photo-1572116469696-31de0f17cc34?w=1400&q=85",
+  "Sushi":             "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=1400&q=85",
+  "Japanese":          "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=1400&q=85",
+  "Mexican":           "https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=1400&q=85",
+  "Italian":           "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1400&q=85",
+  "Thai":              "https://images.unsplash.com/photo-1562802378-063ec186a863?w=1400&q=85",
+  "Burger":            "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=1400&q=85",
+  "Sandwich":          "https://images.unsplash.com/photo-1539252554453-80ab65ce3586?w=1400&q=85",
+  "Dessert":           "https://images.unsplash.com/photo-1551024506-0bccd828d307?w=1400&q=85",
+  "Healthy":           "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=1400&q=85",
+  "Salad":             "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=1400&q=85",
+  "Seafood":           "https://images.unsplash.com/photo-1559742811-822873691df8?w=1400&q=85",
+  "BBQ":               "https://images.unsplash.com/photo-1529193591184-b1d58069ecdd?w=1400&q=85",
+  "Steak":             "https://images.unsplash.com/photo-1529193591184-b1d58069ecdd?w=1400&q=85",
+  "Vegan":             "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=1400&q=85",
+  "Breakfast":         "https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?w=1400&q=85",
+  "Brunch":            "https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?w=1400&q=85",
+  "Tea Shop":          "https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=1400&q=85",
+  "Bubble Tea":        "https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=1400&q=85",
+  "Noodles":           "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=1400&q=85",
+  "Pasta":             "https://images.unsplash.com/photo-1555949258-eb67b1ef0ceb?w=1400&q=85",
+  "Kebab":             "https://images.unsplash.com/photo-1529543544282-ea669407fca3?w=1400&q=85",
+  "Street Food":       "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1400&q=85",
+  "default":           "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1400&q=85",
+};
+
+// Exact match first, then a strict partial match in either direction —
+// never falls through to an unrelated image; only ever the configured
+// business type's own photo or the generic default.
+function getCoverImage(businessType) {
+  if (!businessType) return COVER_BY_TYPE.default;
+  if (COVER_BY_TYPE[businessType]) return COVER_BY_TYPE[businessType];
+  const key = Object.keys(COVER_BY_TYPE).find(
+    (k) => k !== "default" &&
+      (businessType.toLowerCase().includes(k.toLowerCase()) || k.toLowerCase().includes(businessType.toLowerCase()))
+  );
+  return COVER_BY_TYPE[key] || COVER_BY_TYPE.default;
+}
+
+// Rotating motivational lines for restaurant/hospitality owners — one is
+// picked once per page load (stable for the session, not flickering on
+// every re-render).
+const OWNER_QUOTES = [
+  "Every great meal starts with someone who refused to settle for average.",
+  "Small plates, big dreams — keep building.",
+  "Consistency is what turns first-time guests into regulars.",
+  "Behind every 5-star review is a team that showed up today.",
+  "Good food gets noticed. Great service gets remembered.",
+  "The best marketing is a customer who can't stop talking about your food.",
+];
 
 function sameDay(a, b) {
   return (
@@ -179,7 +275,7 @@ function bucketLabel(key, gran) {
 function buildRevenueSeries(ordersInRange, start, end, gran) {
   const map = new Map();
   ordersInRange.forEach((o) => {
-    if (o.paymentStatus !== "PAID") return;
+    if (!isRevenueCounted(o)) return;
     const key = bucketKey(o.createdAt, gran);
     map.set(key, (map.get(key) || 0) + Number(o.grandTotal || 0));
   });
@@ -494,6 +590,11 @@ export default function DashboardMainSetup() {
   const [greeting, setGreeting] = useState(() => t("dash_greeting_hello"));
   useEffect(() => { setGreeting(getGreeting(t)); }, [t]);
   const [currency, setCurrency] = useState("INR");
+  const [city, setCity] = useState("");
+  const [bizName, setBizName] = useState("");
+  const [businessType, setBusinessType] = useState("");
+  // Picked once per page load, not re-picked on every re-render.
+  const [ownerQuote] = useState(() => OWNER_QUOTES[Math.floor(Math.random() * OWNER_QUOTES.length)]);
 
   // read the logged-in admin's name/currency only after mount (client-only)
   // to avoid SSR/client hydration mismatches from reading localStorage during render
@@ -502,6 +603,15 @@ export default function DashboardMainSetup() {
       const stored = JSON.parse(localStorage.getItem("ttl_user") || "{}");
       if (stored.fullName) setUserName(stored.fullName.split(" ")[0]);
       if (stored.currencyCode) setCurrency(stored.currencyCode);
+      if (stored.businessName) setBizName(stored.businessName);
+      if (stored.adminId) {
+        getBusinessInformation(stored.adminId)
+          .then((res) => {
+            if (res?.data?.city) setCity(res.data.city);
+            if (res?.data?.businessType) setBusinessType(res.data.businessType);
+          })
+          .catch(() => {}); // banner just falls back to the generic default image
+      }
     } catch {}
   }, []);
 
@@ -510,14 +620,17 @@ export default function DashboardMainSetup() {
   const [errorMsg, setErrorMsg] = useState("");
   const [lastSync, setLastSync] = useState(null);
 
-  const [grossLabel, setGrossLabel] = useState("Total Revenue");
-  const [compareMetric, setCompareMetric] = useState("Yesterday");
   const [rangeLabel, setRangeLabel] = useState("Last 7 Days");
   const [customRange, setCustomRange] = useState(null);
+  // Whether the person has actively picked a date range yet. Until they
+  // do, every widget shows the complete, unfiltered dataset — total
+  // revenue, top items, payment methods, all of it — rather than
+  // silently pre-scoping to a default 7-day window the person never
+  // chose. Filters stay fully available; they're just opt-in now.
+  const [hasUserFiltered, setHasUserFiltered] = useState(false);
   const [granularity, setGranularity] = useState("Daily");
   const [comparePeriod, setComparePeriod] = useState("No Comparison");
   const [previousPeriod, setPreviousPeriod] = useState("Previous Period");
-  const [showRecommendations, setShowRecommendations] = useState(true);
   const [barsGrown, setBarsGrown] = useState(false);
 
   const fetchOrders = async (silent) => {
@@ -549,14 +662,20 @@ export default function DashboardMainSetup() {
     "Last 30 Days": t("dash_last30"), "This Month": t("dash_this_month_label"),
     "Last Month": t("dash_last_month"), "This Year": t("dash_this_year"),
   };
-  const rangeLabelDisplay = rangePresetDisplay[rangeLabel] || rangeLabel;
+  const rangeLabelDisplay = hasUserFiltered ? (rangePresetDisplay[rangeLabel] || rangeLabel) : "All Time";
 
   // ── date range resolution ──
   const range = useMemo(() => {
+    // No filter applied yet — show the complete, unfiltered dataset.
+    // A far-back static anchor is simpler and cheaper than scanning all
+    // orders for the earliest createdAt, and functionally identical.
+    if (!hasUserFiltered) {
+      return { start: startOfDay(new Date(2000, 0, 1)), end: endOfDay(new Date()) };
+    }
     if (customRange) return customRange;
     const [s, e] = resolvePreset(rangeLabel, new Date());
     return { start: startOfDay(s), end: endOfDay(e) };
-  }, [rangeLabel, customRange]);
+  }, [rangeLabel, customRange, hasUserFiltered]);
 
   const prevRange = useMemo(() => {
     const span = range.end.getTime() - range.start.getTime();
@@ -574,8 +693,8 @@ export default function DashboardMainSetup() {
   const prevOrders = useMemo(() => orders.filter((o) => inRange(o, prevRange)), [orders, prevRange]);
 
   // ── KPIs ──
-  const paidOrders = filteredOrders.filter((o) => o.paymentStatus === "PAID");
-  const prevPaid = prevOrders.filter((o) => o.paymentStatus === "PAID");
+  const paidOrders = filteredOrders.filter(isRevenueCounted);
+  const prevPaid = prevOrders.filter(isRevenueCounted);
 
   const totalRevenue = paidOrders.reduce((s, o) => s + Number(o.grandTotal || 0), 0);
   const prevRevenue = prevPaid.reduce((s, o) => s + Number(o.grandTotal || 0), 0);
@@ -600,31 +719,25 @@ export default function DashboardMainSetup() {
     { key: "completion", label: t("dash_kpi_completion"), icon: CheckCircle2, value: `${completionRate.toFixed(0)}%`, trend: pctChange(completionRate, prevCompletionRate) },
   ];
 
-  // ── top summary card values (grossLabel now stores a canonical English
-  // key — "Total Revenue" | "Total Orders" | "Avg Order Value" — set only
-  // via InlineSelect's key/label options below, so this comparison is safe
-  // no matter what language is active) ──
-  const grossValue = grossLabel === "Total Orders"
-    ? totalOrdersCount.toLocaleString()
-    : grossLabel === "Avg Order Value"
-    ? formatCurrency(avgOrderValue.toFixed(2), currency)
-    : formatCurrency(totalRevenue.toFixed(2), currency);
-
-  const compareValue = useMemo(() => {
-    const [s, e] = resolvePreset(compareMetric === "Last 7 days" ? "Last 7 Days" : compareMetric, new Date());
-    const r = { start: startOfDay(s), end: endOfDay(e) };
-    const rev = orders.filter((o) => o.paymentStatus === "PAID" && inRange(o, r)).reduce((sum, o) => sum + Number(o.grandTotal || 0), 0);
-    return formatCurrency(rev.toFixed(2), currency);
-  }, [compareMetric, orders, currency]);
-
   const thisMonthRevenue = useMemo(() => {
     const now = new Date();
     const start = new Date(now.getFullYear(), now.getMonth(), 1);
-    return orders.filter((o) => o.paymentStatus === "PAID" && new Date(o.createdAt) >= start).reduce((s, o) => s + Number(o.grandTotal || 0), 0);
+    return orders.filter((o) => isRevenueCounted(o) && new Date(o.createdAt) >= start).reduce((s, o) => s + Number(o.grandTotal || 0), 0);
   }, [orders]);
 
+  // Always "today", independent of whatever date filter is selected
+  // elsewhere on the page — a quick at-a-glance activity signal for the
+  // city banner below.
+  const todaysOrdersCount = useMemo(() => {
+    const start = startOfDay(new Date());
+    return orders.filter((o) => new Date(o.createdAt) >= start).length;
+  }, [orders]);
+
+  // Only genuinely PENDING payments belong here now — PAY_AT_COUNTER is
+  // counted as completed revenue above, so it would be contradictory to
+  // also list it as "pending" here.
   const pendingAmount = useMemo(
-    () => orders.filter((o) => o.paymentStatus === "PAY_AT_COUNTER" || o.paymentStatus === "PENDING").reduce((s, o) => s + Number(o.grandTotal || 0), 0),
+    () => orders.filter((o) => o.paymentStatus === "PENDING").reduce((s, o) => s + Number(o.grandTotal || 0), 0),
     [orders]
   );
 
@@ -699,31 +812,66 @@ export default function DashboardMainSetup() {
   }, [filteredOrders, statusMeta]);
   const statusTotal = Object.values(statusBreakdown).reduce((a, b) => a + b, 0) || 1;
 
+  // ── Order Insights — order type mix + busiest hour of day. Both
+  // computed straight from the same filteredOrders already loaded (no
+  // new API calls), and both respect the same all-time / filtered
+  // toggle as the rest of the dashboard. Genuinely useful for a
+  // merchant: order type mix informs packaging/staffing, peak hour
+  // informs kitchen scheduling. ──
+  const ORDER_TYPE_LABELS = { DINE_IN: t("order_type_dine_in") || "Dine-in", TAKE_AWAY: t("order_type_takeaway") || "Takeaway", DELIVERY: t("order_type_delivery") || "Delivery" };
+  const orderTypeBreakdown = useMemo(() => {
+    const map = new Map();
+    filteredOrders.forEach((o) => {
+      const key = o.orderType || "OTHER";
+      const cur = map.get(key) || { key, label: ORDER_TYPE_LABELS[key] || key.replace(/_/g, " "), count: 0 };
+      cur.count += 1;
+      map.set(key, cur);
+    });
+    const total = filteredOrders.length || 1;
+    return Array.from(map.values())
+      .map((x) => ({ ...x, pct: (x.count / total) * 100 }))
+      .sort((a, b) => b.count - a.count);
+  }, [filteredOrders]);
+
+  const peakHour = useMemo(() => {
+    if (filteredOrders.length === 0) return null;
+    const buckets = new Array(24).fill(0);
+    filteredOrders.forEach((o) => { buckets[new Date(o.createdAt).getHours()] += 1; });
+    const maxCount = Math.max(...buckets);
+    if (maxCount === 0) return null;
+    const hour = buckets.indexOf(maxCount);
+    const fmt12 = (h) => { const ampm = h >= 12 ? "PM" : "AM"; const h12 = h % 12 || 12; return `${h12} ${ampm}`; };
+    return { hour, count: maxCount, label: `${fmt12(hour)} – ${fmt12((hour + 1) % 24)}`, buckets };
+  }, [filteredOrders]);
+
   // ── recent live orders feed ──
   const recentOrders = useMemo(
     () => [...orders].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 6),
     [orders]
   );
 
-  const exportCSV = () => {
+  const exportExcel = async () => {
+    const XLSX = await import("xlsx");
     const header = [t("csv_order_number"), t("csv_customer"), t("dash_items_suffix"), t("csv_amount"), t("csv_payment"), t("csv_status"), t("csv_date")];
     const rows = filteredOrders.map((o) => [
       o.orderNumber,
       o.customerName || t("dash_guest"),
       (o.items || []).reduce((s, i) => s + Number(i.quantity || 0), 0),
-      Number(o.grandTotal || 0).toFixed(2),
+      Number(o.grandTotal || 0),
       methodLabel[o.paymentMethod] || o.paymentMethod || "-",
       o.orderStatus,
       new Date(o.createdAt).toLocaleString(),
     ]);
-    const csv = [header, ...rows].map((r) => r.map((v) => `"${String(v ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `orders-${rangeLabel.replace(/\s+/g, "-").toLowerCase()}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
+    const worksheet = XLSX.utils.aoa_to_sheet([header, ...rows]);
+    // Reasonable column widths so it opens looking like a real report,
+    // not a raw data dump the merchant has to manually resize.
+    worksheet["!cols"] = [
+      { wch: 16 }, { wch: 22 }, { wch: 10 }, { wch: 12 }, { wch: 14 }, { wch: 12 }, { wch: 20 },
+    ];
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Orders");
+    const fileName = `orders-${(hasUserFiltered ? rangeLabel : "all-time").replace(/\s+/g, "-").toLowerCase()}.xlsx`;
+    XLSX.writeFile(workbook, fileName);
   };
 
   return (
@@ -754,44 +902,62 @@ export default function DashboardMainSetup() {
               <div className="kpi-icon"><Icon size={18} /></div>
               <div className="kpi-label">{k.label}</div>
               <div className="kpi-value">{loading ? "—" : k.value}</div>
-              <div className={`kpi-trend ${up ? "kpi-trend--up" : "kpi-trend--down"}`}>
-                {up ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
-                {Math.abs(k.trend).toFixed(1)}%
-                <span className="kpi-trend-sub">{t("dash_vs_previous")}</span>
-              </div>
+              {hasUserFiltered ? (
+                <div className={`kpi-trend ${up ? "kpi-trend--up" : "kpi-trend--down"}`}>
+                  {up ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
+                  {Math.abs(k.trend).toFixed(1)}%
+                  <span className="kpi-trend-sub">{t("dash_vs_previous")}</span>
+                </div>
+              ) : (
+                <div className="kpi-trend-sub" style={{ marginTop: 6 }}>All time</div>
+              )}
             </div>
           );
         })}
       </div>
 
       <div className="orchid-card">
-        <div className="orchid-metrics">
-          <div>
-            <InlineSelect
-              value={grossLabel}
-              options={[
-                { key: "Total Revenue", label: t("dash_kpi_revenue") },
-                { key: "Total Orders", label: t("dash_kpi_orders") },
-                { key: "Avg Order Value", label: t("dash_kpi_aov") },
-              ]}
-              onChange={setGrossLabel}
-            />
-            <div className="orchid-metric-value">{loading ? "—" : grossValue}</div>
-            <div className="orchid-metric-time">
-              {lastSync ? `${t("dash_updated")} ${lastSync.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}` : t("dash_syncing")}
+        <div
+          style={{
+            position: "relative", height: 190, borderRadius: 14, overflow: "hidden",
+            marginBottom: 4, backgroundImage: `url(${getCoverImage(businessType)})`,
+            backgroundSize: "cover", backgroundPosition: "center",
+          }}
+        >
+          <div style={{
+            position: "absolute", inset: 0,
+            background: "linear-gradient(180deg, rgba(15,15,17,0.18) 0%, rgba(15,15,17,0.55) 55%, rgba(15,15,17,0.82) 100%)",
+          }} />
+          <div style={{ position: "absolute", inset: 0, padding: "16px 20px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <MapPin size={14} color="#fff" />
+              <span style={{ fontSize: 12.5, fontWeight: 700, color: "#fff", letterSpacing: "0.02em" }}>
+                {city || t("dash_your_city") || "Your City"}
+              </span>
             </div>
-          </div>
-          <div>
-            <InlineSelect
-              value={compareMetric}
-              options={[
-                { key: "Yesterday", label: t("home_yesterday") },
-                { key: "Today", label: t("dash_today") },
-                { key: "Last 7 days", label: t("home_last_7_days") },
-              ]}
-              onChange={setCompareMetric}
-            />
-            <div className="orchid-metric-value">{loading ? "—" : compareValue}</div>
+
+            <div style={{ fontSize: 12.5, fontWeight: 600, fontStyle: "italic", color: "rgba(255,255,255,0.9)", maxWidth: 440, lineHeight: 1.5 }}>
+              "{ownerQuote}"
+            </div>
+
+            <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 12 }}>
+              <div>
+                <div style={{ fontSize: 17, fontWeight: 800, color: "#fff", letterSpacing: "-0.2px" }}>
+                  {bizName ? `${bizName} is live in ${city || "your city"}` : `Serving happy customers in ${city || "your city"}`}
+                </div>
+                <div style={{ fontSize: 11.5, color: "rgba(255,255,255,0.78)", marginTop: 2 }}>
+                  Keep an eye on today's activity right from this dashboard.
+                </div>
+              </div>
+              <div style={{
+                flexShrink: 0, display: "flex", alignItems: "center", gap: 6,
+                background: "rgba(255,255,255,0.14)", border: "1px solid rgba(255,255,255,0.22)",
+                borderRadius: 20, padding: "6px 12px", backdropFilter: "blur(4px)",
+              }}>
+                <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#4ade80" }} />
+                <span style={{ fontSize: 11.5, fontWeight: 700, color: "#fff" }}>{todaysOrdersCount} orders today</span>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -839,11 +1005,13 @@ export default function DashboardMainSetup() {
                   onApply={({ start, end, label }) => {
                     setCustomRange({ start, end });
                     setRangeLabel(label);
+                    setHasUserFiltered(true);
                   }}
                 />
                 <SelectDropdown
-                  value={rangeLabel}
+                  value={hasUserFiltered ? rangeLabel : "All Time"}
                   options={[
+                    { key: "All Time", label: "All Time" },
                     { key: "Today", label: t("dash_today") },
                     { key: "Yesterday", label: t("home_yesterday") },
                     { key: "Last 7 Days", label: t("home_last_7_days") },
@@ -852,7 +1020,15 @@ export default function DashboardMainSetup() {
                     { key: "Last Month", label: t("dash_last_month") },
                     { key: "This Year", label: t("dash_this_year") },
                   ]}
-                  onChange={(v) => { setRangeLabel(v); setCustomRange(null); }}
+                  onChange={(v) => {
+                    if (v === "All Time") {
+                      setHasUserFiltered(false);
+                    } else {
+                      setRangeLabel(v);
+                      setCustomRange(null);
+                      setHasUserFiltered(true);
+                    }
+                  }}
                 />
                 <SelectDropdown
                   value={granularity}
@@ -878,8 +1054,8 @@ export default function DashboardMainSetup() {
                 <button className="marigold-pill" onClick={() => fetchOrders(true)} disabled={loading}>
                   <RefreshCw size={14} className={loading ? "spin" : ""} /> {t("dash_refresh")}
                 </button>
-                <button className="marigold-pill" onClick={exportCSV} disabled={!filteredOrders.length}>
-                  <Download size={14} /> {t("dash_export_csv")}
+                <button className="marigold-pill" onClick={exportExcel} disabled={!filteredOrders.length}>
+                  <Download size={14} /> Export Excel
                 </button>
               </div>
             </div>
@@ -1020,39 +1196,92 @@ export default function DashboardMainSetup() {
             })}
           </div>
 
-          {showRecommendations && (
-            <div className="peony-card">
-              <div className="peony-head">
-                <h3 className="peony-title">{t("home_recommendations")}</h3>
-                <button className="peony-close" onClick={() => setShowRecommendations(false)}>
-                  <X size={15} />
-                </button>
-              </div>
-              <p className="peony-text">
-                {t("home_rec1")}
-              </p>
-              <button className="peony-link">{t("home_rec1_link")}</button>
-              <div className="peony-divider" />
-              <p className="peony-text">
-                {t("home_rec2")}
-              </p>
-              <button className="peony-link">{t("home_rec2_link")}</button>
+          <div className="iris-card">
+            <div className="iris-head">
+              <h3 className="iris-title">{t("Quick Insights") || "Quick Insights"}</h3>
             </div>
-          )}
+            {loading ? (
+              <div className="tulip-empty" style={{ height: 100 }}><Loader2 size={16} className="spin" /></div>
+            ) : filteredOrders.length === 0 ? (
+              <div className="tulip-empty" style={{ height: 100 }}>{t("dash_no_orders_yet")}</div>
+            ) : (
+              <>
+                {topItems[0] && (
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "8px 20px" }}>
+                    <span style={{ width: 24, height: 24, borderRadius: 7, background: "#ede9fe", color: "#7c3aed", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Soup size={13} /></span>
+                    <span style={{ fontSize: 11.5, color: "#475569", lineHeight: 1.5 }}><strong style={{ color: "#0f172a" }}>{topItems[0].name}</strong> is your best seller — {topItems[0].qty} sold {rangeLabelDisplay.toLowerCase()}.</span>
+                  </div>
+                )}
+                {paymentBreakdown[0] && (
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "8px 20px" }}>
+                    <span style={{ width: 24, height: 24, borderRadius: 7, background: "#e0f2fe", color: "#0369a1", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Wallet size={13} /></span>
+                    <span style={{ fontSize: 11.5, color: "#475569", lineHeight: 1.5 }}><strong style={{ color: "#0f172a" }}>{paymentBreakdown[0].label}</strong> is your most used payment method — {paymentBreakdown[0].pct.toFixed(0)}% of orders.</span>
+                  </div>
+                )}
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "8px 20px" }}>
+                  <span style={{
+                    width: 24, height: 24, borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                    background: completionRate >= 80 ? "#dcfce7" : "#fef3c7", color: completionRate >= 80 ? "#16a34a" : "#b45309",
+                  }}>
+                    <CheckCircle2 size={13} />
+                  </span>
+                  <span style={{ fontSize: 11.5, color: "#475569", lineHeight: 1.5 }}>
+                    <strong style={{ color: "#0f172a" }}>{completionRate.toFixed(0)}%</strong> of orders completed successfully {rangeLabelDisplay.toLowerCase()}.
+                  </span>
+                </div>
+                {hasUserFiltered && (
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "8px 20px" }}>
+                    <span style={{
+                      width: 24, height: 24, borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                      background: totalRevenue >= prevRevenue ? "#dcfce7" : "#fee2e2", color: totalRevenue >= prevRevenue ? "#16a34a" : "#dc2626",
+                    }}>
+                      {totalRevenue >= prevRevenue ? <ArrowUpRight size={13} /> : <ArrowDownRight size={13} />}
+                    </span>
+                    <span style={{ fontSize: 11.5, color: "#475569", lineHeight: 1.5 }}>
+                      Revenue is <strong style={{ color: "#0f172a" }}>{Math.abs(pctChange(totalRevenue, prevRevenue)).toFixed(1)}% {totalRevenue >= prevRevenue ? "up" : "down"}</strong> vs. the previous period.
+                    </span>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
 
           <div className="iris-card">
             <div className="iris-head">
-              <h3 className="iris-title">{t("home_api_keys")}</h3>
-              <button className="iris-link">{t("home_view_docs")}</button>
+              <h3 className="iris-title">Order Insights</h3>
+              <span className="iris-static-tag">{rangeLabelDisplay}</span>
             </div>
-            <div className="iris-row">
-              <span className="iris-label">{t("home_publishable_key")}</span>
-              <span className="iris-value">pk_test_51TnN162KHtN...</span>
-            </div>
-            <div className="iris-row">
-              <span className="iris-label">{t("home_secret_key")}</span>
-              <span className="iris-value">sk_test_51TnN162KHtN...</span>
-            </div>
+            {loading ? (
+              <div className="tulip-empty" style={{ height: 100 }}><Loader2 size={16} className="spin" /></div>
+            ) : filteredOrders.length === 0 ? (
+              <div className="tulip-empty" style={{ height: 100 }}>{t("dash_no_orders_yet")}</div>
+            ) : (
+              <>
+                {orderTypeBreakdown.map((ot, i) => (
+                  <div className="donut-legend-row" key={ot.key} style={{ padding: "0 20px" }}>
+                    <span className="donut-dot" style={{ background: DONUT_COLORS[i % DONUT_COLORS.length] }} />
+                    <span className="donut-legend-label" style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                      <Utensils size={11} style={{ opacity: 0.6 }} /> {ot.label}
+                    </span>
+                    <span className="donut-legend-pct">{ot.count} · {ot.pct.toFixed(0)}%</span>
+                  </div>
+                ))}
+                {peakHour && (
+                  <div style={{
+                    display: "flex", alignItems: "center", gap: 10, margin: "12px 20px 4px",
+                    padding: "10px 12px", borderRadius: 10, background: "#f5f3ff", border: "1px solid #ede9fe",
+                  }}>
+                    <div style={{ width: 30, height: 30, borderRadius: 8, background: "#ede9fe", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <Clock size={14} color="#7c3aed" />
+                    </div>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: 11.5, fontWeight: 700, color: "#4c1d95" }}>Busiest hours: {peakHour.label}</div>
+                      <div style={{ fontSize: 10.5, color: "#7c3aed" }}>{peakHour.count} orders in that hour — plan staffing around it</div>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </div>
       </div>

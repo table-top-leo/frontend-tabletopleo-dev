@@ -1,0 +1,189 @@
+.hod-root {
+  min-height: 100vh;
+  background: #f5f6fb;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+  color: #18181b;
+}
+
+/* ── Filters bar ── */
+.hod-filters-bar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 16px 22px 12px; background: #f5f6fb;
+  flex-wrap: wrap;
+}
+.hod-filter {
+  position: relative; display: flex; align-items: center; gap: 7px;
+  background: #fff; border: 1px solid #edeef5; border-radius: 11px;
+  padding: 7px 11px; cursor: pointer; min-width: 142px;
+  box-shadow: 0 1px 2px rgba(15,23,42,0.03);
+}
+.hod-filter-icon { color: #6366f1; display: flex; flex-shrink: 0; }
+.hod-filter-body { flex: 1; min-width: 0; }
+.hod-filter-label { display: block; font-size: 9px; color: #a1a1aa; font-weight: 600; }
+.hod-filter-value { display: block; font-size: 11.5px; font-weight: 700; color: #18181b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hod-filter-chevron { color: #a1a1aa; flex-shrink: 0; }
+.hod-dropdown-menu {
+  position: absolute; top: calc(100% + 6px); left: 0; min-width: 100%;
+  background: #fff; border: 1px solid #edeef5; border-radius: 11px;
+  box-shadow: 0 14px 32px rgba(15,23,42,0.12); z-index: 40; padding: 5px; max-height: 260px; overflow-y: auto;
+}
+.hod-dropdown-item { padding: 8px 10px; border-radius: 8px; font-size: 11.5px; font-weight: 600; color: #3f3f46; cursor: pointer; white-space: nowrap; }
+.hod-dropdown-item:hover { background: #f5f6fb; }
+.hod-dropdown-item.active { background: #6366f1; color: #fff; }
+.hod-reset-btn {
+  display: flex; align-items: center; gap: 5px; margin-left: auto;
+  background: none; border: none; color: #6366f1; font-size: 11.5px; font-weight: 700;
+  cursor: pointer; padding: 6px 2px;
+}
+.hod-date-input {
+  background: #fff; border: 1px solid #edeef5; border-radius: 11px;
+  padding: 8px 10px; font-size: 11.5px; font-weight: 600; color: #18181b;
+  box-shadow: 0 1px 2px rgba(15,23,42,0.03);
+}
+
+/* ── KPI cards — colored icon chips + pill trend badges ── */
+.hod-kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; padding: 4px 22px 0; }
+.hod-kpi-card {
+  display: flex; flex-direction: column; gap: 10px;
+  background: #fff; border: 1px solid #edeef5; border-radius: 16px; padding: 14px 16px;
+  box-shadow: 0 1px 2px rgba(15,23,42,0.03), 0 8px 20px -12px rgba(15,23,42,0.08);
+}
+.hod-kpi-top { display: flex; align-items: center; justify-content: space-between; }
+.hod-kpi-icon {
+  width: 34px; height: 34px; border-radius: 11px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.hod-kpi-icon.c-blue   { background: #eef2ff; color: #4f46e5; }
+.hod-kpi-icon.c-purple { background: #f5f3ff; color: #8b5cf6; }
+.hod-kpi-icon.c-amber  { background: #fffbeb; color: #d97706; }
+.hod-kpi-icon.c-teal   { background: #f0fdfa; color: #0d9488; }
+.hod-kpi-label { font-size: 11px; color: #71717a; font-weight: 600; }
+.hod-kpi-value { font-size: 19px; font-weight: 800; letter-spacing: -0.3px; }
+.hod-kpi-delta {
+  display: inline-flex; align-items: center; gap: 3px; width: fit-content;
+  font-size: 10.5px; font-weight: 800; padding: 3px 8px; border-radius: 999px;
+}
+.hod-kpi-delta.up   { background: #dcfce7; color: #16a34a; }
+.hod-kpi-delta.down { background: #fee2e2; color: #dc2626; }
+.hod-kpi-delta span { color: inherit; opacity: 0.75; font-weight: 600; margin-left: 3px; }
+
+/* ── Shared card ── */
+.hod-card { background: #fff; border: 1px solid #edeef5; border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 1px 2px rgba(15,23,42,0.03), 0 8px 20px -12px rgba(15,23,42,0.08); }
+.hod-card-head { padding: 13px 15px 7px; display: flex; align-items: center; justify-content: space-between; }
+.hod-card-title { display: flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 800; color: #18181b; }
+.hod-card-title svg { color: #6366f1; }
+.hod-card-sub { display: block; font-size: 9.5px; font-weight: 500; color: #a1a1aa; margin: 2px 0 0 21px; }
+.hod-view-link { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; color: #6366f1; text-decoration: none; padding: 8px 15px; }
+.hod-view-link.small { font-size: 10.5px; padding: 6px 15px 12px; }
+
+/* ── Row 1 grid ── */
+.hod-grid { display: grid; grid-template-columns: 2.3fr 3.1fr 2.4fr 2.2fr; gap: 12px; padding: 12px 22px 0; }
+.hod-grid-row2 { grid-template-columns: 2.3fr 3.1fr 2.4fr 2.2fr; grid-template-rows: auto; margin-top: 12px; }
+.hod-grid-row3 { grid-template-columns: 2.7fr 1.6fr 1.6fr; margin-top: 12px; padding-bottom: 24px; }
+
+/* Top performing branch — image kept exactly as-is, just refined corners/shadow */
+.hod-top-branch {
+  background-size: cover; background-position: center; color: #fff;
+  padding: 15px; justify-content: flex-end; min-height: 250px; position: relative;
+}
+.hod-top-branch-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 10.5px; font-weight: 700; color: #c7d2fe; margin-bottom: auto; }
+.hod-top-branch-name { font-size: 17px; font-weight: 800; margin-top: 10px; }
+.hod-top-branch-revenue { font-size: 20px; font-weight: 800; margin-top: 6px; }
+.hod-top-branch-label { font-size: 10.5px; color: #d4d4d8; margin-top: 0px; }
+.hod-top-branch-growth { font-size: 11px; font-weight: 700; color: #4ade80; margin-top: 6px; }
+.hod-top-branch-growth span { color: #d4d4d8; font-weight: 500; margin-left: 4px; }
+.hod-top-branch .hod-view-link { color: #c7d2fe; padding: 7px 0 0; }
+.hod-top-branch-foot { display: flex; align-items: center; gap: 4px; font-size: 10px; color: #d4d4d8; margin-top: 9px; padding-top: 9px; border-top: 1px solid rgba(255,255,255,0.16); }
+.hod-top-branch-foot span { color: #a1a1aa; margin-left: 2px; }
+
+/* Revenue trend — pill tabs, indigo line */
+.hod-trend { padding-bottom: 4px; }
+.hod-tab-group { display: flex; gap: 3px; background: #f5f6fb; border-radius: 999px; padding: 3px; }
+.hod-tab-group.full { margin: 0 15px 10px; }
+.hod-tab { border: none; background: none; padding: 6px 12px; border-radius: 999px; font-size: 10.5px; font-weight: 700; color: #71717a; cursor: pointer; }
+.hod-tab.active { background: #6366f1; color: #fff; box-shadow: 0 2px 8px rgba(99,102,241,0.35); }
+.hod-linechart { width: 100%; height: 148px; display: block; padding: 0 15px; }
+.hod-trend-axis { display: flex; justify-content: space-between; padding: 4px 22px 14px; font-size: 9.5px; color: #a1a1aa; font-weight: 600; }
+
+/* Branch overview cards */
+.hod-branch-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 0 15px 15px; }
+.hod-branch-card { border: 1px solid #edeef5; background: #fafbfe; border-radius: 12px; padding: 11px 12px; cursor: pointer; transition: border-color 0.12s, background 0.12s; }
+.hod-branch-card:hover { border-color: #6366f1; background: #eef2ff; }
+.hod-branch-card-name { font-size: 11.5px; font-weight: 700; color: #18181b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hod-branch-card-rev { font-size: 13px; font-weight: 800; color: #4f46e5; margin-top: 3px; }
+.hod-branch-card-pct { font-size: 9.5px; color: #a1a1aa; margin-top: 2px; }
+
+/* Top items */
+.hod-item-list { display: flex; flex-direction: column; padding: 0 15px; }
+.hod-item-row { display: flex; align-items: center; gap: 9px; padding: 7px 0; border-top: 1px solid #f2f3f8; }
+.hod-item-row:first-child { border-top: none; }
+.hod-item-rank {
+  width: 20px; height: 20px; border-radius: 7px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 800; background: #f5f6fb; color: #71717a;
+}
+.hod-item-thumb { width: 30px; height: 30px; border-radius: 9px; background: linear-gradient(135deg,#eef2ff,#f5f3ff); flex-shrink: 0; }
+.hod-item-info { flex: 1; min-width: 0; }
+.hod-item-name { font-size: 11.5px; font-weight: 700; color: #18181b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hod-item-sub { font-size: 9.5px; color: #a1a1aa; }
+.hod-item-right { text-align: right; flex-shrink: 0; }
+.hod-item-revenue { font-size: 11px; font-weight: 800; color: #18181b; }
+.hod-item-growth { font-size: 9.5px; font-weight: 700; color: #16a34a; }
+
+/* Row 2: payment donut */
+.hod-payment-body { display: flex; align-items: center; gap: 14px; padding: 0 15px 15px; }
+.hod-legend { flex: 1; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.hod-legend-row { display: flex; align-items: center; gap: 7px; font-size: 11px; }
+.hod-legend-dot { width: 9px; height: 9px; border-radius: 3px; flex-shrink: 0; }
+.hod-legend-name { flex: 1; color: #52525b; font-weight: 600; text-transform: capitalize; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hod-legend-amount { font-size: 9.5px; color: #a1a1aa; font-weight: 600; flex-shrink: 0; }
+.hod-legend-val { font-weight: 800; color: #18181b; flex-shrink: 0; min-width: 30px; text-align: right; }
+
+/* Orders bar chart — purple/indigo gradient bars */
+.hod-bar-chart { display: flex; align-items: flex-end; gap: 10px; padding: 6px 15px 15px; height: 160px; }
+.hod-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; }
+.hod-bar-value { font-size: 10px; font-weight: 800; color: #18181b; margin-bottom: 6px; }
+.hod-bar-track { width: 100%; flex: 1; display: flex; align-items: flex-end; }
+.hod-bar-fill { width: 100%; background: linear-gradient(180deg, #818cf8, #6366f1); border-radius: 7px 7px 2px 2px; min-height: 4px; }
+.hod-bar-label { font-size: 9px; color: #71717a; font-weight: 600; margin-top: 7px; text-align: center; }
+
+/* Quick insights */
+.hod-insight-row { display: flex; align-items: flex-start; gap: 9px; padding: 7px 15px; }
+.hod-insight-icon { width: 24px; height: 24px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.hod-insight-text { font-size: 10.5px; color: #52525b; line-height: 1.5; padding-top: 2px; }
+.hod-insight-text strong { color: #18181b; }
+
+/* Recent activity */
+.hod-activity-list { padding: 0 15px; display: flex; flex-direction: column; }
+.hod-activity-row { display: flex; align-items: flex-start; gap: 9px; padding: 7px 0; }
+.hod-activity-time { font-size: 9.5px; color: #a1a1aa; font-weight: 700; width: 32px; flex-shrink: 0; padding-top: 1px; }
+.hod-activity-dot { width: 6px; height: 6px; border-radius: 50%; background: #6366f1; margin-top: 4px; flex-shrink: 0; }
+.hod-activity-text { font-size: 11px; font-weight: 600; color: #18181b; }
+.hod-activity-branch { font-size: 9.5px; color: #a1a1aa; }
+
+/* Row 3 table */
+.hod-table-toolbar { display: flex; align-items: center; gap: 8px; padding: 0 15px 10px; }
+.hod-sort-select {
+  margin-left: auto; font-size: 10.5px; font-weight: 700; color: #3f3f46;
+  background: #f5f6fb; border: 1px solid #edeef5; border-radius: 8px; padding: 6px 9px; cursor: pointer;
+}
+.hod-perf-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.hod-perf-table th { text-align: left; padding: 8px 15px; font-size: 9.5px; font-weight: 700; color: #a1a1aa; text-transform: uppercase; letter-spacing: 0.03em; border-top: 1px solid #f2f3f8; border-bottom: 1px solid #f2f3f8; }
+.hod-perf-table td { padding: 9px 15px; color: #3f3f46; border-bottom: 1px solid #f8f8fb; }
+.hod-perf-table tr:hover td { background: #fafbfe; }
+.hod-perf-table td.strong { font-weight: 800; color: #18181b; }
+.hod-perf-table td.green { color: #16a34a; font-weight: 700; }
+
+/* Revenue by city + promo */
+.hod-promo { background-size: cover; background-position: center; display: flex; align-items: flex-end; padding: 15px; min-height: 170px; }
+.hod-promo-quote { color: #fff; font-size: 12.5px; font-weight: 700; font-style: italic; line-height: 1.4; }
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .hod-kpi-row { grid-template-columns: repeat(2, 1fr); }
+  .hod-grid, .hod-grid-row2 { grid-template-columns: repeat(2, 1fr); }
+  .hod-grid-row3 { grid-template-columns: 1fr; }
+}
+@media (max-width: 720px) {
+  .hod-kpi-row, .hod-grid, .hod-grid-row2 { grid-template-columns: 1fr; }
+}

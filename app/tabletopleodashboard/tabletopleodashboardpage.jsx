@@ -31,6 +31,7 @@ import { useCurrency }          from '../context/CurrencyContext';
 import { formatCurrency }       from '../utils/currencyHelper';
 import DashboardMainSetup from '../ApplicationMainLayout/dashboardsetup'
 import AdminBilling from '../adminbillingcomponent/AdminBilling'
+import HeadOfficeAnalyticsDashboard from '../headofficedashboardcomponent/headofficedashboard'
 import InventoryPage from '../inventorypage/InventoryPage'
 import TaxBillingSetup from '../taxbillingcomponent/taxbillingsetup'
 import { useLanguage } from '../context/LanguageContext'
@@ -117,6 +118,7 @@ function buildProductItems(t) {
   return [
     { id:'payments',  label:t('nav_payments'),  icon:CreditCard },
     { id:'billing',   label:t('nav_billing'),   icon:FileText },
+    { id:'analytics-dashboard', label:'Analytics Dashboard', icon:BarChart2, headOfficeOnly:true },
     { id:'reporting', label:t('nav_reporting'), icon:BarChart2 },
     { id:'apps',      label:t('nav_apps'),      icon:Grid },
     { id:'more',      label:t('nav_more'),      icon:MoreHorizontal },
@@ -297,7 +299,7 @@ const AdminDashboardNew = () => {
     if (activeMenu === 'notifications') {
       return <div data-afd-theme={dark?'dark':'light'}><NotificationTableTopLeo dark={dark} onNavigateToOrder={(orderNoOrId)=>{setHighlightOrder(orderNoOrId);setActiveMenu('orders');}}/></div>;
     }
-    const PAGE_MAP = { 'menu-category':MenuCategory, 'business-info':BusinessInformation, 'locations':LocationsPage, 'settings':SettingsPage, 'help-desk':HelpDeskPage, 'payment-setup':PaymentSetup,'home':DashboardMainSetup,'payments':AdminPayments,'billing':AdminBilling,'inventory':InventoryPage,'discount-management':AdminDiscountManagement,'tax-billing':TaxBillingSetup };
+    const PAGE_MAP = { 'menu-category':MenuCategory, 'business-info':BusinessInformation, 'locations':LocationsPage, 'settings':SettingsPage, 'help-desk':HelpDeskPage, 'payment-setup':PaymentSetup,'home':DashboardMainSetup,'payments':AdminPayments,'billing':AdminBilling,'analytics-dashboard':HeadOfficeAnalyticsDashboard,'inventory':InventoryPage,'discount-management':AdminDiscountManagement,'tax-billing':TaxBillingSetup };
     const ActivePage = PAGE_MAP[activeMenu];
     if (ActivePage) return <div data-afd-theme={dark?'dark':'light'}><ActivePage/></div>;
     if (activeMenu === 'admin-setup') return null;
@@ -430,7 +432,7 @@ const AdminDashboardNew = () => {
             ))}
             <div className="afd-sidebar__divider"/>
             <div className="afd-sidebar__section-label">{t('nav_more_section')}</div>
-            {PRODUCT_ITEMS.map(({id,label,icon:Icon})=>(
+            {PRODUCT_ITEMS.filter(item => !item.headOfficeOnly || !user?.role || user.role === 'OWNER').map(({id,label,icon:Icon})=>(
               <button key={id} className={`afd-sidebar__item${activeMenu===id?' afd-sidebar__item--active':''}`} onClick={()=>setActiveMenu(id)} title={collapsed?label:undefined}>
                 <Icon size={17}/><span className="afd-item-label">{label}</span>
               </button>

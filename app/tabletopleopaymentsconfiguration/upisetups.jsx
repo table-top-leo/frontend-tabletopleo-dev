@@ -406,7 +406,6 @@ const PaymentSetup =() =>{
             <div>
               <div style={{ fontSize:14, fontWeight:700, color:"#0f172a", marginBottom:3, display:"flex", alignItems:"center", gap:6 }}>
                 {t("ps_pac_title")}
-                {isLockedToHeadOffice && <Lock size={12} color="#7c3aed" />}
               </div>
               <div style={{ fontSize:12, color:"#64748b", lineHeight:1.5 }}>
                 {t("ps_pac_desc")}
@@ -418,7 +417,6 @@ const PaymentSetup =() =>{
               <div
                 onClick={() => {
                   if (pacInitialLoading || pacLoading) return;
-                  if (isLockedToHeadOffice) { setShowDeniedPopup(true); return; }
                   // Only stage the change locally — nothing is sent to the
                   // backend here. The DB value changes only when the admin
                   // clicks "Save" below.
@@ -428,7 +426,7 @@ const PaymentSetup =() =>{
                 style={{
                   width:44, height:24, borderRadius:12,
                   background: payAtCounterDraft ? "#16a34a" : "#d1d5db",
-                  position:"relative", cursor: (pacInitialLoading || isLockedToHeadOffice) ? (isLockedToHeadOffice ? "not-allowed" : "default") : "pointer",
+                  position:"relative", cursor: pacInitialLoading ? "default" : "pointer",
                   transition:"background 0.2s",
                   flexShrink:0,
                   opacity: pacInitialLoading ? 0.6 : 1,
