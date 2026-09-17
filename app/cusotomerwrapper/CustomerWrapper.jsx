@@ -122,7 +122,7 @@ const CustomerWrapperInner = ({ businessId, locationId }) => {
     if (!locationId) return;
     (async () => {
       try {
-        const res = await fetch(`http://localhost:6163/api/locations/public/${locationId}`);
+        const res = await fetch(`https://api.tabletopleo.com/api/locations/public/${locationId}`);
         const data = await res.json();
         if (data?.success && data?.data?.branchName) {
           setBranchName(data.data.branchName);
@@ -211,7 +211,7 @@ const CustomerWrapperInner = ({ businessId, locationId }) => {
         }
 
         try {
-          const pacRes = await fetch(`http://localhost:6163/api/payment/pay-at-counter/status?businessId=${businessId}`);
+          const pacRes = await fetch(`https://api.tabletopleo.com/api/payment/pay-at-counter/status?businessId=${businessId}`);
           const pacData = await pacRes.json();
           if (!pacRes.ok) {
             console.warn("Pay at Counter status check failed:", pacRes.status, pacData);

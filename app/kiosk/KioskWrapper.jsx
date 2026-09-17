@@ -133,7 +133,7 @@ const KioskWrapper = ({ businessId }) => {
         if (sessionRes.success) setSessionId(sessionRes.data.sessionId);
 
         try {
-          const pacRes = await fetch(`http://localhost:6163/api/payment/pay-at-counter/status?businessId=${businessId}`);
+          const pacRes = await fetch(`https://api.tabletopleo.com/api/payment/pay-at-counter/status?businessId=${businessId}`);
           const pacData = await pacRes.json();
           setPayAtCounterAvailable(pacData?.data === true);
         } catch {

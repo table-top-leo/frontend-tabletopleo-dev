@@ -5,7 +5,7 @@ import {
   Eye, Loader2, ShieldCheck, ShieldOff,
 } from "lucide-react";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:6163";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://api.tabletopleo.com";
 const PAGE_SIZE = 10;
 
 const STATUS_CFG = {

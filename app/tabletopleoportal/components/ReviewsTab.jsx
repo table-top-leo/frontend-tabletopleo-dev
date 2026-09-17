@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Search, Star, MessageSquareText, X, Loader2 } from "lucide-react";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:6163";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://api.tabletopleo.com";
 
 function formatDateTime(iso) {
   if (!iso) return "—";

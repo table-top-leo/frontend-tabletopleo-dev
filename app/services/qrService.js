@@ -6,7 +6,7 @@ import axios from "axios";
 
 const QR_BASE = "/api/qr";
 const MENU_BASE = "/api/menu";
-const BASE_URL = "http://localhost:6163";
+const BASE_URL = "https://api.tabletopleo.com";
 
 const qrService = {
 

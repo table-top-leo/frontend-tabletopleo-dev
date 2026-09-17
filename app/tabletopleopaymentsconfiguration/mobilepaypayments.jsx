@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Eye, EyeOff, AlertCircle, CheckCircle, Loader, Copy, Download } from "lucide-react";
 import axios from "axios";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:6163/api";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.tabletopleo.com/api";
 
 export default function MobilePayPayments({ onBack, adminId, businessId }) {
   const [loading, setLoading] = useState(false);

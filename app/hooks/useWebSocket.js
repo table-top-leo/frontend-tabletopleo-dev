@@ -7,7 +7,7 @@ let globalConnected = false;
 const subscribers  = new Map(); // topicKey → Set of { id, handler }
 let subIdCounter   = 0;
 
-const WS_URL = "http://localhost:6163/ws";
+const WS_URL = "https://api.tabletopleo.com/ws";
 
 async function getStompLib() {
   const { Client } = await import("@stomp/stompjs");

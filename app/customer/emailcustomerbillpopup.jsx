@@ -5,7 +5,7 @@ import { X, Mail, MailCheck, Send, ShieldCheck, CheckCircle2, Loader2 } from "lu
 import { useCustomerLanguage } from "../context/CustomerLanguageProvider";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:6163";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://api.tabletopleo.com";
 
 const CustomerEmailInvoicePopup = ({ onClose, orderNumber, orderId }) => {
   const { t } = useCustomerLanguage();

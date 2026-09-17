@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { formatCurrency } from "../../utils/currencyHelper";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:6163/api";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.tabletopleo.com/api";
 
 export default function KioskMobilePayModal({ businessId, orderId, total, currencyCode, businessName, onSuccess, onClose }) {
   const [loading, setLoading] = useState(true);

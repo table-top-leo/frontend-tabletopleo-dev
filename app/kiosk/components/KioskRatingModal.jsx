@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from "react";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:6163";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://api.tabletopleo.com";
 const REACTIONS = { 0: "Tap a star to rate", 1: "What went wrong?", 2: "We can do better", 3: "Thanks for the feedback", 4: "Glad you enjoyed it!", 5: "You're roar-some!" };
 
 export default function KioskRatingModal({ open, businessId, customerName, customerPhone, onClose }) {

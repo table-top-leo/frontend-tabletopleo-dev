@@ -8,7 +8,7 @@ import QRCode from "react-qr-code";
 import axios from "axios";
 import { useCustomerLanguage } from "../context/CustomerLanguageProvider";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:6163/api";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.tabletopleo.com/api";
 
 const ICON_URLS = {
   "PhonePe":     "https://img.icons8.com/color/96/000000/phone-pe.png",

@@ -202,7 +202,7 @@ const PaymentSetup =() =>{
     const loadAvailability = async () => {
       try {
         const token = localStorage.getItem("ttl_token");
-        const res = await fetch(`http://localhost:6163/api/payment/available-methods`, {
+        const res = await fetch(`https://api.tabletopleo.com/api/payment/available-methods`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
@@ -228,7 +228,7 @@ const PaymentSetup =() =>{
       setPacInitialLoading(true);
       try {
         const token = localStorage.getItem("ttl_token");
-        const res = await fetch(`http://localhost:6163/api/payment/pay-at-counter/my-status`, {
+        const res = await fetch(`https://api.tabletopleo.com/api/payment/pay-at-counter/my-status`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
@@ -253,7 +253,7 @@ const PaymentSetup =() =>{
     try {
       const token = localStorage.getItem("ttl_token");
       const res = await fetch(
-        `http://localhost:6163/api/payment/pay-at-counter/toggle?enabled=${payAtCounterDraft}`,
+        `https://api.tabletopleo.com/api/payment/pay-at-counter/toggle?enabled=${payAtCounterDraft}`,
         { method: "PUT", headers: { Authorization: `Bearer ${token}` } }
       );
       const data = await res.json();

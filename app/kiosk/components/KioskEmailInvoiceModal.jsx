@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:6163";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://api.tabletopleo.com";
 
 export default function KioskEmailInvoiceModal({ open, orderId, orderNumber, onClose }) {
   const [email, setEmail] = useState("");

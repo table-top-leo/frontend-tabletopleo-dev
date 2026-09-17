@@ -7,7 +7,7 @@ import { setupBusiness } from "../services/businessService";
 import axios from "axios";
 import { COUNTRY_CURRENCY_MAP, CURRENCIES } from "../utils/currencyHelper";
 
-const BASE_URL = "http://localhost:6163";
+const BASE_URL = "https://api.tabletopleo.com";
 
 const COUNTRIES = [
   "Afghanistan","Albania","Algeria","Andorra","Angola","Argentina","Armenia","Australia",

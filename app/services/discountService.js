@@ -1,6 +1,6 @@
 import api from "../services/axiosInterceptor";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:6163";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://api.tabletopleo.com";
 
 const discountService = {
   // ── Merchant-facing (JWT) ──────────────────────────────────

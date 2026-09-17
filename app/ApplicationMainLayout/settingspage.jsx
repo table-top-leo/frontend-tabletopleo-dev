@@ -83,7 +83,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (!adminId) return;
-    fetch(`http://localhost:6163/api/business-information/${adminId}`, {
+    fetch(`https://api.tabletopleo.com/api/business-information/${adminId}`, {
       headers: { Authorization:`Bearer ${localStorage.getItem("ttl_token")||""}` }
     }).then(r=>r.json()).then(d=>{
       const b = d?.data || d;
@@ -142,7 +142,7 @@ export default function SettingsPage() {
     setDeleteLoading(true);
     setDeleteError("");
     try {
-      const res = await fetch("http://localhost:6163/api/account-deletion/request", {
+      const res = await fetch("https://api.tabletopleo.com/api/account-deletion/request", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

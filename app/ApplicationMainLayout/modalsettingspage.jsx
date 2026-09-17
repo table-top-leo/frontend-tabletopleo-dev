@@ -5,7 +5,7 @@ import {
 } from "lucide-react";
 import { useLanguage } from "../context/LanguageContext";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:6163";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://api.tabletopleo.com";
 
 function getUser() {
   try { const s = localStorage.getItem("ttl_user"); return s ? JSON.parse(s) : null; }

@@ -4,7 +4,7 @@ import {
   Search, Trash2, X, CheckCircle2, XCircle, Clock, MessageSquareText, Loader2,
 } from "lucide-react";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:6163";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://api.tabletopleo.com";
  
 const ADMIN_PORTAL_KEY = "change-me";
  

@@ -33,3 +33,18 @@ export const deleteAccount = async (adminId) => {
   const response = await api.delete(`/api/auth/delete-account/${adminId}`);
   return response.data;
 };
+
+// Revokes the persistent session on the server (clearing the HttpOnly
+// refresh cookie) — this is what actually ends "stay logged in" for
+// this browser. Errors are deliberately swallowed: even if the server
+// call fails (e.g. the network drops), the caller should still proceed
+// to clear local state and redirect to login — a failed logout call
+// should never trap the person in the app.
+export const logoutUser = async () => {
+  try {
+    const response = await api.post("/api/auth/logout");
+    return response.data;
+  } catch (e) {
+    return { success: false };
+  }
+};

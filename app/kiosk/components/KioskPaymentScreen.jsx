@@ -6,7 +6,7 @@ import { formatCurrency } from "../../utils/currencyHelper";
 import { KioskUpiPanel, KioskGatewaySummaryPanel, KioskCounterPanel } from "./KioskPaymentMethodPanels";
 import KioskMobilePayModal from "./KioskMobilePayModal";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:6163/api";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.tabletopleo.com/api";
 
 const METHOD_ICONS = {
   upi: (

@@ -29,6 +29,7 @@ import adminOrderService        from '../services/adminOrderService';
 import AcceptOrderPopup         from '../orderstabletopleo/AcceptOrderPopup';
 import { useCurrency }          from '../context/CurrencyContext';
 import { formatCurrency }       from '../utils/currencyHelper';
+import { logoutUser }           from '../services/authService';
 import DashboardMainSetup from '../ApplicationMainLayout/dashboardsetup'
 import AdminBilling from '../adminbillingcomponent/AdminBilling'
 import HeadOfficeAnalyticsDashboard from '../headofficedashboardcomponent/headofficedashboard'
@@ -264,7 +265,13 @@ const AdminDashboardNew = () => {
     notificationService.clearAll().catch(e => console.error('Failed to clear notifications:', e));
   };
 
-  const confirmLogout = () => {
+  const confirmLogout = async () => {
+    // Revoke the persistent session on the server first — this is what
+    // actually clears the HttpOnly refresh cookie. Without this, closing
+    // and reopening the browser after "logging out" would silently log
+    // the person back in, since the still-valid refresh cookie would
+    // just issue a fresh access token again.
+    await logoutUser();
     localStorage.removeItem('ttl_token');
     localStorage.removeItem('ttl_user');
     router.push('/logintabletopleo');

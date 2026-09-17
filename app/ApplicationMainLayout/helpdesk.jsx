@@ -16,7 +16,7 @@ import "../designdashboardcomponent/helpdesk.css";
 import { SupportModal } from "../ApplicationMainLayout/modalsettingspage";
 import { useLanguage } from "../context/LanguageContext";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:6163";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://api.tabletopleo.com";
 const WHATSAPP_NUMBER = "918688349726"; // 91 + 8688349726
 const CALL_NUMBER = "+918688349726";
 

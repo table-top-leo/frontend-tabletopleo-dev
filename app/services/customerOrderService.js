@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const BASE_URL = "http://localhost:6163";
+const BASE_URL = "https://api.tabletopleo.com";
 const API      = `${BASE_URL}/api/customer`;
 
 // All customer APIs are public (no JWT) — use plain axios

@@ -123,7 +123,7 @@ export default function UpgradePlanPage({ onBack, currencySymbol = "₹", curren
     }));
     // Fetch business info for address
     if (u.adminId) {
-      fetch(`http://localhost:6163/api/business-information/${u.adminId}`, {
+      fetch(`https://api.tabletopleo.com/api/business-information/${u.adminId}`, {
         headers:{ Authorization:`Bearer ${localStorage.getItem("ttl_token")||""}` }
       }).then(r=>r.json()).then(d=>{
         const b = d?.data || d;
