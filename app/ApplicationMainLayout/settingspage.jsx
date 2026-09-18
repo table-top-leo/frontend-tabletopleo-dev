@@ -78,7 +78,7 @@ export default function SettingsPage() {
   const initials   = fullName.split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,2);
   const locationId  = user?.locationId || "";
   const QR_DATA    = businessId
-    ? (locationId ? `http://localhost:3000/menu/${businessId}/${locationId}` : `http://localhost:3000/menu/${businessId}`)
+    ? (locationId ? `https://tabletopleo.com/menu/${businessId}/${locationId}` : `https://tabletopleo.com/menu/${businessId}`)
     : `http://localhost:3000/menu/${adminId}`;
 
   useEffect(() => {
