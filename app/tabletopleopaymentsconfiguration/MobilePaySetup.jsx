@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Eye, EyeOff, ShieldCheck, Smartphone, AlertCircle, CheckCircle, Loader } from "lucide-react";
 import axios from "axios";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080/api";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://tabletopleo.com/api";
 
 export default function MobilePaySetup({ onBack, adminId, businessId }) {
   const [step, setStep] = useState(1);
