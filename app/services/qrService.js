@@ -16,7 +16,7 @@ const qrService = {
    *
    * @returns {Promise} - ApiResponse<QrCodeResponse>
    *   qrImageBase64: "data:image/png;base64,..." — use directly in <img src="">
-   *   qrUrl: "http://localhost:3000/menu/BUS000001" — the URL encoded in the QR
+   *   qrUrl: "https://tabletopleo.com/menu/BUS000001" — the URL encoded in the QR
    */
   generateQrCode: async () => {
     const response = await api.post(`${QR_BASE}/generate`);
