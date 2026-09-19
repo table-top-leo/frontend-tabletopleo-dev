@@ -202,7 +202,7 @@ function fmtCompact(n, code) {
 const HeadOfficeDashboardPage = () => {
   const { currencyCode } = useCurrency();
   const user = useMemo(() => getUser(), []);
-  const isOwner = !!user && (!user.role || user.role === "OWNER");
+  const isOwner = !!user && (!user.role || user.role === "OWNER") && user?.multiLocation === true;
 
   const [businessType, setBusinessType] = useState("");
   useEffect(() => {
@@ -312,7 +312,8 @@ const HeadOfficeDashboardPage = () => {
           </div>
           <div style={{ fontSize: 15, fontWeight: 800, color: "#18181b", marginBottom: 6 }}>Head Office Only</div>
           <div style={{ fontSize: 12.5, color: "#71717a", lineHeight: 1.6 }}>
-            This dashboard is only available to Head Office. Branch logins don't have access to combined
+            This dashboard is only available to Head Office accounts with multiple branches.
+            Branch logins and single-location merchants don't have access to combined
             business analytics.
           </div>
         </div>
