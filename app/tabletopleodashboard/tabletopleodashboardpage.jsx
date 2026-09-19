@@ -439,7 +439,7 @@ const AdminDashboardNew = () => {
             ))}
             <div className="afd-sidebar__divider"/>
             <div className="afd-sidebar__section-label">{t('nav_more_section')}</div>
-            {PRODUCT_ITEMS.filter(item => !item.headOfficeOnly || !user?.role || user.role === 'OWNER').map(({id,label,icon:Icon})=>(
+            {PRODUCT_ITEMS.filter(item => !item.headOfficeOnly || (user?.multiLocation === true && (!user?.role || user.role === 'OWNER'))).map(({id,label,icon:Icon})=>(
               <button key={id} className={`afd-sidebar__item${activeMenu===id?' afd-sidebar__item--active':''}`} onClick={()=>setActiveMenu(id)} title={collapsed?label:undefined}>
                 <Icon size={17}/><span className="afd-item-label">{label}</span>
               </button>
